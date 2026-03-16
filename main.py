@@ -8,9 +8,7 @@ app = FastAPI(title="AFK RRHH")
 
 FRONTEND_DIR = Path(__file__).parent
 
-# Servir archivos estáticos (js, css, imágenes)
-# Nota: Si los archivos están en la raíz, montamos la raíz.
-app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
+# Los archivos estáticos se montarán al final para no interferir con las rutas principales
 
 @app.get("/", response_class=HTMLResponse)
 def index():
@@ -36,3 +34,6 @@ def candidates_html():
 # @app.post("/api/chat")
 # def chat(...):
 #     pass
+
+# IMPORTANTE: Montar archivos estáticos al final para que las rutas relativas funcionen
+app.mount("/", StaticFiles(directory=FRONTEND_DIR), name="static")
