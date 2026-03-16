@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AFK RRHH — Perfil de Candidato</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <style>
+    .profile {
+      display: grid;
+      gap: 16px
+    }
+
+    .profile__header {
+      display: flex;
+      align-items: center;
+      gap: 16px
+    }
+
+    .profile__header .avatar {
+      width: 72px;
+      height: 72px;
+      border-radius: 999px
+    }
+
+    .grid2 {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: repeat(2, minmax(0, 1fr))
+    }
+
+    @media(max-width:900px) {
+      .grid2 {
+        grid-template-columns: 1fr
+      }
+    }
+
+    .timeline {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      gap: 10px
+    }
+
+    .timeline li {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: 12px;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, .03)
+    }
+
+    .chart-box {
+      height: 280px;
+      width: 100%
+    }
+
+    .files a {
+      display: inline-block;
+      margin: 6px 10px 6px 0
+    }
+  </style>
+</head>
+
+<body>
+  <div class="dashboard">
+
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo">AFK</div>
+        <span>RRHH</span>
+      </div>
+      <nav class="nav">
+        <a class="is-active" href="index.html"><span class="label">Dashboard</span></a>
+        <a href="workers.html"><span class="label">Trabajadores</span></a>
+        <a href="pipeline.html"><span class="label">Pipeline</span></a>
+        <a href="vacancies.html"><span class="label">Vacantes</span></a>
+        <a href="interviews.html"><span class="label">Entrevistas</span></a>
+        <a href="alerts.html"><span class="label">Alertas</span></a>
+        <a href="reports.html"><span class="label">Reportes</span></a>
+        <a href="documents.html"><span class="label">Documentos</span></a>
+        <a id="openChatbot" href="#chatbot"><span class="label">Chatbot</span></a>
+      </nav>
+    </aside>
+
+    <header class="topbar">
+      <button class="btn-menu" aria-label="Abrir menú">☰</button>
+    </header>
+
+    <main class="main">
+      <div style="margin-bottom:20px;">
+        <a href="index.html" style="color:var(--text-muted); text-decoration:none; font-size:14px;">← Volver al Dashboard</a>
+      </div>
+      <h1 class="h1">Ficha del Candidato</h1>
+
+      <div class="profile">
+
+        <div class="card">
+          <div class="card__body">
+            <div class="profile__header">
+              <img id="phAvatar" class="avatar" src="" alt="">
+              <div>
+                <div id="phName" class="h1" style="margin:0">—</div>
+                <div id="phProf" class="text-muted">—</div>
+                <div id="phContact" class="text-muted">—</div>
+                <div id="activeProcess" style="margin-top:8px"></div>
+                <div id="aiMatchContainer" style="margin-top:8px; display:none;">
+                    <span class="tag" style="background:rgba(255,165,0,0.1); color:#ffa500; font-size:12px; font-weight:bold;">Match IA: <span id="matchScoreVal">--</span>%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid2">
+
+          <div class="card">
+            <div class="card__body">
+              <h2 class="h1" style="font-size:18px">Información</h2>
+
+              <div class="text-muted">Última empresa</div>
+              <div id="phUltima">—</div><br />
+
+              <div class="text-muted">Cargo último</div>
+              <div id="phCargo">—</div><br />
+
+              <div class="text-muted">Periodo</div>
+              <div id="phPeriodo">—</div><br />
+
+              <div class="text-muted">Años de experiencia</div>
+              <div id="phExp">—</div><br />
+
+              <div class="text-muted">Timeline laboral</div>
+              <div class="chart-box">
+                <canvas id="expTimeline"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card__body">
+              <h2 class="h1" style="font-size:18px">Score</h2>
+
+              <div class="text-muted">Ranking</div>
+              <div id="phRanking">—</div><br />
+
+              <div class="text-muted">Nota</div>
+              <div id="phNota">—</div><br />
+
+              <div class="text-muted" style="margin-top:10px;">Perfil de competencias</div>
+              <div class="chart-box">
+                <canvas id="radar"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="grid-column:1 / -1">
+            <div class="card__body">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h2 class="h1" style="font-size:18px">Resumen AI (Copiloto)</h2>
+                <button id="btnAiSummary" class="btn btn--primary" style="font-size:12px; padding: 4px 12px;">Generar Resumen</button>
+              </div>
+              <div id="aiSummaryContent" class="text-muted" style="margin-top:12px; line-height:1.6;">
+                Haz clic en "Generar Resumen" para que el asistente analice el perfil...
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card__body">
+              <h2 class="h1" style="font-size:18px">Gestión de Reclutamiento</h2>
+              
+              <div class="form-group" style="margin-top:12px">
+                <label style="display:block; margin-bottom:8px; color:var(--text-muted); font-size:14px;">Vincular a Vacante</label>
+                <select id="selectVacancy" class="select" style="width:100%"></select>
+                <button id="btnLinkVacancy" class="btn btn--primary" style="width:100%; margin-top:12px">Vincular</button>
+              </div>
+
+              <div style="margin-top:24px; border-top:1px solid var(--border); padding-top:16px">
+                <label style="display:block; margin-bottom:8px; color:var(--text-muted); font-size:14px;">Programar Entrevista</label>
+                <input type="datetime-local" id="interviewDate" class="input" style="width:100%; margin-top:8px; padding:10px; background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:8px; color:#fff;">
+                <button id="btnScheduleInterview" class="btn btn--primary" style="width:100%; margin-top:12px">Programar</button>
+              </div>
+            </div>
+          </div>
+
+
+          <div class="card" style="grid-column:1 / -1">
+            <div class="card__body">
+              <h2 class="h1" style="font-size:18px">Historial</h2>
+              <ol id="stageTimeline" class="timeline"></ol>
+            </div>
+          </div>
+
+          <div class="card" style="grid-column:1 / -1">
+            <div class="card__body">
+              <h2 class="h1" style="font-size:18px">Evaluación general</h2>
+              <div id="phEval">—</div>
+            </div>
+          </div>
+
+          <div class="card" style="grid-column:1 / -1">
+            <div class="card__body">
+              <h2 class="h1" style="font-size:18px">Competencias y experiencia adicional</h2>
+
+              <div class="grid2" style="margin-top:8px">
+                <div>
+                  <h3 class="h1" style="font-size:14px">Experiencia específica</h3>
+                  <ul id="phConoc" class="pill-list"></ul>
+                </div>
+
+                <div>
+                  <h3 class="h1" style="font-size:14px">Otras experiencias</h3>
+                  <ul id="phOtrasExp" class="pill-list"></ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="grid-column:1 / -1">
+            <div class="card__body">
+              <h2 class="h1" style="font-size:18px">Documentos</h2>
+              <div class="files" id="docList"></div>
+              <iframe id="pdfViewer"
+                style="width:100%;height:380px;border:1px solid var(--border);border-radius:10px"></iframe>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </main>
+
+    <!-- Chatbot -->
+    <aside id="chatbot" class="chatbot">
+      <div class="chatbot__head"><strong>AFK Copiloto</strong><button id="closeChat" class="btn">Cerrar</button></div>
+      <div id="chatBody" class="chatbot__body"></div>
+      <div class="chatbot__input"><input id="chatInput"><button id="chatSend" class="btn btn--primary">Enviar</button></div>
+    </aside>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase.js?v=2.0"></script>
+  <script src="candidate.js?v=2.0"></script>
+  <script>
+    // Behavior for sidebar chat in profile page
+    const d=document, chat=d.getElementById('chatbot');
+    d.getElementById('btnChat')?.addEventListener('click', () => chat.classList.add('is-open'));
+    d.getElementById('openChatbot')?.addEventListener('click', e => { e.preventDefault(); chat.classList.add('is-open'); });
+    d.getElementById('closeChat').onclick = () => chat.classList.remove('is-open');
+  </script>
+  <script defer src="responsive.js?v=2.0"></script>
+</body>
+
+</html>

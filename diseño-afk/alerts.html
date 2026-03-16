@@ -1,0 +1,77 @@
+<!doctype html><html lang="es"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AFK RRHH — Alertas</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head><body><div class="dashboard">
+  <aside class="sidebar"><div class="brand"><div class="logo">AFK</div><span>RRHH</span></div>
+    <nav class="nav">
+      <a href="index.html"><span class="label">Dashboard</span></a>
+      <a href="workers.html"><span class="label">Trabajadores</span></a>
+      <a href="pipeline.html"><span class="label">Pipeline</span></a>
+      <a href="vacancies.html"><span class="label">Vacantes</span></a>
+      <a href="interviews.html"><span class="label">Entrevistas</span></a>
+      <a class="is-active" href="alerts.html"><span class="label">Alertas</span></a>
+      <a href="reports.html"><span class="label">Reportes</span></a>
+      <a href="documents.html"><span class="label">Documentos</span></a>
+      <a id="openChatbot" href="#chatbot"><span class="label">Chatbot</span></a>
+    </nav>
+  </aside>
+  <header class="topbar"><button class="btn-menu" aria-label="Abrir menú">☰</button><div class="btn" onclick="location.href='documents.html'">Subir documentos</div><div class="btn" id="btnChat">Abrir Chatbot</div></header>
+  <main class="main">
+    <section class="alerts">
+      <h1 class="h1">Alertas y Vencimientos</h1>
+      <div class="toolbar">
+        <div class="toolbar__left" style="display:flex; gap:12px; flex-wrap:wrap;">
+          <div class="input">
+            <input id="alertSearch" placeholder="Buscar trabajador o documento...">
+          </div>
+          <select id="filterType" class="select">
+            <option value="">Todos los tipos</option>
+            <option value="Examen">Exámenes</option>
+            <option value="Certificado">Certificaciones</option>
+          </select>
+          <select id="filterSeverity" class="select">
+            <option value="">Todas las severidades</option>
+            <option value="Crítica">Crítica (Vencido)</option>
+            <option value="Media">Media (Por vencer)</option>
+            <option value="Baja">Baja (Vigente)</option>
+          </select>
+          <div class="input" style="gap:8px; display:flex; align-items:center;">
+            <label for="filterDate" style="font-size:11px; white-space:nowrap; color:var(--muted)">Vence antes de:</label>
+            <input type="date" id="filterDate" style="min-width:auto;">
+          </div>
+          <button id="btnResetFilters" class="btn">Reset</button>
+        </div>
+      </div>
+      <div class="card"><div class="table alerts" id="alertsTable">
+        <div class="t-head">
+          <div class="t-col-name">Empleado</div>
+          <div class="t-col-doc">Documento</div>
+          <div class="t-col-date">Vencimiento</div>
+          <div class="t-col-status">Estado</div>
+          <div class="t-col-sev">Severidad</div>
+        </div>
+        <!-- Filas dinámicas inyectadas por alerts.supabase.js -->
+        <div class="loading-state" style="padding:40px; text-align:center; color:var(--muted)">
+          Cargando alertas de cumplimiento...
+        </div>
+      </div></div>
+    </section>
+  </main>
+  <aside id="chatbot" class="chatbot"><div class="chatbot__head"><strong>AFK Chatbot</strong><button id="closeChat" class="btn">Cerrar</button></div><div id="chatBody" class="chatbot__body"><div class="chat-msg bot">Hola 👋</div></div><div class="chatbot__input"><input id="chatInput"><button id="chatSend" class="btn btn--primary">Enviar</button></div></aside>
+</div>
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase.js?v=2.0"></script>
+<script defer src="alerts.supabase.js?v=2.0"></script>
+<script>
+const d=document,dr=d.getElementById('chatbot'),i=d.getElementById('chatInput'),b=d.getElementById('chatBody');
+d.getElementById('btnChat').onclick=()=>{dr.classList.add('is-open');i.focus()};
+d.getElementById('openChatbot').onclick=e=>{e.preventDefault();dr.classList.add('is-open');i.focus()};
+d.getElementById('closeChat').onclick=()=>dr.classList.remove('is-open');
+d.getElementById('chatSend').onclick=()=>{const v=i.value.trim();if(!v)return;const m=d.createElement('div');m.className='chat-msg user';m.textContent=v;b.appendChild(m);i.value='';};
+i.onkeydown=e=>{if(e.key==='Enter')d.getElementById('chatSend').click()};
+</script>
+<script defer src="responsive.js?v=2.0"></script>
+</body></html>
