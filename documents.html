@@ -1,0 +1,53 @@
+<!doctype html><html lang="es"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AFK RRHH — Documentos</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head><body><div class="dashboard">
+  <aside class="sidebar"><div class="brand"><div class="logo">AFK</div><span>RRHH</span></div>
+    <nav class="nav">
+      <a href="index.html"><span class="label">Dashboard</span></a>
+      <a href="pipeline.html"><span class="label">Pipeline</span></a>
+      <a href="vacancies.html"><span class="label">Vacantes</span></a>
+      <a href="interviews.html"><span class="label">Entrevistas</span></a>
+      <a href="alerts.html"><span class="label">Alertas</span></a>
+      <a href="reports.html"><span class="label">Reportes</span></a>
+      <a class="is-active" href="documents.html"><span class="label">Documentos</span></a>
+      <a id="openChatbot" href="#chatbot"><span class="label">Chatbot</span></a>
+    </nav>
+  </aside>
+  <header class="topbar"><button class="btn-menu" aria-label="Abrir menú">☰</button><div class="btn" id="btnChat">Abrir Chatbot</div></header>
+  <main class="main">
+    <h1 class="h1">Documentos</h1>
+    <div class="card"><div class="card__body">
+      <div class="uploader">
+        <div id="dropzone" class="dropzone" tabindex="0">
+          <p class="m-0">Arrastra archivos aquí o <span class="btn btn--primary" id="pickFiles">Selecciona</span></p>
+          <p class="text-muted m-0">PDF, DOCX, XLSX, PNG (máx. 25MB)</p>
+          <input id="fileInput" type="file" multiple hidden>
+        </div>
+        <div id="files" class="files"></div>
+        <div><button id="uploadNow" class="btn btn--primary">Subir ahora</button></div>
+      </div>
+    </div></div>
+  </main>
+  <aside id="chatbot" class="chatbot"><div class="chatbot__head"><strong>AFK Chatbot</strong><button id="closeChat" class="btn">Cerrar</button></div><div id="chatBody" class="chatbot__body"><div class="chat-msg bot">Hola 👋</div></div><div class="chatbot__input"><input id="chatInput"><button id="chatSend" class="btn btn--primary">Enviar</button></div></aside>
+</div>
+<script>
+const d=document,dr=d.getElementById('chatbot'),i=d.getElementById('chatInput'),b=d.getElementById('chatBody');
+d.getElementById('btnChat')?.addEventListener('click',()=>{dr.classList.add('is-open');i.focus()});
+d.getElementById('openChatbot')?.addEventListener('click',e=>{e.preventDefault();dr.classList.add('is-open');i.focus()});
+d.getElementById('closeChat').onclick=()=>dr.classList.remove('is-open');
+d.getElementById('chatSend').onclick=()=>{const v=i.value.trim();if(!v)return;const m=d.createElement('div');m.className='chat-msg user';m.textContent=v;b.appendChild(m);i.value='';};
+/* Uploader simulado */
+const dz=d.getElementById('dropzone'), fi=d.getElementById('fileInput'), pf=d.getElementById('pickFiles'), list=d.getElementById('files'), up=d.getElementById('uploadNow');
+let files=[]; const bytes=n=>n<1024?n+' B':n<1048576?(n/1024).toFixed(1)+' KB':(n/1048576).toFixed(1)+' MB';
+const render=()=>{list.innerHTML='';files.forEach((f,i)=>{const row=d.createElement('div');row.className='file';row.innerHTML=`<span class="dot" style="background:#60a5fa"></span><div class="name">${f.name} <span class="size">· ${bytes(f.size)}</span></div><button class="btn">Quitar</button>`;row.querySelector('button').onclick=()=>{files.splice(i,1);render()};list.appendChild(row)});};
+const onFiles=s=>{for(const f of s){files.push(f)}render()};
+['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add('drag')}));
+['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove('drag')}));
+dz.addEventListener('drop',e=>onFiles(e.dataTransfer.files)); pf.onclick=()=>fi.click(); fi.onchange=e=>onFiles(e.target.files);
+up.onclick=()=>{if(!files.length)return alert('No hay archivos.');alert('Subidos '+files.length+' archivo(s). (Simulado)');files=[];render()};
+</script>
+<script defer src="responsive.js?v=2.0"></script>
+</body></html>

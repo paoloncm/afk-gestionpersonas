@@ -1,0 +1,104 @@
+<!doctype html><html lang="es"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AFK RRHH — Vacantes</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<style>
+    .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px); align-items: center; justify-content: center; }
+    .modal.is-open { display: flex; }
+    .modal-content { background: #1a1a1a; border: 1px solid var(--border); border-radius: 12px; padding: 24px; width: 100%; max-width: 500px; }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 14px; }
+    .form-group input, .form-group textarea { width: 100%; padding: 10px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: #fff; }
+</style>
+</head><body><div class="dashboard">
+  <aside class="sidebar"><div class="brand"><div class="logo">AFK</div><span>RRHH</span></div>
+    <nav class="nav">
+      <a href="index.html"><span class="label">Dashboard</span></a>
+      <a href="workers.html"><span class="label">Trabajadores</span></a>
+      <a href="pipeline.html"><span class="label">Pipeline</span></a>
+      <a class="is-active" href="vacancies.html"><span class="label">Vacantes</span></a>
+      <a href="interviews.html"><span class="label">Entrevistas</span></a>
+      <a href="alerts.html"><span class="label">Alertas</span></a>
+      <a href="reports.html"><span class="label">Reportes</span></a>
+      <a href="documents.html"><span class="label">Documentos</span></a>
+      <a id="openChatbot" href="#chatbot"><span class="label">Chatbot</span></a>
+    </nav>
+  </aside>
+  <header class="topbar">
+    <button class="btn-menu" aria-label="Abrir menú">☰</button>
+    <div class="btn" onclick="location.href='documents.html'">Subir documentos</div>
+    <div class="btn btn--primary" id="btnNewVac">Nueva Vacante</div>
+    <div class="btn" id="btnChat">Abrir Chatbot</div>
+</header>
+  <main class="main" id="vacancies-container">
+    <h1 class="h1">Cargando vacantes...</h1>
+  </main>
+
+  <div id="vacancyModal" class="modal">
+    <div class="modal-content">
+        <h2 class="h1" id="modalTitle" style="font-size:20px; margin-bottom:20px;">Gestionar Vacante</h2>
+        <form id="vacancyForm">
+            <input type="hidden" name="vacancy_id" id="editVacancyId">
+            <div class="form-group">
+                <label>Título del puesto</label>
+                <input name="title" required placeholder="Ej. Desarrollador Senior">
+            </div>
+            <div class="form-group">
+                <label>Requisitos (uno por línea)</label>
+                <textarea name="requirements" rows="4" required placeholder="Ej. 5 años de experiencia&#10;Inglés avanzado"></textarea>
+            </div>
+            <div class="form-group">
+                <label>SLA (días)</label>
+                <input type="number" name="sla_days" value="30" required>
+            </div>
+            <div style="display:flex; gap:12px; margin-top:24px;">
+                <button type="submit" class="btn btn--primary" style="flex:1">Crear</button>
+                <button type="button" class="btn close-modal" style="flex:1">Cancelar</button>
+            </div>
+        </form>
+    </div>
+  </div>
+  <aside id="chatbot" class="chatbot">
+    <div class="chatbot__head"><strong>AFK Chatbot</strong><button id="closeChat" class="btn">Cerrar</button></div>
+    <div id="chatBody" class="chatbot__body">
+      <div class="chat-msg bot">Hola 👋</div>
+    </div>
+    <div class="chatbot__input"><input id="chatInput"><button id="chatSend" class="btn btn--primary">Enviar</button></div>
+  </aside>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase.js?v=2.0"></script>
+<script defer src="vacancies.supabase.js?v=2.0"></script>
+<script>
+  const d = document,
+    dr = d.getElementById('chatbot'),
+    i = d.getElementById('chatInput'),
+    b = d.getElementById('chatBody');
+  d.getElementById('btnChat').onclick = () => {
+    dr.classList.add('is-open');
+    i.focus()
+  };
+  d.getElementById('openChatbot').onclick = e => {
+    e.preventDefault();
+    dr.classList.add('is-open');
+    i.focus()
+  };
+  d.getElementById('closeChat').onclick = () => dr.classList.remove('is-open');
+  d.getElementById('chatSend').onclick = () => {
+    const v = i.value.trim();
+    if (!v) return;
+    const m = d.createElement('div');
+    m.className = 'chat-msg user';
+    m.textContent = v;
+    b.appendChild(m);
+    i.value = '';
+  };
+  i.onkeydown = e => {
+    if (e.key === 'Enter') d.getElementById('chatSend').click()
+  };
+</script>
+<script defer src="responsive.js?v=2.0"></script>
+</body></html>
