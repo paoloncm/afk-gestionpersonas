@@ -18,6 +18,7 @@ body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 Inter,system-
 .nav a:hover{background:rgba(255,255,255,.06);color:#fff}
 .nav a.is-active{background:var(--accent);color:#fff;font-weight:700}
 .nav .label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nav-category{font-size:10px;text-transform:uppercase;color:var(--muted);letter-spacing:1px;font-weight:700;margin:18px 12px 6px;opacity:0.6}
 
 .topbar{grid-area:topbar;background:linear-gradient(180deg,rgba(255,255,255,.02),transparent);
   border-bottom:1px solid var(--border);display:flex;justify-content:flex-end;align-items:center;gap:10px;padding:0 18px;position:sticky;top:0;z-index:50;backdrop-filter:blur(8px)}
