@@ -1,7 +1,15 @@
 // chat.js — cliente ligero para n8n (Webhook -> Respond to Webhook)
 
 (() => {
-  const DEFAULT_API = 'https://primary-production-aa252.up.railway.app/webhook/a35e75ae-9003-493b-a00e-8edd8bd2b12a';
+  const WEBHOOK_SELECCION = 'https://primary-production-aa252.up.railway.app/webhook/a35e75ae-9003-493b-a00e-8edd8bd2b12a';
+  const WEBHOOK_GESTION = 'https://primary-production-aa252.up.railway.app/webhook/96a6eb91-bc4a-416e-b978-0c35e7f58603';
+
+  // Páginas que pertenecen a Gestión
+  const pagesGestion = ['workers.html', 'alerts.html', 'documents.html', 'reports.html', 'worker.html'];
+  const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+
+  const DEFAULT_API = pagesGestion.includes(currentPage) ? WEBHOOK_GESTION : WEBHOOK_SELECCION;
+  
   const CHAT_API = window.AFK_CHAT_WEBHOOK || DEFAULT_API;
   const USE_BASIC_AUTH = false, BASIC_USER = 'user', BASIC_PASS = 'pass';
   const BEARER_TOKEN = '';
