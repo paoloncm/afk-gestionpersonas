@@ -4,6 +4,7 @@
     const $ = s => document.querySelector(s);
     const tableBody = $('#workersTable');
     let allWorkers = [];
+    let selectedWorkers = new Set();
 
     async function init() {
         if (!window.supabase) {
@@ -32,8 +33,8 @@
     }
 
     function renderWorkers(items) {
-        const header = `
             <div class="t-head">
+                <div style="width:40px"><input type="checkbox" id="selectAll"></div>
                 <div>Nombre</div>
                 <div>RUT</div>
                 <div>Empresa / Faena</div>
@@ -59,6 +60,9 @@
 
                 html += `
                     <div class="t-row" data-id="${id}">
+                        <div style="width:40px">
+                            <input type="checkbox" class="worker-check" value="${id}" ${selectedWorkers.has(id) ? 'checked' : ''}>
+                        </div>
                         <div class="emp t-col-name" data-label="Nombre">
                             <img class="avatar" src="${avatar}">
                             <div>
@@ -80,20 +84,61 @@
         }
         tableBody.innerHTML = html;
 
-        // Add event listeners for assignment
-        tableBody.querySelectorAll('.btn-assign').forEach(btn => {
-            btn.onclick = async (e) => {
-                const row = e.target.closest('.t-row');
-                const id = row.dataset.id;
-                const newFaena = prompt('Ingrese el nombre de la Faena o Empresa:');
-                if (newFaena) {
-                    const { error } = await supabase.from('workers').update({ company_name: newFaena }).eq('id', id);
-                    if (error) alert('Error: ' + error.message);
-                    else loadWorkers();
-                }
-            };
-        });
+    // Event Listeners for Selection
+    const selectAll = $('#selectAll');
+    if (selectAll) {
+        selectAll.onchange = (e) => {
+            const checks = tableBody.querySelectorAll('.worker-check');
+            checks.forEach(c => {
+                c.checked = e.target.checked;
+                if (c.checked) selectedWorkers.add(c.value);
+                else selectedWorkers.delete(c.value);
+            });
+        };
     }
+
+    tableBody.querySelectorAll('.worker-check').forEach(c => {
+        c.onchange = (e) => {
+            if (e.target.checked) selectedWorkers.add(e.target.value);
+            else {
+                selectedWorkers.delete(e.target.value);
+                if (selectAll) selectAll.checked = false;
+            }
+        };
+    });
+
+    // Add event listeners for assignment
+    tableBody.querySelectorAll('.btn-assign').forEach(btn => {
+        btn.onclick = async (e) => {
+            const row = e.target.closest('.t-row');
+            const id = row.dataset.id;
+            const newFaena = prompt('Ingrese el nombre de la Faena o Empresa:');
+            if (newFaena) {
+                const { error } = await supabase.from('workers').update({ company_name: newFaena }).eq('id', id);
+                if (error) alert('Error: ' + error.message);
+                else loadWorkers();
+            }
+        };
+    });
+}
+
+// Logic for TEC-02 Generation
+async function generateTec02() {
+    const project = $('#projectName')?.value || 'Proyecto Sin Nombre';
+    if (selectedWorkers.size === 0) {
+        alert('Por favor, selecciona al menos un trabajador.');
+        return;
+    }
+
+    console.log('Generando TEC-02 para:', Array.from(selectedWorkers));
+    
+    // For now, redirect to a mock report view or alert
+    const ids = Array.from(selectedWorkers).join(',');
+    window.location.href = `reports.html?type=tec02&project=${encodeURIComponent(project)}&workers=${ids}`;
+}
+
+const btnGen = $('#btnGenerateTec02');
+if (btnGen) btnGen.onclick = generateTec02;
 
     function setupFilters() {
         const searchInput = $('#workerSearch');

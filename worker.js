@@ -37,14 +37,55 @@
                 .eq('worker_id', workerId)
                 .order('expiry_date', { ascending: false });
 
-            renderProfile(worker, credentials || []);
+           renderProfile(worker, credentials || []);
         } catch (err) {
             console.error('Error loading worker profile:', err);
             content.innerHTML = `<h2 class="h1">Error al cargar datos: ${err.message}</h2>`;
         }
     }
 
+let currentCreds = [];
+
+function showCredentialDetail(id) {
+    const c = currentCreds.find(x => x.id === id);
+    if (!c) return;
+
+    let modal = document.getElementById('docModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'docModal';
+        modal.className = 'modal';
+        document.body.appendChild(modal);
+    }
+
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="h1" style="margin:0; font-size:18px;">${c.credential_name}</h3>
+                <button class="modal-close" onclick="document.getElementById('docModal').classList.remove('is-active')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="detail-section">
+                    <label>Observaciones</label>
+                    <div class="detail-content">${c.observation || 'Sin observaciones registradas.'}</div>
+                </div>
+                <div class="detail-section">
+                    <label>Recomendaciones / Restricciones</label>
+                    <div class="detail-content">${c.restriction_notes || 'Sin recomendaciones especiales.'}</div>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-top:20px; font-size:12px; color:var(--muted);">
+                    <span>Estado: <strong>${c.result_status || 'N/A'}</strong></span>
+                    <span>Vencimiento: <strong>${c.expiry_date ? new Date(c.expiry_date).toLocaleDateString() : 'N/A'}</strong></span>
+                </div>
+            </div>
+        </div>
+    `;
+    modal.classList.add('is-active');
+    modal.onclick = (e) => { if (e.target === modal) modal.classList.remove('is-active'); };
+}
+
     function renderProfile(w, creds) {
+        currentCreds = creds;
         const avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(w.full_name)}&size=128&background=random&color=fff`;
         
         content.innerHTML = `
@@ -80,7 +121,7 @@
                                     const isExpired = expiry && expiry < new Date();
                                     const displayName = c.exam_type ? `${c.credential_name} (${c.exam_type})` : c.credential_name;
                                     return `
-                                        <div class="credential-card">
+                                        <div class="credential-card" onclick="window.afkShowDoc('${c.id}')">
                                             <div class="credential-info">
                                                 <strong>${displayName}</strong>
                                                 <span class="text-muted" style="font-size:12px;">Tipo: ${c.credential_category || 'General'}</span>
@@ -108,5 +149,6 @@
                 </div>
             </div>
         `;
+        window.afkShowDoc = showCredentialDetail;
     }
 })();
