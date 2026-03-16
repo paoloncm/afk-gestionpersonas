@@ -8,8 +8,23 @@
   <link rel="stylesheet" href="styles.css">
   <style>
     .profile-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 24px; }
-    .credential-card { background: var(--card-2); border: 1px solid var(--border); padding: 16px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .credential-card { background: var(--card-2); border: 1px solid var(--border); padding: 16px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; cursor: pointer; transition: all 0.2s ease; }
+    .credential-card:hover { border-color: var(--accent); background: rgba(255,255,255,0.05); transform: translateY(-2px); }
     .credential-info { display: flex; flex-direction: column; gap: 4px; }
+    
+    /* Document Modal Styles */
+    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+    .modal.is-active { display: flex; }
+    .modal-content { background: var(--card); border: 1px solid var(--border); border-radius: 18px; width: 100%; max-width: 550px; position: relative; box-shadow: 0 20px 40px rgba(0,0,0,0.4); animation: modalIn 0.3s ease-out; }
+    @keyframes modalIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .modal-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .modal-body { padding: 24px; }
+    .modal-close { background: none; border: none; color: var(--muted); font-size: 24px; cursor: pointer; padding: 4px; display: flex; line-height: 1; }
+    .modal-close:hover { color: #fff; }
+    .detail-section { margin-bottom: 20px; }
+    .detail-section label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 8px; font-weight: 700; }
+    .detail-content { background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 10px; padding: 14px; font-size: 14px; color: var(--text); line-height: 1.6; }
+
     @media (max-width: 880px) { .profile-grid { grid-template-columns: 1fr; } }
   </style>
 </head>
