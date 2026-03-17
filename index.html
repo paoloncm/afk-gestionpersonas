@@ -1,4 +1,3 @@
-<!-- AFK RRHH — index.html -->
 <!doctype html>
 <html lang="es">
 <head>
@@ -6,20 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>AFK RRHH — Dashboard</title>
 
-  <!-- Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-
-  <!-- Styles -->
   <link rel="stylesheet" href="styles.css">
 
-  <!-- Charts -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 
 <body>
   <div class="dashboard">
-
-    <!-- Sidebar -->
     <aside class="sidebar" aria-label="Navegación">
       <div class="brand">
         <div class="logo">AFK</div>
@@ -42,23 +35,15 @@
       </nav>
     </aside>
 
-    <!-- Topbar -->
     <header class="topbar">
       <button class="btn-menu" aria-label="Abrir menú">☰</button>
-      <button class="btn" onclick="location.href='documents.html'">
-        Subir documentos
-      </button>
-      <button class="btn btn--primary" id="btnChat">
-        Abrir Chatbot
-      </button>
+      <button class="btn" onclick="location.href='documents.html'">Subir documentos</button>
+      <button class="btn btn--primary" id="btnChat">Abrir Chatbot</button>
     </header>
 
-    <!-- Main -->
     <main class="main" id="app">
-
       <h1 class="h1">Dashboard</h1>
 
-      <!-- ✅ FILTROS -->
       <section class="toolbar">
         <div class="toolbar__left" style="display:flex; gap:12px; flex-wrap:wrap;">
           <select id="filterEstado" class="select">
@@ -73,7 +58,6 @@
         </div>
       </section>
 
-      <!-- KPIs -->
       <section class="grid-kpi">
         <div class="card">
           <div class="card__body kpi">
@@ -104,7 +88,6 @@
         </div>
       </section>
 
-      <!-- Charts -->
       <section class="section grid-3">
         <div class="card">
           <div class="card__body">
@@ -152,8 +135,7 @@
         </div>
       </section>
 
-      <!-- Tabla de candidatos -->
-      <section id="candidatesTable">
+      <section id="candidateSection">
         <h2 class="h1">Candidatos</h2>
 
         <div class="toolbar">
@@ -163,9 +145,19 @@
               <input id="candSearch" type="search" placeholder="Buscar candidato…" />
             </div>
           </div>
-          <div class="toolbar__right">
-            <button id="btnNewCandidate" class="btn btn--primary" style="margin-right: 10px;">Nuevo Candidato</button>
-            <button id="btnCompare" class="btn btn--primary" style="display:none">Comparar seleccionados (<span id="compareCount">0</span>)</button>
+
+          <div class="toolbar__right" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+            <button id="btnGenerateTec02FromCandidates" class="btn">
+              Generar TEC-02
+            </button>
+
+            <button id="btnNewCandidate" class="btn btn--primary">
+              Nuevo Candidato
+            </button>
+
+            <button id="btnCompare" class="btn btn--primary" style="display:none">
+              Comparar seleccionados (<span id="compareCount">0</span>)
+            </button>
           </div>
         </div>
 
@@ -175,18 +167,16 @@
               <div class="t-col-cb"></div>
               <div class="t-col-name">Nombre</div>
               <div class="t-col-prof">Profesión</div>
-              <div class="t-col-vac">Vacante a postular</div>
+              <div class="t-col-vac">Cargo a desempeñar</div>
               <div class="t-col-score">Puntaje</div>
               <div class="t-col-exp">Años exp.</div>
               <div class="t-col-status">Estado</div>
             </div>
-            <!-- filas dinámicas -->
           </div>
         </div>
       </section>
     </main>
 
-    <!-- Chatbot -->
     <aside id="chatbot" class="chatbot">
       <div class="chatbot__head">
         <strong>AFK Chatbot</strong>
@@ -201,64 +191,91 @@
       </div>
     </aside>
 
-  <!-- Modal Nuevo Candidato -->
-  <div id="candidateModal" class="modal">
-    <div class="modal__content" style="max-width:500px">
-      <div class="modal__header">
-        <h2 class="h1" style="font-size:1.5rem">Registrar Candidato</h2>
-        <button class="close-modal">&times;</button>
-      </div>
-      <div class="modal__body">
-        <form id="candidateForm">
-          <div class="form-group">
-            <label>Nombre Completo</label>
-            <input name="nombre_completo" required class="input" placeholder="Ej: Juan Pérez">
-          </div>
-          <div class="grid-2">
+    <div id="candidateModal" class="modal">
+      <div class="modal__content" style="max-width:500px">
+        <div class="modal__header">
+          <h2 class="h1" style="font-size:1.5rem">Registrar Candidato</h2>
+          <button class="close-modal">&times;</button>
+        </div>
+        <div class="modal__body">
+          <form id="candidateForm">
             <div class="form-group">
-              <label>Profesión</label>
-              <input name="profesion" class="input" placeholder="Ej: Desarrollador">
+              <label>Nombre Completo</label>
+              <input name="nombre_completo" required class="input" placeholder="Ej: Juan Pérez">
             </div>
+
+            <div class="grid-2">
+              <div class="form-group">
+                <label>Profesión</label>
+                <input name="profesion" class="input" placeholder="Ej: Ingeniero Civil">
+              </div>
+
+              <div class="form-group">
+                <label>Nota / Ranking (0-10)</label>
+                <input name="nota" type="number" step="0.1" min="0" max="10" class="input" value="5">
+              </div>
+            </div>
+
+            <div class="grid-2">
+              <div class="form-group">
+                <label>Correo</label>
+                <input name="correo" type="email" class="input" placeholder="correo@ejemplo.com">
+              </div>
+
+              <div class="form-group">
+                <label>Teléfono</label>
+                <input name="telefono" class="input" placeholder="+56 9 ...">
+              </div>
+            </div>
+
             <div class="form-group">
-              <label>Nota / Ranking (0-10)</label>
-              <input name="nota" type="number" step="0.1" min="0" max="10" class="input" value="5">
+              <label>Cargo a desempeñar</label>
+              <input name="cargo_a_desempenar" class="input" placeholder="Ej: Supervisor de Proyectos">
             </div>
-          </div>
-          <div class="grid-2">
+
+            <div class="grid-2">
+              <div class="form-group">
+                <label>Experiencia total</label>
+                <input name="experiencia_total" type="number" step="0.1" class="input" value="0">
+              </div>
+
+              <div class="form-group">
+                <label>Experiencia en empresa actual</label>
+                <input name="experiencia_en_empresa_actual" type="number" step="0.1" class="input" value="0">
+              </div>
+            </div>
+
+            <div class="grid-2">
+              <div class="form-group">
+                <label>Exp. cargo actual</label>
+                <input name="exp_cargo_actual" type="number" step="0.1" class="input" value="0">
+              </div>
+
+              <div class="form-group">
+                <label>Exp. proyectos similares</label>
+                <input name="exp_proy_similares" type="number" step="0.1" class="input" value="0">
+              </div>
+            </div>
+
             <div class="form-group">
-              <label>Correo</label>
-              <input name="correo" type="email" class="input" placeholder="correo@ejemplo.com">
+              <label>Cargar CV (PDF)</label>
+              <input name="cv_file" type="file" class="input" accept=".pdf">
             </div>
-            <div class="form-group">
-              <label>Teléfono</label>
-              <input name="telefono" class="input" placeholder="+56 9 ...">
+
+            <div style="margin-top:20px">
+              <button type="submit" class="btn btn--primary" style="width:100%">Guardar candidato</button>
             </div>
-          </div>
-          <div class="form-group">
-            <label>Vincular a Vacante</label>
-            <select name="vacancy_id" id="selectVacancy" class="select" style="width:100%">
-              <option value="">Ninguna por ahora</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Cargar CV (PDF)</label>
-            <input name="cv_file" type="file" class="input" accept=".pdf">
-          </div>
-          <div style="margin-top:20px">
-            <button type="submit" class="btn btn--primary" style="width:100%">Guardar y Empezar Proceso</button>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
 
-  <!-- App scripts -->
-  <script defer src="sheet.js?v=2.0"></script>
-  <script defer src="candidates.supabase.js?v=2.0"></script>
+  <script defer src="candidates.supabase.js?v=3.0"></script>
   <script defer src="charts.js?v=2.0"></script>
   <script defer src="chat.js?v=2.0"></script>
   <script defer src="responsive.js?v=2.0"></script>
