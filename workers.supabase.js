@@ -484,7 +484,7 @@ console.log("ExcelJS global:", window.ExcelJS);
 
     const response = await fetch("/templates/tec-02-templates.xlsx");
     if (!response.ok) {
-      throw new Error("No se encontró /templates/tec02_templates.xlsx");
+      throw new Error("No se encontró /templates/tec-02-templates.xlsx");
     }
 
     const arrayBuffer = await response.arrayBuffer();
