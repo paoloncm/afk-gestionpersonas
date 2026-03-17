@@ -125,7 +125,137 @@
     };
   }
 
-  console.log("ExcelJS global:", window.ExcelJS);
+  function safeNum(v) {
+    if (v == null || v === "") return null;
+    const n = Number(String(v).replace(",", "."));
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function getStructuredExamData(credential) {
+    if (!credential) return {};
+
+    if (credential.structured_data && typeof credential.structured_data === "object") {
+      return credential.structured_data;
+    }
+
+    if (credential.exam_data && typeof credential.exam_data === "object") {
+      return credential.exam_data;
+    }
+
+    if (credential.metadata && typeof credential.metadata === "object") {
+      return credential.metadata;
+    }
+
+    return {};
+  }
+
+  function mergeWorkerExamData(worker, credentials) {
+    const workerCreds = credentials.filter(c => String(c.worker_id) === String(worker.id));
+
+    const merged = {
+      obs: "",
+      faena: worker.company_name || "",
+      rut: worker.rut || "",
+      colaborador: worker.full_name || "",
+      fecha: new Date(),
+
+      peso: null,
+      talla: null,
+      cintura: null,
+      imc: null,
+      presion: "",
+      frec_card: null,
+      actividad_fisica: "",
+      framingham: "",
+      ecg: "",
+      audiometria: "",
+      audiometria_conclusion: "",
+      test_ruffier: "",
+      rx_torax: "",
+      rx_neumoconiosis_oit: "",
+      epworth: "",
+      lake_louise: "",
+      glucosa: null,
+      creatinina: null,
+      colesterol_total: null,
+      hdl: null,
+      ldl: null,
+      trigliceridos: null,
+      inr: null,
+      protrombina: null,
+      bilirrubina_total: null,
+      gpt: null,
+      hemoglobina: null,
+      hematocrito: null,
+      plaquetas: null,
+      creatininuria: null,
+      anfetaminas: "",
+      benzodiazepinas: "",
+      canabinoides: "",
+      cocaina: "",
+      observacion_general: "",
+      fecha_informe_revisado: "",
+      riesgo_evaluado: "",
+      observaciones: "",
+      proximo_control: "",
+      contraindicacion_achs: "",
+      fecha_registro_contraind: "",
+      riesgo_contraindicado: "",
+      tipo_contraindicacion: "",
+      recomendacion_interna: ""
+    };
+
+    workerCreds.forEach(c => {
+      const d = getStructuredExamData(c);
+
+      merged.peso ??= safeNum(d.peso);
+      merged.talla ??= safeNum(d.talla);
+      merged.cintura ??= safeNum(d.cintura);
+      merged.imc ??= safeNum(d.imc);
+      merged.presion ||= d.presion || "";
+      merged.frec_card ??= safeNum(d.frec_card);
+      merged.actividad_fisica ||= d.actividad_fisica || "";
+      merged.framingham ||= d.framingham || "";
+      merged.ecg ||= d.ecg || "";
+      merged.audiometria ||= d.audiometria || "";
+      merged.audiometria_conclusion ||= d.audiometria_conclusion || "";
+      merged.test_ruffier ||= d.test_ruffier || "";
+      merged.rx_torax ||= d.rx_torax || "";
+      merged.rx_neumoconiosis_oit ||= d.rx_neumoconiosis_oit || "";
+      merged.epworth ||= d.epworth || "";
+      merged.lake_louise ||= d.lake_louise || "";
+      merged.glucosa ??= safeNum(d.glucosa);
+      merged.creatinina ??= safeNum(d.creatinina);
+      merged.colesterol_total ??= safeNum(d.colesterol_total);
+      merged.hdl ??= safeNum(d.hdl);
+      merged.ldl ??= safeNum(d.ldl);
+      merged.trigliceridos ??= safeNum(d.trigliceridos);
+      merged.inr ??= safeNum(d.inr);
+      merged.protrombina ??= safeNum(d.protrombina);
+      merged.bilirrubina_total ??= safeNum(d.bilirrubina_total);
+      merged.gpt ??= safeNum(d.gpt);
+      merged.hemoglobina ??= safeNum(d.hemoglobina);
+      merged.hematocrito ??= safeNum(d.hematocrito);
+      merged.plaquetas ??= safeNum(d.plaquetas);
+      merged.creatininuria ??= safeNum(d.creatininuria);
+      merged.anfetaminas ||= d.anfetaminas || "";
+      merged.benzodiazepinas ||= d.benzodiazepinas || "";
+      merged.canabinoides ||= d.canabinoides || "";
+      merged.cocaina ||= d.cocaina || "";
+      merged.observacion_general ||= d.observacion_general || c.observation || "";
+      merged.fecha_informe_revisado ||= d.fecha_informe_revisado || "";
+      merged.riesgo_evaluado ||= d.riesgo_evaluado || "";
+      merged.observaciones ||= d.observaciones || "";
+      merged.proximo_control ||= d.proximo_control || "";
+      merged.contraindicacion_achs ||= d.contraindicacion_achs || "";
+      merged.fecha_registro_contraind ||= d.fecha_registro_contraind || "";
+      merged.riesgo_contraindicado ||= d.riesgo_contraindicado || "";
+      merged.tipo_contraindicacion ||= d.tipo_contraindicacion || "";
+      merged.recomendacion_interna ||= d.recomendacion_interna || "";
+    });
+
+    return merged;
+  }
 
   async function init() {
     if (!tableBody) {
@@ -157,9 +287,7 @@
         { data: credentials, error: credentialsError }
       ] = await Promise.all([
         supabase.from("workers").select("*").order("full_name", { ascending: true }),
-        supabase
-          .from("worker_credentials")
-          .select("id, worker_id, credential_name, expiry_date, result_status")
+        supabase.from("worker_credentials").select("*")
       ]);
 
       if (workersError) throw workersError;
@@ -347,7 +475,7 @@
             <div style="display:flex; gap:8px; flex-wrap:wrap;">
               <a href="worker.html?id=${encodeURIComponent(id)}" class="btn btn--mini">Ver ficha</a>
               <button class="btn btn--mini btn-generate-one" data-worker-id="${id}">
-                TEC-02
+                Exámenes
               </button>
             </div>
           </div>
@@ -387,9 +515,6 @@
         const value = String(e.target.value);
         if (e.target.checked) selectedWorkers.add(value);
         else selectedWorkers.delete(value);
-
-        const selectAll = $("#selectAll");
-        if (selectAll && !e.target.checked) selectAll.checked = false;
       };
     });
 
@@ -421,111 +546,125 @@
       btn.onclick = async (e) => {
         try {
           const workerId = e.currentTarget.dataset.workerId;
-
-          const { data, error } = await supabase
-            .from("workers")
-            .select("*")
-            .eq("id", workerId)
-            .single();
-
-          if (error) throw error;
-
-          const rows = buildTec02Rows([data]);
-          const payload = getTec02HeaderInputs();
-          await exportTec02FromTemplate(rows, payload);
+          selectedWorkers = new Set([String(workerId)]);
+          await exportExamSheetFromTemplate();
         } catch (err) {
-          console.error("Error generando TEC-02 individual:", err);
-          alert("No se pudo generar el TEC-02 individual: " + err.message);
+          console.error("Error generando planilla individual:", err);
+          alert("No se pudo generar la planilla: " + err.message);
         }
       };
     });
   }
 
-  function getTec02HeaderInputs() {
-    return {
-      projectName: $("#projectName")?.value?.trim() || "Proyecto Sin Nombre",
-      legalName: $("#companyLegalName")?.value?.trim() || "",
-      legalRepresentative: $("#legalRepresentative")?.value?.trim() || "",
-    };
-  }
-
-  async function fetchSelectedWorkersFullData() {
+  async function fetchSelectedWorkersForExamSheet() {
     const ids = Array.from(selectedWorkers);
 
     if (!ids.length) {
       throw new Error("No hay trabajadores seleccionados.");
     }
 
-    const { data, error } = await supabase
+    const { data: workers, error: workersError } = await supabase
       .from("workers")
       .select("*")
       .in("id", ids)
       .order("full_name", { ascending: true });
 
-    if (error) throw error;
+    if (workersError) throw workersError;
 
-    return data || [];
+    const { data: credentials, error: credentialsError } = await supabase
+      .from("worker_credentials")
+      .select("*")
+      .in("worker_id", ids);
+
+    if (credentialsError) throw credentialsError;
+
+    return {
+      workers: workers || [],
+      credentials: credentials || []
+    };
   }
 
-  function buildTec02Rows(workers) {
-    return workers.map((w, index) => ({
-      nro: index + 1,
-      nombre_completo: w.full_name || "",
-      cargo: w.position || w.role_name || w.job_title || w.cargo || "",
-      titulo_profesional: w.profession || w.professional_title || w.titulo_profesional || "",
-      experiencia_a: w.exp_a ?? w.years_experience ?? "",
-      experiencia_b: w.exp_b ?? "",
-      experiencia_c: w.exp_c ?? "",
-      experiencia_d: w.exp_d ?? "",
-    }));
-  }
-
-  async function exportTec02FromTemplate(rows, headerData) {
+  async function exportExamSheetFromTemplate() {
     if (!window.ExcelJS) {
       throw new Error("No está cargada la librería ExcelJS.");
     }
 
-    const templateUrl = "/templates/tec02_template.xlsx";
-    console.log("Template URL:", templateUrl);
+    const { workers, credentials } = await fetchSelectedWorkersForExamSheet();
 
+    const templateUrl = "/templates/planilla_examenes_preocupacionales.xlsx";
     const response = await fetch(templateUrl);
-    console.log("Template response:", response.status, response.statusText);
 
     if (!response.ok) {
       throw new Error(`No se encontró ${templateUrl}`);
     }
 
     const arrayBuffer = await response.arrayBuffer();
-
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(arrayBuffer);
 
-    const worksheet = workbook.getWorksheet("TEC-02") || workbook.getWorksheet(1);
+    const worksheet = workbook.getWorksheet("Hoja1") || workbook.getWorksheet(1);
     if (!worksheet) {
-      throw new Error("No se encontró la hoja TEC-02.");
+      throw new Error("No se encontró la hoja principal.");
     }
 
-    if (headerData.legalName) worksheet.getCell("H9").value = headerData.legalName;
-    if (headerData.legalRepresentative) worksheet.getCell("H11").value = headerData.legalRepresentative;
+    const rows = workers.map(w => mergeWorkerExamData(w, credentials));
+    const startRow = 2;
 
-    worksheet.getCell("W11").value = new Date();
-    worksheet.getCell("W11").numFmt = "dd-mm-yyyy";
-
-    if (headerData.projectName) worksheet.getCell("H7").value = headerData.projectName;
-
-    const startRow = 17;
-
-    rows.forEach((w, index) => {
+    rows.forEach((r, index) => {
       const rowNumber = startRow + index;
 
-      worksheet.getCell(`B${rowNumber}`).value = w.nro;
-      worksheet.getCell(`C${rowNumber}`).value = w.nombre_completo;
-      worksheet.getCell(`J${rowNumber}`).value = w.cargo;
-      worksheet.getCell(`O${rowNumber}`).value = w.titulo_profesional;
-      worksheet.getCell(`T${rowNumber}`).value = w.experiencia_a;
-      worksheet.getCell(`V${rowNumber}`).value = w.experiencia_b;
-      worksheet.getCell(`X${rowNumber}`).value = w.experiencia_c;
-      worksheet.getCell(`Z${rowNumber}`).value = w.experiencia_d;
+      worksheet.getCell(`A${rowNumber}`).value = r.obs || "";
+      worksheet.getCell(`B${rowNumber}`).value = r.faena || "";
+      worksheet.getCell(`C${rowNumber}`).value = r.rut || "";
+      worksheet.getCell(`D${rowNumber}`).value = r.colaborador || "";
+      worksheet.getCell(`E${rowNumber}`).value = r.fecha || new Date();
+
+      worksheet.getCell(`F${rowNumber}`).value = r.peso;
+      worksheet.getCell(`H${rowNumber}`).value = r.talla;
+      worksheet.getCell(`I${rowNumber}`).value = r.cintura;
+      worksheet.getCell(`J${rowNumber}`).value = r.imc;
+      worksheet.getCell(`K${rowNumber}`).value = r.presion || "";
+      worksheet.getCell(`L${rowNumber}`).value = r.frec_card;
+      worksheet.getCell(`M${rowNumber}`).value = r.actividad_fisica || "";
+      worksheet.getCell(`N${rowNumber}`).value = r.framingham || "";
+      worksheet.getCell(`O${rowNumber}`).value = r.ecg || "";
+      worksheet.getCell(`P${rowNumber}`).value = r.audiometria || "";
+      worksheet.getCell(`Q${rowNumber}`).value = r.audiometria_conclusion || "";
+      worksheet.getCell(`R${rowNumber}`).value = r.test_ruffier || "";
+      worksheet.getCell(`S${rowNumber}`).value = r.rx_torax || "";
+      worksheet.getCell(`T${rowNumber}`).value = r.rx_neumoconiosis_oit || "";
+      worksheet.getCell(`U${rowNumber}`).value = r.epworth || "";
+      worksheet.getCell(`V${rowNumber}`).value = r.lake_louise || "";
+      worksheet.getCell(`W${rowNumber}`).value = r.glucosa;
+      worksheet.getCell(`X${rowNumber}`).value = r.creatinina;
+      worksheet.getCell(`Y${rowNumber}`).value = r.colesterol_total;
+      worksheet.getCell(`Z${rowNumber}`).value = r.hdl;
+      worksheet.getCell(`AA${rowNumber}`).value = r.ldl;
+      worksheet.getCell(`AB${rowNumber}`).value = r.trigliceridos;
+      worksheet.getCell(`AC${rowNumber}`).value = r.inr;
+      worksheet.getCell(`AD${rowNumber}`).value = r.protrombina;
+      worksheet.getCell(`AE${rowNumber}`).value = r.bilirrubina_total;
+      worksheet.getCell(`AF${rowNumber}`).value = r.gpt;
+      worksheet.getCell(`AG${rowNumber}`).value = r.hemoglobina;
+      worksheet.getCell(`AH${rowNumber}`).value = r.hematocrito;
+      worksheet.getCell(`AI${rowNumber}`).value = r.plaquetas;
+      worksheet.getCell(`AJ${rowNumber}`).value = r.creatininuria;
+      worksheet.getCell(`AK${rowNumber}`).value = r.anfetaminas || "";
+      worksheet.getCell(`AL${rowNumber}`).value = r.benzodiazepinas || "";
+      worksheet.getCell(`AM${rowNumber}`).value = r.canabinoides || "";
+      worksheet.getCell(`AN${rowNumber}`).value = r.cocaina || "";
+      worksheet.getCell(`AO${rowNumber}`).value = r.observacion_general || "";
+      worksheet.getCell(`AP${rowNumber}`).value = r.fecha_informe_revisado || "";
+      worksheet.getCell(`AQ${rowNumber}`).value = r.riesgo_evaluado || "";
+      worksheet.getCell(`AR${rowNumber}`).value = r.observaciones || "";
+      worksheet.getCell(`BE${rowNumber}`).value = r.proximo_control || "";
+      worksheet.getCell(`BF${rowNumber}`).value = r.contraindicacion_achs || "";
+      worksheet.getCell(`BG${rowNumber}`).value = r.fecha_registro_contraind || "";
+      worksheet.getCell(`BH${rowNumber}`).value = r.riesgo_contraindicado || "";
+      worksheet.getCell(`BI${rowNumber}`).value = r.tipo_contraindicacion || "";
+      worksheet.getCell(`BJ${rowNumber}`).value = r.recomendacion_interna || "";
+
+      worksheet.getCell(`E${rowNumber}`).numFmt = "dd-mm-yyyy";
     });
 
     const buffer = await workbook.xlsx.writeBuffer();
@@ -535,33 +674,13 @@
     );
 
     const link = document.createElement("a");
-    const safeName = (headerData.projectName || "Proyecto").replace(/[^\w\-]+/g, "_");
-
     link.href = URL.createObjectURL(blob);
-    link.download = `TEC-02_${safeName}.xlsx`;
+    link.download = "PLANILLA_Examenes_Preocupacionales.xlsx";
     document.body.appendChild(link);
     link.click();
     link.remove();
 
     setTimeout(() => URL.revokeObjectURL(link.href), 1000);
-  }
-
-  async function generateTec02() {
-    try {
-      if (selectedWorkers.size === 0) {
-        alert("Por favor, selecciona al menos un trabajador.");
-        return;
-      }
-
-      const workers = await fetchSelectedWorkersFullData();
-      const rows = buildTec02Rows(workers);
-      const headerData = getTec02HeaderInputs();
-
-      await exportTec02FromTemplate(rows, headerData);
-    } catch (err) {
-      console.error("Error generando TEC-02:", err);
-      alert("No se pudo generar el TEC-02: " + err.message);
-    }
   }
 
   function setupFilters() {
@@ -610,6 +729,19 @@
 
   const btnGen = $("#btnGenerateTec02");
   if (btnGen) {
-    btnGen.onclick = generateTec02;
+    btnGen.textContent = "Generar planilla exámenes";
+    btnGen.onclick = async () => {
+      try {
+        if (selectedWorkers.size === 0) {
+          alert("Selecciona al menos un trabajador.");
+          return;
+        }
+
+        await exportExamSheetFromTemplate();
+      } catch (err) {
+        console.error(err);
+        alert("No se pudo generar la planilla: " + err.message);
+      }
+    };
   }
 })();
