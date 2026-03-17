@@ -482,9 +482,9 @@ console.log("ExcelJS global:", window.ExcelJS);
       throw new Error("No está cargada la librería ExcelJS.");
     }
 
-    const response = await fetch("/templates/tec02_template.xlsx");
+    const response = await fetch("/templates/tec-02-templates.xlsx");
     if (!response.ok) {
-      throw new Error("No se encontró /templates/tec02_template.xlsx");
+      throw new Error("No se encontró /templates/tec02_templates.xlsx");
     }
 
     const arrayBuffer = await response.arrayBuffer();
