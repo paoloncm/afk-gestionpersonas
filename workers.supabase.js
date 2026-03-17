@@ -24,13 +24,6 @@
     return status || "Activo";
   }
 
-  function formatDate(dateStr) {
-    if (!dateStr) return "N/A";
-    const d = new Date(dateStr);
-    if (Number.isNaN(d.getTime())) return "N/A";
-    return d.toLocaleDateString("es-CL");
-  }
-
   function isInfpsico(credential) {
     const name = String(credential?.credential_name || "").toUpperCase();
     return name.includes("INFPSICO");
@@ -84,13 +77,9 @@
       const diffMs = expiry.getTime() - now.getTime();
       const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 
-      if (diffDays <= 0) {
-        expired += 1;
-      } else if (diffDays <= 30) {
-        upcoming += 1;
-      } else {
-        healthy += 1;
-      }
+      if (diffDays <= 0) expired += 1;
+      else if (diffDays <= 30) upcoming += 1;
+      else healthy += 1;
     });
 
     if (expired > 0) {
@@ -167,9 +156,7 @@
         { data: credentials, error: credentialsError }
       ] = await Promise.all([
         supabase.from("workers").select("*").order("full_name", { ascending: true }),
-        supabase
-          .from("worker_credentials")
-          .select("id, worker_id, credential_name, expiry_date, result_status")
+        supabase.from("worker_credentials").select("id, worker_id, credential_name, expiry_date, result_status")
       ]);
 
       if (workersError) throw workersError;
@@ -214,7 +201,6 @@
       (acc, w) => {
         const s = getComplianceSummary(w.id);
         acc.total += 1;
-        acc.docs += s.total;
 
         if (s.faenaText === "No habilitado") acc.notEnabled += 1;
         else if (s.faenaText === "En riesgo") acc.atRisk += 1;
@@ -223,14 +209,7 @@
 
         return acc;
       },
-      {
-        total: 0,
-        docs: 0,
-        enabled: 0,
-        atRisk: 0,
-        notEnabled: 0,
-        noInfo: 0
-      }
+      { total: 0, enabled: 0, atRisk: 0, notEnabled: 0, noInfo: 0 }
     );
 
     body.innerHTML = `
@@ -267,10 +246,10 @@
         <div class="t-col-rut">RUT</div>
         <div class="t-col-faena">Empresa / Faena</div>
         <div class="t-col-email">Email</div>
-        <div data-label="Semáforo">Semáforo</div>
-        <div data-label="Estado Faena">Estado Faena</div>
-        <div data-label="Documentos">Documentos</div>
-        <div data-label="Acciones">Acciones</div>
+        <div>Semáforo</div>
+        <div>Estado Faena</div>
+        <div>Documentos</div>
+        <div>Acciones</div>
       </div>
     `;
 
@@ -334,10 +313,7 @@
 
           <div class="faena-cell t-col-faena" data-label="Empresa / Faena">
             <span class="faena-text">${company}</span>
-            <button
-              class="btn btn--mini btn-assign"
-              style="padding:2px 6px; font-size:10px; margin-left:8px; opacity:.8;"
-            >
+            <button class="btn btn--mini btn-assign" style="padding:2px 6px; font-size:10px; margin-left:8px; opacity:.8;">
               ${company === "Sin asignar" ? "Asignar" : "Editar"}
             </button>
           </div>
@@ -367,7 +343,7 @@
           <div data-label="Acciones">
             <div style="display:flex; gap:8px; flex-wrap:wrap;">
               <a href="worker.html?id=${encodeURIComponent(id)}" class="btn btn--mini">Ver ficha</a>
-              <button class="btn btn--mini btn-generate-one" data-worker-id="${id}" data-worker-name="${name}">
+              <button class="btn btn--mini btn-generate-one" data-worker-id="${id}">
                 TEC-02
               </button>
             </div>
@@ -442,8 +418,6 @@
       btn.onclick = async (e) => {
         try {
           const workerId = e.currentTarget.dataset.workerId;
-          const workerName = e.currentTarget.dataset.workerName || "Trabajador";
-          const project = $("#projectName")?.value?.trim() || "Proyecto Sin Nombre";
 
           const { data, error } = await supabase
             .from("workers")
@@ -454,13 +428,22 @@
           if (error) throw error;
 
           const rows = buildTec02Rows([data]);
-          exportTec02Excel(rows, project || workerName);
+          const payload = getTec02HeaderInputs();
+          await exportTec02FromTemplate(rows, payload);
         } catch (err) {
           console.error("Error generando TEC-02 individual:", err);
           alert("No se pudo generar el TEC-02 individual: " + err.message);
         }
       };
     });
+  }
+
+  function getTec02HeaderInputs() {
+    return {
+      projectName: $("#projectName")?.value?.trim() || "Proyecto Sin Nombre",
+      legalName: $("#companyLegalName")?.value?.trim() || "",
+      legalRepresentative: $("#legalRepresentative")?.value?.trim() || "",
+    };
   }
 
   async function fetchSelectedWorkersFullData() {
@@ -485,182 +468,81 @@
     return workers.map((w, index) => ({
       nro: index + 1,
       nombre_completo: w.full_name || "",
-      rut: w.rut || "",
       cargo: w.position || w.role_name || w.job_title || w.cargo || "",
       titulo_profesional: w.profession || w.professional_title || w.titulo_profesional || "",
       experiencia_a: w.exp_a ?? w.years_experience ?? "",
       experiencia_b: w.exp_b ?? "",
       experiencia_c: w.exp_c ?? "",
       experiencia_d: w.exp_d ?? "",
-      empresa_faena: w.company_name || "",
-      email: w.email || "",
-      telefono: w.phone || "",
-      estado: normalizeStatus(w.status || "")
     }));
   }
 
-  function exportTec02Excel(rows, projectName) {
-    if (!window.XLSX) {
-      alert("Falta cargar la librería XLSX.");
-      return;
+  async function exportTec02FromTemplate(rows, headerData) {
+    if (!window.ExcelJS) {
+      throw new Error("No está cargada la librería ExcelJS.");
     }
 
-    const wb = XLSX.utils.book_new();
-
-    const wsData = [
-      ["CORPORACIÓN NACIONAL DEL COBRE DE CHILE"],
-      ["FORMULARIO TEC-02"],
-      ["NÓMINA Y ANTECEDENTES DEL PERSONAL CLAVE"],
-      [],
-      ["Proyecto", projectName || "Proyecto Sin Nombre"],
-      ["Fecha", new Date().toLocaleDateString("es-CL")],
-      [],
-      [
-        "N°",
-        "Nombre Completo",
-        "RUT",
-        "Cargo a Desempeñar",
-        "Título Profesional",
-        "Años Exp. A",
-        "Años Exp. B",
-        "Años Exp. C",
-        "Años Exp. D",
-        "Empresa / Faena",
-        "Email",
-        "Teléfono",
-        "Estado"
-      ]
-    ];
-
-    rows.forEach((r) => {
-      wsData.push([
-        r.nro,
-        r.nombre_completo,
-        r.rut,
-        r.cargo,
-        r.titulo_profesional,
-        r.experiencia_a,
-        r.experiencia_b,
-        r.experiencia_c,
-        r.experiencia_d,
-        r.empresa_faena,
-        r.email,
-        r.telefono,
-        r.estado
-      ]);
-    });
-
-    const ws = XLSX.utils.aoa_to_sheet(wsData);
-
-    ws["!cols"] = [
-      { wch: 6 },
-      { wch: 28 },
-      { wch: 16 },
-      { wch: 28 },
-      { wch: 28 },
-      { wch: 12 },
-      { wch: 12 },
-      { wch: 12 },
-      { wch: 12 },
-      { wch: 24 },
-      { wch: 26 },
-      { wch: 16 },
-      { wch: 14 }
-    ];
-
-    XLSX.utils.book_append_sheet(wb, ws, "TEC-02");
-
-    const safeProject = (projectName || "Proyecto").replace(/[^\w\-]+/g, "_");
-    XLSX.writeFile(wb, `TEC-02_${safeProject}.xlsx`);
-  }
-
-  function exportTec02Pdf(rows, projectName) {
-    if (!window.jspdf || !window.jspdf.jsPDF) {
-      alert("Falta cargar jsPDF.");
-      return;
+    const response = await fetch("/templates/tec02_template.xlsx");
+    if (!response.ok) {
+      throw new Error("No se encontró /templates/tec02_template.xlsx");
     }
 
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({
-      orientation: "landscape",
-      unit: "mm",
-      format: "a4"
+    const arrayBuffer = await response.arrayBuffer();
+
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(arrayBuffer);
+
+    const worksheet = workbook.getWorksheet("TEC-02") || workbook.getWorksheet(1);
+    if (!worksheet) {
+      throw new Error("No se encontró la hoja TEC-02.");
+    }
+
+    // Cabecera real según tu plantilla
+    if (headerData.legalName) worksheet.getCell("H9").value = headerData.legalName;
+    if (headerData.legalRepresentative) worksheet.getCell("H11").value = headerData.legalRepresentative;
+
+    worksheet.getCell("W11").value = new Date();
+    worksheet.getCell("W11").numFmt = "dd-mm-yyyy";
+
+    // Proyecto: tu plantilla no trae celda explícita visible para proyecto;
+    // si quieres, lo dejamos también en H7.
+    if (headerData.projectName) worksheet.getCell("H7").value = headerData.projectName;
+
+    const startRow = 17;
+
+    rows.forEach((w, index) => {
+      const rowNumber = startRow + index;
+
+      worksheet.getCell(`B${rowNumber}`).value = w.nro;
+      worksheet.getCell(`C${rowNumber}`).value = w.nombre_completo;
+      worksheet.getCell(`J${rowNumber}`).value = w.cargo;
+      worksheet.getCell(`O${rowNumber}`).value = w.titulo_profesional;
+      worksheet.getCell(`T${rowNumber}`).value = w.experiencia_a;
+      worksheet.getCell(`V${rowNumber}`).value = w.experiencia_b;
+      worksheet.getCell(`X${rowNumber}`).value = w.experiencia_c;
+      worksheet.getCell(`Z${rowNumber}`).value = w.experiencia_d;
     });
 
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(16);
-    doc.text("CORPORACIÓN NACIONAL DEL COBRE DE CHILE", 148, 15, { align: "center" });
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob(
+      [buffer],
+      { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }
+    );
 
-    doc.setFontSize(14);
-    doc.text("FORMULARIO TEC-02", 148, 24, { align: "center" });
+    const link = document.createElement("a");
+    const safeName = (headerData.projectName || "Proyecto").replace(/[^\w\-]+/g, "_");
 
-    doc.setFontSize(11);
-    doc.text("NÓMINA Y ANTECEDENTES DEL PERSONAL CLAVE", 148, 31, { align: "center" });
+    link.href = URL.createObjectURL(blob);
+    link.download = `TEC-02_${safeName}.xlsx`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
 
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    doc.text(`Proyecto: ${projectName || "Proyecto Sin Nombre"}`, 14, 40);
-    doc.text(`Fecha: ${new Date().toLocaleDateString("es-CL")}`, 240, 40);
-
-    const body = rows.map((r) => [
-      r.nro,
-      r.nombre_completo,
-      r.cargo,
-      r.titulo_profesional,
-      r.experiencia_a,
-      r.experiencia_b,
-      r.experiencia_c,
-      r.experiencia_d
-    ]);
-
-    doc.autoTable({
-      startY: 46,
-      head: [[
-        "N°",
-        "Nombre Completo",
-        "Cargo",
-        "Título Profesional",
-        "A",
-        "B",
-        "C",
-        "D"
-      ]],
-      body,
-      styles: {
-        fontSize: 8,
-        cellPadding: 2
-      },
-      headStyles: {
-        fillColor: [180, 214, 197],
-        textColor: 20,
-        lineColor: 80,
-        lineWidth: 0.2
-      },
-      bodyStyles: {
-        lineColor: 120,
-        lineWidth: 0.15
-      },
-      columnStyles: {
-        0: { cellWidth: 10 },
-        1: { cellWidth: 55 },
-        2: { cellWidth: 55 },
-        3: { cellWidth: 55 },
-        4: { cellWidth: 12 },
-        5: { cellWidth: 12 },
-        6: { cellWidth: 12 },
-        7: { cellWidth: 12 }
-      },
-      margin: { left: 10, right: 10 }
-    });
-
-    const safeProject = (projectName || "Proyecto").replace(/[^\w\-]+/g, "_");
-    doc.save(`TEC-02_${safeProject}.pdf`);
+    setTimeout(() => URL.revokeObjectURL(link.href), 1000);
   }
 
-  async function generateTec02(format = "xlsx") {
+  async function generateTec02() {
     try {
-      const project = $("#projectName")?.value?.trim() || "Proyecto Sin Nombre";
-
       if (selectedWorkers.size === 0) {
         alert("Por favor, selecciona al menos un trabajador.");
         return;
@@ -668,17 +550,9 @@
 
       const workers = await fetchSelectedWorkersFullData();
       const rows = buildTec02Rows(workers);
+      const headerData = getTec02HeaderInputs();
 
-      if (!rows.length) {
-        alert("No se encontraron datos para los trabajadores seleccionados.");
-        return;
-      }
-
-      if (format === "pdf") {
-        exportTec02Pdf(rows, project);
-      } else {
-        exportTec02Excel(rows, project);
-      }
+      await exportTec02FromTemplate(rows, headerData);
     } catch (err) {
       console.error("Error generando TEC-02:", err);
       alert("No se pudo generar el TEC-02: " + err.message);
@@ -731,11 +605,6 @@
 
   const btnGen = $("#btnGenerateTec02");
   if (btnGen) {
-    btnGen.onclick = () => generateTec02("xlsx");
-  }
-
-  const btnGenPdf = $("#btnGenerateTec02Pdf");
-  if (btnGenPdf) {
-    btnGenPdf.onclick = () => generateTec02("pdf");
+    btnGen.onclick = generateTec02;
   }
 })();
