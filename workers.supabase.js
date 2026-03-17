@@ -29,16 +29,13 @@
     return Number.isFinite(n) ? n : null;
   }
 
-  function normalizeText(value) {
-    return String(value || "")
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase()
-      .trim();
-  }
-
   function sameRut(a, b) {
-    const clean = (v) => String(v || "").replace(/\./g, "").replace(/-/g, "").trim().toUpperCase();
+    const clean = (v) => String(v || "")
+      .replace(/\./g, "")
+      .replace(/-/g, "")
+      .trim()
+      .toUpperCase();
+
     return clean(a) && clean(a) === clean(b);
   }
 
@@ -227,61 +224,64 @@
         return;
       }
 
-      // SOLO el examen más reciente por trabajador
-      const exam = workerExams[0];
+      // TODOS los exámenes del trabajador
+      workerExams.forEach((exam) => {
+        rows.push({
+          obs: exam.obs || "",
+          faena: exam.faena || worker.company_name || "",
+          rut: exam.rut || worker.rut || "",
+          colaborador: exam.full_name || worker.full_name || "",
+          fecha: exam.exam_date ? new Date(exam.exam_date) : new Date(),
+          examen: [
+            exam.credential_name || "EXAMEN",
+            exam.exam_type ? `(${exam.exam_type})` : ""
+          ].join(" ").trim(),
 
-      rows.push({
-        obs: exam.obs || "",
-        faena: exam.faena || worker.company_name || "",
-        rut: exam.rut || worker.rut || "",
-        colaborador: exam.full_name || worker.full_name || "",
-        fecha: exam.exam_date ? new Date(exam.exam_date) : new Date(),
-        examen: exam.credential_name || exam.exam_type || "EXAMEN",
-
-        peso: safeNum(exam.peso),
-        talla: safeNum(exam.talla),
-        cintura: safeNum(exam.cintura),
-        imc: safeNum(exam.imc),
-        presion: exam.presion || "",
-        frec_card: safeNum(exam.frec_card),
-        actividad_fisica: exam.actividad_fisica || "",
-        framingham: exam.framingham || "",
-        ecg: exam.ecg || "",
-        audiometria: exam.audiometria || "",
-        audiometria_conclusion: exam.audiometria_conclusion || "",
-        test_ruffier: exam.test_ruffier || "",
-        rx_torax: exam.rx_torax || "",
-        rx_neumoconiosis_oit: exam.rx_neumoconiosis_oit || "",
-        epworth: exam.epworth || "",
-        lake_louise: exam.lake_louise || "",
-        glucosa: safeNum(exam.glucosa),
-        creatinina: safeNum(exam.creatinina),
-        colesterol_total: safeNum(exam.colesterol_total),
-        hdl: safeNum(exam.hdl),
-        ldl: safeNum(exam.ldl),
-        trigliceridos: safeNum(exam.trigliceridos),
-        inr: safeNum(exam.inr),
-        protrombina: safeNum(exam.protrombina_pct),
-        bilirrubina_total: safeNum(exam.bilirrubina_total),
-        gpt: safeNum(exam.gpt),
-        hemoglobina: safeNum(exam.hemoglobina),
-        hematocrito: safeNum(exam.hematocrito),
-        plaquetas: safeNum(exam.plaquetas),
-        creatininuria: safeNum(exam.creatininuria),
-        anfetaminas: exam.anfetaminas || "",
-        benzodiazepinas: exam.benzodiazepinas || "",
-        canabinoides: exam.canabinoides || "",
-        cocaina: exam.cocaina || "",
-        observacion_general: exam.recomendaciones_generales || "",
-        fecha_informe_revisado: toDateOrEmpty(exam.reviewed_date),
-        riesgo_evaluado: exam.riesgo_evaluado || "",
-        observaciones: exam.observaciones || exam.observation || "",
-        proximo_control: toDateOrEmpty(exam.next_control_date),
-        contraindicacion_achs: exam.contraindicacion_achs || "",
-        fecha_registro_contraind: toDateOrEmpty(exam.fecha_registro_contraind),
-        riesgo_contraindicado: exam.riesgo_contraindicado || "",
-        tipo_contraindicacion: exam.tipo_contraindicacion || "",
-        recomendacion_interna: exam.recomendacion_interna || ""
+          peso: safeNum(exam.peso),
+          talla: safeNum(exam.talla),
+          cintura: safeNum(exam.cintura),
+          imc: safeNum(exam.imc),
+          presion: exam.presion || "",
+          frec_card: safeNum(exam.frec_card),
+          actividad_fisica: exam.actividad_fisica || "",
+          framingham: exam.framingham || "",
+          ecg: exam.ecg || "",
+          audiometria: exam.audiometria || "",
+          audiometria_conclusion: exam.audiometria_conclusion || "",
+          test_ruffier: exam.test_ruffier || "",
+          rx_torax: exam.rx_torax || "",
+          rx_neumoconiosis_oit: exam.rx_neumoconiosis_oit || "",
+          epworth: exam.epworth || "",
+          lake_louise: exam.lake_louise || "",
+          glucosa: safeNum(exam.glucosa),
+          creatinina: safeNum(exam.creatinina),
+          colesterol_total: safeNum(exam.colesterol_total),
+          hdl: safeNum(exam.hdl),
+          ldl: safeNum(exam.ldl),
+          trigliceridos: safeNum(exam.trigliceridos),
+          inr: safeNum(exam.inr),
+          protrombina: safeNum(exam.protrombina_pct),
+          bilirrubina_total: safeNum(exam.bilirrubina_total),
+          gpt: safeNum(exam.gpt),
+          hemoglobina: safeNum(exam.hemoglobina),
+          hematocrito: safeNum(exam.hematocrito),
+          plaquetas: safeNum(exam.plaquetas),
+          creatininuria: safeNum(exam.creatininuria),
+          anfetaminas: exam.anfetaminas || "",
+          benzodiazepinas: exam.benzodiazepinas || "",
+          canabinoides: exam.canabinoides || "",
+          cocaina: exam.cocaina || "",
+          observacion_general: exam.recomendaciones_generales || "",
+          fecha_informe_revisado: toDateOrEmpty(exam.reviewed_date),
+          riesgo_evaluado: exam.riesgo_evaluado || "",
+          observaciones: exam.observaciones || exam.observation || "",
+          proximo_control: toDateOrEmpty(exam.next_control_date),
+          contraindicacion_achs: exam.contraindicacion_achs || "",
+          fecha_registro_contraind: toDateOrEmpty(exam.fecha_registro_contraind),
+          riesgo_contraindicado: exam.riesgo_contraindicado || "",
+          tipo_contraindicacion: exam.tipo_contraindicacion || "",
+          recomendacion_interna: exam.recomendacion_interna || ""
+        });
       });
     });
 
@@ -615,7 +615,8 @@
       .from("medical_exam_records")
       .select("*")
       .in("rut", selectedRuts)
-      .eq("credential_category", "examen");
+      .eq("credential_category", "examen")
+      .order("exam_date", { ascending: false });
 
     if (examsError) throw examsError;
 
