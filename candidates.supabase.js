@@ -123,8 +123,8 @@
       btnCompare.onclick = () => {
         const ids = Array.from(selectedCandidates);
         if (ids.length < 2) return;
-        const [id1, id2] = ids;
-        window.location.href = `candidate.html?id=${encodeURIComponent(id1)}&id_2=${encodeURIComponent(id2)}`;
+        const base = window.location.protocol === 'file:' ? 'comparison.html' : 'comparison';
+        window.location.href = `${base}?ids=${encodeURIComponent(ids.join(','))}`;
       };
     }
   }

@@ -546,8 +546,11 @@
       btn.onclick = async (e) => {
         try {
           const workerId = e.currentTarget.dataset.workerId;
-          selectedWorkers = new Set([String(workerId)]);
-          await exportExamSheetFromTemplate();
+          // Exportar solo este trabajador sin tocar el Set global
+          const worker = allWorkers.find(w => String(w.id) === String(workerId));
+          if (!worker) throw new Error("Trabajador no encontrado");
+          const credentials = allCredentials.filter(c => String(c.worker_id) === String(workerId));
+          await exportExamSheetDirect([worker], credentials);
         } catch (err) {
           console.error("Error generando planilla individual:", err);
           alert("No se pudo generar la planilla: " + err.message);
@@ -556,61 +559,37 @@
     });
   }
 
-  async function fetchSelectedWorkersForExamSheet() {
+  function syncSelectedFromDOM() {
+    // Sincronizar selectedWorkers desde los checkboxes reales del DOM
+    const checks = tableBody.querySelectorAll(".worker-check");
+    checks.forEach((c) => {
+      if (c.checked) selectedWorkers.add(String(c.value));
+      else selectedWorkers.delete(String(c.value));
+    });
+  }
+
+  function getSelectedWorkersData() {
+    syncSelectedFromDOM();
     const ids = Array.from(selectedWorkers);
 
     if (!ids.length) {
       throw new Error("No hay trabajadores seleccionados.");
     }
 
-    const { data: workers, error: workersError } = await supabase
-      .from("workers")
-      .select("*")
-      .in("id", ids)
-      .order("full_name", { ascending: true });
+    // Usar datos ya cargados en memoria (sin segundo request a Supabase)
+    const workers = allWorkers
+      .filter(w => ids.includes(String(w.id)))
+      .sort((a, b) => (a.full_name || "").localeCompare(b.full_name || ""));
 
-    if (workersError) throw workersError;
+    const credentials = allCredentials.filter(c => ids.includes(String(c.worker_id)));
 
-    const { data: credentials, error: credentialsError } = await supabase
-      .from("worker_credentials")
-      .select("*")
-      .in("worker_id", ids);
-
-    if (credentialsError) throw credentialsError;
-
-    return {
-      workers: workers || [],
-      credentials: credentials || []
-    };
+    return { workers, credentials };
   }
 
-  async function exportExamSheetFromTemplate() {
-    if (!window.ExcelJS) {
-      throw new Error("No está cargada la librería ExcelJS.");
-    }
-
-    const { workers, credentials } = await fetchSelectedWorkersForExamSheet();
-
-    const templateUrl = "/templates/planilla_examenes_preocupacionales.xlsx";
-    const response = await fetch(templateUrl);
-
-    if (!response.ok) {
-      throw new Error(`No se encontró ${templateUrl}`);
-    }
-
-    const arrayBuffer = await response.arrayBuffer();
-    const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(arrayBuffer);
-
-    const worksheet = workbook.getWorksheet("Hoja1") || workbook.getWorksheet(1);
-    if (!worksheet) {
-      throw new Error("No se encontró la hoja principal.");
-    }
-
-    const rows = workers.map(w => mergeWorkerExamData(w, credentials));
+  function writeWorkersToSheet(worksheet, workers, credentials) {
     const startRow = 2;
-
-    rows.forEach((r, index) => {
+    workers.forEach((w, index) => {
+      const r = mergeWorkerExamData(w, credentials);
       const rowNumber = startRow + index;
 
       worksheet.getCell(`A${rowNumber}`).value = r.obs || "";
@@ -666,21 +645,51 @@
 
       worksheet.getCell(`E${rowNumber}`).numFmt = "dd-mm-yyyy";
     });
+  }
 
+  async function loadTemplate() {
+    if (!window.ExcelJS) {
+      throw new Error("No está cargada la librería ExcelJS.");
+    }
+    const templateUrl = "/templates/planilla_examenes_preocupacionales.xlsx";
+    const response = await fetch(templateUrl);
+    if (!response.ok) throw new Error(`No se encontró ${templateUrl}`);
+    const arrayBuffer = await response.arrayBuffer();
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(arrayBuffer);
+    const worksheet = workbook.getWorksheet("Hoja1") || workbook.getWorksheet(1);
+    if (!worksheet) throw new Error("No se encontró la hoja principal.");
+    return { workbook, worksheet };
+  }
+
+  async function downloadWorkbook(workbook, filename) {
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob(
       [buffer],
       { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }
     );
-
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = "PLANILLA_Examenes_Preocupacionales.xlsx";
+    link.download = filename;
     document.body.appendChild(link);
     link.click();
     link.remove();
-
     setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+  }
+
+  async function exportExamSheetFromTemplate() {
+    const { workers, credentials } = getSelectedWorkersData();
+    console.log(`[Planilla] Exportando ${workers.length} trabajadores:`, workers.map(w => w.full_name));
+    const { workbook, worksheet } = await loadTemplate();
+    writeWorkersToSheet(worksheet, workers, credentials);
+    await downloadWorkbook(workbook, "PLANILLA_Examenes_Preocupacionales.xlsx");
+  }
+
+  async function exportExamSheetDirect(workers, credentials) {
+    console.log(`[Planilla] Exportando individual: ${workers.map(w => w.full_name)}`);
+    const { workbook, worksheet } = await loadTemplate();
+    writeWorkersToSheet(worksheet, workers, credentials);
+    await downloadWorkbook(workbook, "PLANILLA_Examenes_Preocupacionales.xlsx");
   }
 
   function setupFilters() {
