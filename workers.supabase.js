@@ -149,112 +149,131 @@
     return {};
   }
 
-  function mergeWorkerExamData(worker, credentials) {
-    const workerCreds = credentials.filter(c => String(c.worker_id) === String(worker.id));
+  function buildExamRows(workers, credentials) {
+    const rows = [];
 
-    const merged = {
-      obs: "",
-      faena: worker.company_name || "",
-      rut: worker.rut || "",
-      colaborador: worker.full_name || "",
-      fecha: new Date(),
+    workers.forEach((worker) => {
+      const workerCreds = credentials.filter(
+        (c) => String(c.worker_id) === String(worker.id)
+      );
 
-      peso: null,
-      talla: null,
-      cintura: null,
-      imc: null,
-      presion: "",
-      frec_card: null,
-      actividad_fisica: "",
-      framingham: "",
-      ecg: "",
-      audiometria: "",
-      audiometria_conclusion: "",
-      test_ruffier: "",
-      rx_torax: "",
-      rx_neumoconiosis_oit: "",
-      epworth: "",
-      lake_louise: "",
-      glucosa: null,
-      creatinina: null,
-      colesterol_total: null,
-      hdl: null,
-      ldl: null,
-      trigliceridos: null,
-      inr: null,
-      protrombina: null,
-      bilirrubina_total: null,
-      gpt: null,
-      hemoglobina: null,
-      hematocrito: null,
-      plaquetas: null,
-      creatininuria: null,
-      anfetaminas: "",
-      benzodiazepinas: "",
-      canabinoides: "",
-      cocaina: "",
-      observacion_general: "",
-      fecha_informe_revisado: "",
-      riesgo_evaluado: "",
-      observaciones: "",
-      proximo_control: "",
-      contraindicacion_achs: "",
-      fecha_registro_contraind: "",
-      riesgo_contraindicado: "",
-      tipo_contraindicacion: "",
-      recomendacion_interna: ""
-    };
+      if (!workerCreds.length) {
+        rows.push({
+          obs: "",
+          faena: worker.company_name || "",
+          rut: worker.rut || "",
+          colaborador: worker.full_name || "",
+          fecha: new Date(),
+          examen: "SIN EXAMEN REGISTRADO",
 
-    workerCreds.forEach(c => {
-      const d = getStructuredExamData(c);
+          peso: null,
+          talla: null,
+          cintura: null,
+          imc: null,
+          presion: "",
+          frec_card: null,
+          actividad_fisica: "",
+          framingham: "",
+          ecg: "",
+          audiometria: "",
+          audiometria_conclusion: "",
+          test_ruffier: "",
+          rx_torax: "",
+          rx_neumoconiosis_oit: "",
+          epworth: "",
+          lake_louise: "",
+          glucosa: null,
+          creatinina: null,
+          colesterol_total: null,
+          hdl: null,
+          ldl: null,
+          trigliceridos: null,
+          inr: null,
+          protrombina: null,
+          bilirrubina_total: null,
+          gpt: null,
+          hemoglobina: null,
+          hematocrito: null,
+          plaquetas: null,
+          creatininuria: null,
+          anfetaminas: "",
+          benzodiazepinas: "",
+          canabinoides: "",
+          cocaina: "",
+          observacion_general: "",
+          fecha_informe_revisado: "",
+          riesgo_evaluado: "",
+          observaciones: "",
+          proximo_control: "",
+          contraindicacion_achs: "",
+          fecha_registro_contraind: "",
+          riesgo_contraindicado: "",
+          tipo_contraindicacion: "",
+          recomendacion_interna: ""
+        });
+        return;
+      }
 
-      merged.peso ??= safeNum(d.peso);
-      merged.talla ??= safeNum(d.talla);
-      merged.cintura ??= safeNum(d.cintura);
-      merged.imc ??= safeNum(d.imc);
-      merged.presion ||= d.presion || "";
-      merged.frec_card ??= safeNum(d.frec_card);
-      merged.actividad_fisica ||= d.actividad_fisica || "";
-      merged.framingham ||= d.framingham || "";
-      merged.ecg ||= d.ecg || "";
-      merged.audiometria ||= d.audiometria || "";
-      merged.audiometria_conclusion ||= d.audiometria_conclusion || "";
-      merged.test_ruffier ||= d.test_ruffier || "";
-      merged.rx_torax ||= d.rx_torax || "";
-      merged.rx_neumoconiosis_oit ||= d.rx_neumoconiosis_oit || "";
-      merged.epworth ||= d.epworth || "";
-      merged.lake_louise ||= d.lake_louise || "";
-      merged.glucosa ??= safeNum(d.glucosa);
-      merged.creatinina ??= safeNum(d.creatinina);
-      merged.colesterol_total ??= safeNum(d.colesterol_total);
-      merged.hdl ??= safeNum(d.hdl);
-      merged.ldl ??= safeNum(d.ldl);
-      merged.trigliceridos ??= safeNum(d.trigliceridos);
-      merged.inr ??= safeNum(d.inr);
-      merged.protrombina ??= safeNum(d.protrombina);
-      merged.bilirrubina_total ??= safeNum(d.bilirrubina_total);
-      merged.gpt ??= safeNum(d.gpt);
-      merged.hemoglobina ??= safeNum(d.hemoglobina);
-      merged.hematocrito ??= safeNum(d.hematocrito);
-      merged.plaquetas ??= safeNum(d.plaquetas);
-      merged.creatininuria ??= safeNum(d.creatininuria);
-      merged.anfetaminas ||= d.anfetaminas || "";
-      merged.benzodiazepinas ||= d.benzodiazepinas || "";
-      merged.canabinoides ||= d.canabinoides || "";
-      merged.cocaina ||= d.cocaina || "";
-      merged.observacion_general ||= d.observacion_general || c.observation || "";
-      merged.fecha_informe_revisado ||= d.fecha_informe_revisado || "";
-      merged.riesgo_evaluado ||= d.riesgo_evaluado || "";
-      merged.observaciones ||= d.observaciones || "";
-      merged.proximo_control ||= d.proximo_control || "";
-      merged.contraindicacion_achs ||= d.contraindicacion_achs || "";
-      merged.fecha_registro_contraind ||= d.fecha_registro_contraind || "";
-      merged.riesgo_contraindicado ||= d.riesgo_contraindicado || "";
-      merged.tipo_contraindicacion ||= d.tipo_contraindicacion || "";
-      merged.recomendacion_interna ||= d.recomendacion_interna || "";
+      workerCreds.forEach((cred) => {
+        const d = getStructuredExamData(cred);
+
+        rows.push({
+          obs: "",
+          faena: worker.company_name || "",
+          rut: worker.rut || "",
+          colaborador: worker.full_name || "",
+          fecha: cred.expiry_date ? new Date(cred.expiry_date) : new Date(),
+          examen: cred.credential_name || cred.exam_type || "EXAMEN",
+
+          peso: safeNum(d.peso),
+          talla: safeNum(d.talla),
+          cintura: safeNum(d.cintura),
+          imc: safeNum(d.imc),
+          presion: d.presion || "",
+          frec_card: safeNum(d.frec_card),
+          actividad_fisica: d.actividad_fisica || "",
+          framingham: d.framingham || "",
+          ecg: d.ecg || "",
+          audiometria: d.audiometria || "",
+          audiometria_conclusion: d.audiometria_conclusion || "",
+          test_ruffier: d.test_ruffier || "",
+          rx_torax: d.rx_torax || "",
+          rx_neumoconiosis_oit: d.rx_neumoconiosis_oit || "",
+          epworth: d.epworth || "",
+          lake_louise: d.lake_louise || "",
+          glucosa: safeNum(d.glucosa),
+          creatinina: safeNum(d.creatinina),
+          colesterol_total: safeNum(d.colesterol_total),
+          hdl: safeNum(d.hdl),
+          ldl: safeNum(d.ldl),
+          trigliceridos: safeNum(d.trigliceridos),
+          inr: safeNum(d.inr),
+          protrombina: safeNum(d.protrombina),
+          bilirrubina_total: safeNum(d.bilirrubina_total),
+          gpt: safeNum(d.gpt),
+          hemoglobina: safeNum(d.hemoglobina),
+          hematocrito: safeNum(d.hematocrito),
+          plaquetas: safeNum(d.plaquetas),
+          creatininuria: safeNum(d.creatininuria),
+          anfetaminas: d.anfetaminas || "",
+          benzodiazepinas: d.benzodiazepinas || "",
+          canabinoides: d.canabinoides || "",
+          cocaina: d.cocaina || "",
+          observacion_general: d.observacion_general || cred.observation || "",
+          fecha_informe_revisado: d.fecha_informe_revisado || "",
+          riesgo_evaluado: d.riesgo_evaluado || "",
+          observaciones: d.observaciones || cred.observation || "",
+          proximo_control: d.proximo_control || "",
+          contraindicacion_achs: d.contraindicacion_achs || "",
+          fecha_registro_contraind: d.fecha_registro_contraind || "",
+          riesgo_contraindicado: d.riesgo_contraindicado || "",
+          tipo_contraindicacion: d.tipo_contraindicacion || "",
+          recomendacion_interna: d.recomendacion_interna || ""
+        });
+      });
     });
 
-    return merged;
+    return rows;
   }
 
   async function init() {
@@ -546,11 +565,8 @@
       btn.onclick = async (e) => {
         try {
           const workerId = e.currentTarget.dataset.workerId;
-          // Exportar solo este trabajador sin tocar el Set global
-          const worker = allWorkers.find(w => String(w.id) === String(workerId));
-          if (!worker) throw new Error("Trabajador no encontrado");
-          const credentials = allCredentials.filter(c => String(c.worker_id) === String(workerId));
-          await exportExamSheetDirect([worker], credentials);
+          selectedWorkers = new Set([String(workerId)]);
+          await exportExamSheetFromTemplate();
         } catch (err) {
           console.error("Error generando planilla individual:", err);
           alert("No se pudo generar la planilla: " + err.message);
@@ -559,66 +575,89 @@
     });
   }
 
-  function syncSelectedFromDOM() {
-    // Sincronizar selectedWorkers desde los checkboxes reales del DOM
-    const checks = tableBody.querySelectorAll(".worker-check");
-    checks.forEach((c) => {
-      if (c.checked) selectedWorkers.add(String(c.value));
-      else selectedWorkers.delete(String(c.value));
-    });
-  }
-
-  function getSelectedWorkersData() {
-    syncSelectedFromDOM();
+  async function fetchSelectedWorkersForExamSheet() {
     const ids = Array.from(selectedWorkers);
 
     if (!ids.length) {
       throw new Error("No hay trabajadores seleccionados.");
     }
 
-    // Usar datos ya cargados en memoria (sin segundo request a Supabase)
-    const workers = allWorkers
-      .filter(w => ids.includes(String(w.id)))
-      .sort((a, b) => (a.full_name || "").localeCompare(b.full_name || ""));
+    const { data: workers, error: workersError } = await supabase
+      .from("workers")
+      .select("*")
+      .in("id", ids)
+      .order("full_name", { ascending: true });
 
-    const credentials = allCredentials.filter(c => ids.includes(String(c.worker_id)));
+    if (workersError) throw workersError;
 
-    return { workers, credentials };
+    const { data: credentials, error: credentialsError } = await supabase
+      .from("worker_credentials")
+      .select("*")
+      .in("worker_id", ids);
+
+    if (credentialsError) throw credentialsError;
+
+    return {
+      workers: workers || [],
+      credentials: credentials || []
+    };
   }
 
-  function getTemplateDataRows(worksheet) {
-    // Collect rows that have cells in the main data columns (A=1 to BJ=62).
-    // The template has spacer rows (e.g. rows 2, 4) that only contain
-    // formula/summary cells in far-right columns (BL+). We skip those.
-    const dataRows = [];
-    worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
-      if (rowNumber <= 1) return; // skip header
-      let hasMainColumn = false;
-      row.eachCell({ includeEmpty: false }, (_cell, colNumber) => {
-        if (colNumber <= 62) hasMainColumn = true; // A(1)..BJ(62)
-      });
-      if (hasMainColumn) dataRows.push(rowNumber);
-    });
-    return dataRows;
-  }
+  async function exportExamSheetFromTemplate() {
+    if (!window.ExcelJS) {
+      throw new Error("No está cargada la librería ExcelJS.");
+    }
 
-  function writeWorkersToSheet(worksheet, workers, credentials) {
-    const dataRows = getTemplateDataRows(worksheet);
-    console.log(`[Planilla] Filas de template disponibles: ${dataRows.length}, Trabajadores: ${workers.length}`);
+    const { workers, credentials } = await fetchSelectedWorkersForExamSheet();
 
-    workers.forEach((w, index) => {
-      const rowNumber = dataRows[index];
-      if (!rowNumber) {
-        console.warn(`[Planilla] Sin fila de template para trabajador #${index + 1}: ${w.full_name}`);
-        return;
-      }
-      const r = mergeWorkerExamData(w, credentials);
+    const nombreProyecto = document.querySelector("#projectName")?.value || "";
+    const razonSocial = document.querySelector("#companyLegalName")?.value || "";
+    const representante = document.querySelector("#legalRepresentative")?.value || "";
+
+    if (!nombreProyecto || !razonSocial || !representante) {
+      alert("Completa Nombre del Proyecto, Razón Social y Representante Legal.");
+      return;
+    }
+
+    const templateUrl = "/templates/planilla_examenes_preocupacionales.xlsx";
+    const response = await fetch(templateUrl);
+
+    if (!response.ok) {
+      throw new Error(`No se encontró ${templateUrl}`);
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(arrayBuffer);
+
+    const worksheet = workbook.getWorksheet("Hoja1") || workbook.getWorksheet(1);
+    if (!worksheet) {
+      throw new Error("No se encontró la hoja principal.");
+    }
+
+    const rows = buildExamRows(workers, credentials);
+
+    worksheet.getCell("B1").value = nombreProyecto;
+    worksheet.getCell("D1").value = razonSocial;
+    worksheet.getCell("F1").value = representante;
+
+    const startRow = 2;
+
+    if (rows.length > 1) {
+      worksheet.spliceRows(startRow + 1, 0, ...new Array(rows.length - 1).fill([]));
+    }
+
+    rows.forEach((r, index) => {
+      const rowNumber = startRow + index;
 
       worksheet.getCell(`A${rowNumber}`).value = r.obs || "";
       worksheet.getCell(`B${rowNumber}`).value = r.faena || "";
       worksheet.getCell(`C${rowNumber}`).value = r.rut || "";
       worksheet.getCell(`D${rowNumber}`).value = r.colaborador || "";
       worksheet.getCell(`E${rowNumber}`).value = r.fecha || new Date();
+
+      // Nombre del examen en G
+      worksheet.getCell(`G${rowNumber}`).value = r.examen || "";
 
       worksheet.getCell(`F${rowNumber}`).value = r.peso;
       worksheet.getCell(`H${rowNumber}`).value = r.talla;
@@ -667,53 +706,22 @@
 
       worksheet.getCell(`E${rowNumber}`).numFmt = "dd-mm-yyyy";
     });
-  }
 
-
-
-  async function loadTemplate() {
-    if (!window.ExcelJS) {
-      throw new Error("No está cargada la librería ExcelJS.");
-    }
-    const templateUrl = "/templates/planilla_examenes_preocupacionales.xlsx";
-    const response = await fetch(templateUrl);
-    if (!response.ok) throw new Error(`No se encontró ${templateUrl}`);
-    const arrayBuffer = await response.arrayBuffer();
-    const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(arrayBuffer);
-    const worksheet = workbook.getWorksheet("Hoja1") || workbook.getWorksheet(1);
-    if (!worksheet) throw new Error("No se encontró la hoja principal.");
-    return { workbook, worksheet };
-  }
-
-  async function downloadWorkbook(workbook, filename) {
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob(
       [buffer],
       { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }
     );
+
+    const safeProject = (nombreProyecto || "Proyecto").replace(/[^\w\-]+/g, "_");
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = filename;
+    link.download = `PLANILLA_Examenes_${safeProject}.xlsx`;
     document.body.appendChild(link);
     link.click();
     link.remove();
+
     setTimeout(() => URL.revokeObjectURL(link.href), 1000);
-  }
-
-  async function exportExamSheetFromTemplate() {
-    const { workers, credentials } = getSelectedWorkersData();
-    console.log(`[Planilla] Exportando ${workers.length} trabajadores:`, workers.map(w => w.full_name));
-    const { workbook, worksheet } = await loadTemplate();
-    writeWorkersToSheet(worksheet, workers, credentials);
-    await downloadWorkbook(workbook, "PLANILLA_Examenes_Preocupacionales.xlsx");
-  }
-
-  async function exportExamSheetDirect(workers, credentials) {
-    console.log(`[Planilla] Exportando individual: ${workers.map(w => w.full_name)}`);
-    const { workbook, worksheet } = await loadTemplate();
-    writeWorkersToSheet(worksheet, workers, credentials);
-    await downloadWorkbook(workbook, "PLANILLA_Examenes_Preocupacionales.xlsx");
   }
 
   function setupFilters() {
@@ -762,9 +770,13 @@
 
   const btnGen = $("#btnGenerateTec02");
   if (btnGen) {
-    btnGen.textContent = "Generar planilla exámenes";
     btnGen.onclick = async () => {
       try {
+        if (selectedWorkers.size === 0) {
+          alert("Selecciona al menos un trabajador.");
+          return;
+        }
+
         await exportExamSheetFromTemplate();
       } catch (err) {
         console.error(err);
