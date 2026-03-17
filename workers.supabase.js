@@ -1,4 +1,3 @@
-// workers.supabase.js
 (async function () {
   const $ = (s) => document.querySelector(s);
   const tableBody = $("#workersTable");
@@ -125,7 +124,9 @@
       faenaText: "Habilitado",
     };
   }
-console.log("ExcelJS global:", window.ExcelJS);
+
+  console.log("ExcelJS global:", window.ExcelJS);
+
   async function init() {
     if (!tableBody) {
       console.error("No se encontró #workersTable");
@@ -156,7 +157,9 @@ console.log("ExcelJS global:", window.ExcelJS);
         { data: credentials, error: credentialsError }
       ] = await Promise.all([
         supabase.from("workers").select("*").order("full_name", { ascending: true }),
-        supabase.from("worker_credentials").select("id, worker_id, credential_name, expiry_date, result_status")
+        supabase
+          .from("worker_credentials")
+          .select("id, worker_id, credential_name, expiry_date, result_status")
       ]);
 
       if (workersError) throw workersError;
@@ -482,9 +485,14 @@ console.log("ExcelJS global:", window.ExcelJS);
       throw new Error("No está cargada la librería ExcelJS.");
     }
 
-    const response = await fetch("/templates/TEC-02-templates.xlsx");
+    const templateUrl = "/templates/tec02_template.xlsx";
+    console.log("Template URL:", templateUrl);
+
+    const response = await fetch(templateUrl);
+    console.log("Template response:", response.status, response.statusText);
+
     if (!response.ok) {
-      throw new Error("No se encontró /templates/TEC-02-templates.xlsx");
+      throw new Error(`No se encontró ${templateUrl}`);
     }
 
     const arrayBuffer = await response.arrayBuffer();
@@ -497,15 +505,12 @@ console.log("ExcelJS global:", window.ExcelJS);
       throw new Error("No se encontró la hoja TEC-02.");
     }
 
-    // Cabecera real según tu plantilla
     if (headerData.legalName) worksheet.getCell("H9").value = headerData.legalName;
     if (headerData.legalRepresentative) worksheet.getCell("H11").value = headerData.legalRepresentative;
 
     worksheet.getCell("W11").value = new Date();
     worksheet.getCell("W11").numFmt = "dd-mm-yyyy";
 
-    // Proyecto: tu plantilla no trae celda explícita visible para proyecto;
-    // si quieres, lo dejamos también en H7.
     if (headerData.projectName) worksheet.getCell("H7").value = headerData.projectName;
 
     const startRow = 17;
