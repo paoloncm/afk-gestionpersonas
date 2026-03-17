@@ -125,7 +125,7 @@
       faenaText: "Habilitado",
     };
   }
-
+console.log("ExcelJS global:", window.ExcelJS);
   async function init() {
     if (!tableBody) {
       console.error("No se encontró #workersTable");
