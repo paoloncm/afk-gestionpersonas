@@ -611,11 +611,9 @@
     const { workers, credentials } = await fetchSelectedWorkersForExamSheet();
 
     const nombreProyecto = document.querySelector("#projectName")?.value || "";
-    const razonSocial = document.querySelector("#companyLegalName")?.value || "";
-    const representante = document.querySelector("#legalRepresentative")?.value || "";
 
-    if (!nombreProyecto || !razonSocial || !representante) {
-      alert("Completa Nombre del Proyecto, Razón Social y Representante Legal.");
+    if (!nombreProyecto) {
+      alert("Completa el Nombre del Proyecto.");
       return;
     }
 
@@ -637,9 +635,8 @@
 
     const rows = buildExamRows(workers, credentials);
 
-    worksheet.getCell("B1").value = nombreProyecto;
-    worksheet.getCell("D1").value = razonSocial;
-    worksheet.getCell("F1").value = representante;
+    // Solo proyecto, en celda libre
+    worksheet.getCell("G1").value = nombreProyecto;
 
     const startRow = 2;
 
@@ -656,7 +653,7 @@
       worksheet.getCell(`D${rowNumber}`).value = r.colaborador || "";
       worksheet.getCell(`E${rowNumber}`).value = r.fecha || new Date();
 
-      // Nombre del examen en G
+      // Nombre del examen
       worksheet.getCell(`G${rowNumber}`).value = r.examen || "";
 
       worksheet.getCell(`F${rowNumber}`).value = r.peso;
