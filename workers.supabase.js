@@ -3,7 +3,7 @@
   const tableBody = $("#workersTable");
 
   let allWorkers = [];
-  let allCredentials = [];
+  let allExamRecords = [];
   let selectedWorkers = new Set();
 
   function escapeHtml(value) {
@@ -23,13 +23,36 @@
     return status || "Activo";
   }
 
-  function isInfpsico(credential) {
-    const name = String(credential?.credential_name || "").toUpperCase();
-    return name.includes("INFPSICO");
+  function safeNum(v) {
+    if (v == null || v === "") return null;
+    const n = Number(String(v).replace(",", "."));
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function normalizeText(value) {
+    return String(value || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .trim();
+  }
+
+  function sameRut(a, b) {
+    const clean = (v) => String(v || "").replace(/\./g, "").replace(/-/g, "").trim().toUpperCase();
+    return clean(a) && clean(a) === clean(b);
+  }
+
+  function isInfpsico(record) {
+    const examType = String(record?.exam_type || "").toLowerCase();
+    const name = String(record?.credential_name || "").toUpperCase();
+    return examType === "infpsico" || name.includes("INFPSICO");
   }
 
   function getWorkerDocs(workerId) {
-    return allCredentials.filter((c) => String(c.worker_id) === String(workerId));
+    const worker = allWorkers.find((w) => String(w.id) === String(workerId));
+    if (!worker) return [];
+
+    return allExamRecords.filter((r) => sameRut(r.rut, worker.rut));
   }
 
   function getComplianceSummary(workerId) {
@@ -125,39 +148,29 @@
     };
   }
 
-  function safeNum(v) {
-    if (v == null || v === "") return null;
-    const n = Number(String(v).replace(",", "."));
-    return Number.isFinite(n) ? n : null;
+  function toDateOrEmpty(value) {
+    if (!value) return "";
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? "" : d;
   }
 
-  function getStructuredExamData(credential) {
-    if (!credential) return {};
-
-    if (credential.structured_data && typeof credential.structured_data === "object") {
-      return credential.structured_data;
-    }
-
-    if (credential.exam_data && typeof credential.exam_data === "object") {
-      return credential.exam_data;
-    }
-
-    if (credential.metadata && typeof credential.metadata === "object") {
-      return credential.metadata;
-    }
-
-    return {};
+  function sortExamsNewest(exams) {
+    return [...exams].sort((a, b) => {
+      const da = a.exam_date ? new Date(a.exam_date).getTime() : 0;
+      const db = b.exam_date ? new Date(b.exam_date).getTime() : 0;
+      return db - da;
+    });
   }
 
-  function buildExamRows(workers, credentials) {
+  function buildExamRows(workers, examRecords) {
     const rows = [];
 
     workers.forEach((worker) => {
-      const workerCreds = credentials.filter(
-        (c) => String(c.worker_id) === String(worker.id)
+      const workerExams = sortExamsNewest(
+        examRecords.filter((r) => sameRut(r.rut, worker.rut))
       );
 
-      if (!workerCreds.length) {
+      if (!workerExams.length) {
         rows.push({
           obs: "",
           faena: worker.company_name || "",
@@ -214,62 +227,61 @@
         return;
       }
 
-      workerCreds.forEach((cred) => {
-        const d = getStructuredExamData(cred);
+      // SOLO el examen más reciente por trabajador
+      const exam = workerExams[0];
 
-        rows.push({
-          obs: "",
-          faena: worker.company_name || "",
-          rut: worker.rut || "",
-          colaborador: worker.full_name || "",
-          fecha: cred.expiry_date ? new Date(cred.expiry_date) : new Date(),
-          examen: cred.credential_name || cred.exam_type || "EXAMEN",
+      rows.push({
+        obs: exam.obs || "",
+        faena: exam.faena || worker.company_name || "",
+        rut: exam.rut || worker.rut || "",
+        colaborador: exam.full_name || worker.full_name || "",
+        fecha: exam.exam_date ? new Date(exam.exam_date) : new Date(),
+        examen: exam.credential_name || exam.exam_type || "EXAMEN",
 
-          peso: safeNum(d.peso),
-          talla: safeNum(d.talla),
-          cintura: safeNum(d.cintura),
-          imc: safeNum(d.imc),
-          presion: d.presion || "",
-          frec_card: safeNum(d.frec_card),
-          actividad_fisica: d.actividad_fisica || "",
-          framingham: d.framingham || "",
-          ecg: d.ecg || "",
-          audiometria: d.audiometria || "",
-          audiometria_conclusion: d.audiometria_conclusion || "",
-          test_ruffier: d.test_ruffier || "",
-          rx_torax: d.rx_torax || "",
-          rx_neumoconiosis_oit: d.rx_neumoconiosis_oit || "",
-          epworth: d.epworth || "",
-          lake_louise: d.lake_louise || "",
-          glucosa: safeNum(d.glucosa),
-          creatinina: safeNum(d.creatinina),
-          colesterol_total: safeNum(d.colesterol_total),
-          hdl: safeNum(d.hdl),
-          ldl: safeNum(d.ldl),
-          trigliceridos: safeNum(d.trigliceridos),
-          inr: safeNum(d.inr),
-          protrombina: safeNum(d.protrombina),
-          bilirrubina_total: safeNum(d.bilirrubina_total),
-          gpt: safeNum(d.gpt),
-          hemoglobina: safeNum(d.hemoglobina),
-          hematocrito: safeNum(d.hematocrito),
-          plaquetas: safeNum(d.plaquetas),
-          creatininuria: safeNum(d.creatininuria),
-          anfetaminas: d.anfetaminas || "",
-          benzodiazepinas: d.benzodiazepinas || "",
-          canabinoides: d.canabinoides || "",
-          cocaina: d.cocaina || "",
-          observacion_general: d.observacion_general || cred.observation || "",
-          fecha_informe_revisado: d.fecha_informe_revisado || "",
-          riesgo_evaluado: d.riesgo_evaluado || "",
-          observaciones: d.observaciones || cred.observation || "",
-          proximo_control: d.proximo_control || "",
-          contraindicacion_achs: d.contraindicacion_achs || "",
-          fecha_registro_contraind: d.fecha_registro_contraind || "",
-          riesgo_contraindicado: d.riesgo_contraindicado || "",
-          tipo_contraindicacion: d.tipo_contraindicacion || "",
-          recomendacion_interna: d.recomendacion_interna || ""
-        });
+        peso: safeNum(exam.peso),
+        talla: safeNum(exam.talla),
+        cintura: safeNum(exam.cintura),
+        imc: safeNum(exam.imc),
+        presion: exam.presion || "",
+        frec_card: safeNum(exam.frec_card),
+        actividad_fisica: exam.actividad_fisica || "",
+        framingham: exam.framingham || "",
+        ecg: exam.ecg || "",
+        audiometria: exam.audiometria || "",
+        audiometria_conclusion: exam.audiometria_conclusion || "",
+        test_ruffier: exam.test_ruffier || "",
+        rx_torax: exam.rx_torax || "",
+        rx_neumoconiosis_oit: exam.rx_neumoconiosis_oit || "",
+        epworth: exam.epworth || "",
+        lake_louise: exam.lake_louise || "",
+        glucosa: safeNum(exam.glucosa),
+        creatinina: safeNum(exam.creatinina),
+        colesterol_total: safeNum(exam.colesterol_total),
+        hdl: safeNum(exam.hdl),
+        ldl: safeNum(exam.ldl),
+        trigliceridos: safeNum(exam.trigliceridos),
+        inr: safeNum(exam.inr),
+        protrombina: safeNum(exam.protrombina_pct),
+        bilirrubina_total: safeNum(exam.bilirrubina_total),
+        gpt: safeNum(exam.gpt),
+        hemoglobina: safeNum(exam.hemoglobina),
+        hematocrito: safeNum(exam.hematocrito),
+        plaquetas: safeNum(exam.plaquetas),
+        creatininuria: safeNum(exam.creatininuria),
+        anfetaminas: exam.anfetaminas || "",
+        benzodiazepinas: exam.benzodiazepinas || "",
+        canabinoides: exam.canabinoides || "",
+        cocaina: exam.cocaina || "",
+        observacion_general: exam.recomendaciones_generales || "",
+        fecha_informe_revisado: toDateOrEmpty(exam.reviewed_date),
+        riesgo_evaluado: exam.riesgo_evaluado || "",
+        observaciones: exam.observaciones || exam.observation || "",
+        proximo_control: toDateOrEmpty(exam.next_control_date),
+        contraindicacion_achs: exam.contraindicacion_achs || "",
+        fecha_registro_contraind: toDateOrEmpty(exam.fecha_registro_contraind),
+        riesgo_contraindicado: exam.riesgo_contraindicado || "",
+        tipo_contraindicacion: exam.tipo_contraindicacion || "",
+        recomendacion_interna: exam.recomendacion_interna || ""
       });
     });
 
@@ -303,17 +315,17 @@
 
       const [
         { data: workers, error: workersError },
-        { data: credentials, error: credentialsError }
+        { data: exams, error: examsError }
       ] = await Promise.all([
         supabase.from("workers").select("*").order("full_name", { ascending: true }),
-        supabase.from("worker_credentials").select("*")
+        supabase.from("medical_exam_records").select("*")
       ]);
 
       if (workersError) throw workersError;
-      if (credentialsError) throw credentialsError;
+      if (examsError) throw examsError;
 
       allWorkers = workers || [];
-      allCredentials = credentials || [];
+      allExamRecords = exams || [];
 
       renderWorkers(allWorkers);
       updateTopSummary(allWorkers);
@@ -427,9 +439,12 @@
       const statusClass = status === "Activo" ? "badge--active" : "badge--inactive";
       const summary = getComplianceSummary(id);
 
-      const avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-        w.full_name || "Desconocido"
-      )}&background=random&color=fff`;
+      const initials = (w.full_name || "Desconocido")
+        .split(" ")
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((x) => x[0]?.toUpperCase() || "")
+        .join("");
 
       html += `
         <div class="t-row worker-row-pro" data-id="${id}">
@@ -443,7 +458,9 @@
           </div>
 
           <div class="emp t-col-name" data-label="Trabajador">
-            <img class="avatar" src="${avatar}" alt="${name}">
+            <div class="avatar" style="display:flex; align-items:center; justify-content:center; font-weight:700;">
+              ${escapeHtml(initials)}
+            </div>
             <div style="display:flex; flex-direction:column; gap:4px; min-width:0;">
               <a
                 href="worker.html?id=${encodeURIComponent(id)}"
@@ -590,16 +607,21 @@
 
     if (workersError) throw workersError;
 
-    const { data: credentials, error: credentialsError } = await supabase
-      .from("worker_credentials")
-      .select("*")
-      .in("worker_id", ids);
+    const selectedRuts = (workers || [])
+      .map((w) => w.rut)
+      .filter(Boolean);
 
-    if (credentialsError) throw credentialsError;
+    const { data: exams, error: examsError } = await supabase
+      .from("medical_exam_records")
+      .select("*")
+      .in("rut", selectedRuts)
+      .eq("credential_category", "examen");
+
+    if (examsError) throw examsError;
 
     return {
       workers: workers || [],
-      credentials: credentials || []
+      exams: exams || []
     };
   }
 
@@ -608,7 +630,7 @@
       throw new Error("No está cargada la librería ExcelJS.");
     }
 
-    const { workers, credentials } = await fetchSelectedWorkersForExamSheet();
+    const { workers, exams } = await fetchSelectedWorkersForExamSheet();
 
     const nombreProyecto = document.querySelector("#projectName")?.value || "";
 
@@ -633,9 +655,8 @@
       throw new Error("No se encontró la hoja principal.");
     }
 
-    const rows = buildExamRows(workers, credentials);
+    const rows = buildExamRows(workers, exams);
 
-    // Solo proyecto, en celda libre
     worksheet.getCell("G1").value = nombreProyecto;
 
     const startRow = 2;
@@ -653,7 +674,6 @@
       worksheet.getCell(`D${rowNumber}`).value = r.colaborador || "";
       worksheet.getCell(`E${rowNumber}`).value = r.fecha || new Date();
 
-      // Nombre del examen
       worksheet.getCell(`G${rowNumber}`).value = r.examen || "";
 
       worksheet.getCell(`F${rowNumber}`).value = r.peso;
@@ -702,6 +722,16 @@
       worksheet.getCell(`BJ${rowNumber}`).value = r.recomendacion_interna || "";
 
       worksheet.getCell(`E${rowNumber}`).numFmt = "dd-mm-yyyy";
+
+      if (r.fecha_informe_revisado instanceof Date) {
+        worksheet.getCell(`AP${rowNumber}`).numFmt = "dd-mm-yyyy";
+      }
+      if (r.proximo_control instanceof Date) {
+        worksheet.getCell(`BE${rowNumber}`).numFmt = "dd-mm-yyyy";
+      }
+      if (r.fecha_registro_contraind instanceof Date) {
+        worksheet.getCell(`BG${rowNumber}`).numFmt = "dd-mm-yyyy";
+      }
     });
 
     const buffer = await workbook.xlsx.writeBuffer();
