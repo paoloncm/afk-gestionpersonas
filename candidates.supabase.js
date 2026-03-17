@@ -204,6 +204,10 @@
     renderCandidates(filteredCandidates);
     updateKPIs(filteredCandidates);
     updateTopList(filteredCandidates);
+
+    if (window.renderAfkCharts) {
+      window.renderAfkCharts(filteredCandidates);
+    }
   }
 
   function renderCandidates(items) {
@@ -319,9 +323,9 @@
   function buildTec02RowsFromCandidates(rows) {
     return rows.map((c, index) => ({
       nro: index + 1,
-      nombre_completo: c.nombre_completo || c.full_name || "",
-      cargo: c.cargo_a_desempenar || c.vacancy_title || c.cargo || "",
-      titulo_profesional: c.profesion || c.profession || "",
+      nombre_completo: c.nombre_completo || "",
+      cargo: c.cargo_a_desempenar || "",
+      titulo_profesional: c.profesion || "",
       experiencia_a: parseFloat(c.experiencia_total) || 0,
       experiencia_b: parseFloat(c.experiencia_en_empresa_actual) || 0,
       experiencia_c: parseFloat(c.exp_cargo_actual) || 0,

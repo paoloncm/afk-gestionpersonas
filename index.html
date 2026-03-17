@@ -37,8 +37,11 @@
 
     <header class="topbar">
       <button class="btn-menu" aria-label="Abrir menú">☰</button>
-      <button class="btn" onclick="location.href='documents.html'">Subir documentos</button>
-      <button class="btn btn--primary" id="btnChat">Abrir Chatbot</button>
+      <div style="display:flex; gap:10px; margin-left:auto; flex-wrap:wrap;">
+        <button id="btnGenerateTec02FromCandidates" class="btn">Generar TEC-02</button>
+        <button class="btn" onclick="location.href='documents.html'">Subir documentos</button>
+        <button class="btn btn--primary" id="btnChat">Abrir Chatbot</button>
+      </div>
     </header>
 
     <main class="main" id="app">
@@ -147,14 +150,7 @@
           </div>
 
           <div class="toolbar__right" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
-            <button id="btnGenerateTec02FromCandidates" class="btn">
-              Generar TEC-02
-            </button>
-
-            <button id="btnNewCandidate" class="btn btn--primary">
-              Nuevo Candidato
-            </button>
-
+            <button id="btnNewCandidate" class="btn btn--primary">Nuevo Candidato</button>
             <button id="btnCompare" class="btn btn--primary" style="display:none">
               Comparar seleccionados (<span id="compareCount">0</span>)
             </button>
@@ -275,8 +271,8 @@
   <script src="supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
 
+  <script defer src="charts.js?v=3.0"></script>
   <script defer src="candidates.supabase.js?v=3.0"></script>
-  <script defer src="charts.js?v=2.0"></script>
   <script defer src="chat.js?v=2.0"></script>
   <script defer src="responsive.js?v=2.0"></script>
 </body>
