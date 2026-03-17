@@ -669,60 +669,7 @@
     });
   }
 
-      worksheet.getCell(`A${rowNumber}`).value = r.obs || "";
-      worksheet.getCell(`B${rowNumber}`).value = r.faena || "";
-      worksheet.getCell(`C${rowNumber}`).value = r.rut || "";
-      worksheet.getCell(`D${rowNumber}`).value = r.colaborador || "";
-      worksheet.getCell(`E${rowNumber}`).value = r.fecha || new Date();
 
-      worksheet.getCell(`F${rowNumber}`).value = r.peso;
-      worksheet.getCell(`H${rowNumber}`).value = r.talla;
-      worksheet.getCell(`I${rowNumber}`).value = r.cintura;
-      worksheet.getCell(`J${rowNumber}`).value = r.imc;
-      worksheet.getCell(`K${rowNumber}`).value = r.presion || "";
-      worksheet.getCell(`L${rowNumber}`).value = r.frec_card;
-      worksheet.getCell(`M${rowNumber}`).value = r.actividad_fisica || "";
-      worksheet.getCell(`N${rowNumber}`).value = r.framingham || "";
-      worksheet.getCell(`O${rowNumber}`).value = r.ecg || "";
-      worksheet.getCell(`P${rowNumber}`).value = r.audiometria || "";
-      worksheet.getCell(`Q${rowNumber}`).value = r.audiometria_conclusion || "";
-      worksheet.getCell(`R${rowNumber}`).value = r.test_ruffier || "";
-      worksheet.getCell(`S${rowNumber}`).value = r.rx_torax || "";
-      worksheet.getCell(`T${rowNumber}`).value = r.rx_neumoconiosis_oit || "";
-      worksheet.getCell(`U${rowNumber}`).value = r.epworth || "";
-      worksheet.getCell(`V${rowNumber}`).value = r.lake_louise || "";
-      worksheet.getCell(`W${rowNumber}`).value = r.glucosa;
-      worksheet.getCell(`X${rowNumber}`).value = r.creatinina;
-      worksheet.getCell(`Y${rowNumber}`).value = r.colesterol_total;
-      worksheet.getCell(`Z${rowNumber}`).value = r.hdl;
-      worksheet.getCell(`AA${rowNumber}`).value = r.ldl;
-      worksheet.getCell(`AB${rowNumber}`).value = r.trigliceridos;
-      worksheet.getCell(`AC${rowNumber}`).value = r.inr;
-      worksheet.getCell(`AD${rowNumber}`).value = r.protrombina;
-      worksheet.getCell(`AE${rowNumber}`).value = r.bilirrubina_total;
-      worksheet.getCell(`AF${rowNumber}`).value = r.gpt;
-      worksheet.getCell(`AG${rowNumber}`).value = r.hemoglobina;
-      worksheet.getCell(`AH${rowNumber}`).value = r.hematocrito;
-      worksheet.getCell(`AI${rowNumber}`).value = r.plaquetas;
-      worksheet.getCell(`AJ${rowNumber}`).value = r.creatininuria;
-      worksheet.getCell(`AK${rowNumber}`).value = r.anfetaminas || "";
-      worksheet.getCell(`AL${rowNumber}`).value = r.benzodiazepinas || "";
-      worksheet.getCell(`AM${rowNumber}`).value = r.canabinoides || "";
-      worksheet.getCell(`AN${rowNumber}`).value = r.cocaina || "";
-      worksheet.getCell(`AO${rowNumber}`).value = r.observacion_general || "";
-      worksheet.getCell(`AP${rowNumber}`).value = r.fecha_informe_revisado || "";
-      worksheet.getCell(`AQ${rowNumber}`).value = r.riesgo_evaluado || "";
-      worksheet.getCell(`AR${rowNumber}`).value = r.observaciones || "";
-      worksheet.getCell(`BE${rowNumber}`).value = r.proximo_control || "";
-      worksheet.getCell(`BF${rowNumber}`).value = r.contraindicacion_achs || "";
-      worksheet.getCell(`BG${rowNumber}`).value = r.fecha_registro_contraind || "";
-      worksheet.getCell(`BH${rowNumber}`).value = r.riesgo_contraindicado || "";
-      worksheet.getCell(`BI${rowNumber}`).value = r.tipo_contraindicacion || "";
-      worksheet.getCell(`BJ${rowNumber}`).value = r.recomendacion_interna || "";
-
-      worksheet.getCell(`E${rowNumber}`).numFmt = "dd-mm-yyyy";
-    });
-  }
 
   async function loadTemplate() {
     if (!window.ExcelJS) {
