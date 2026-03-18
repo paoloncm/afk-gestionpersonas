@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — AFK RRHH</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: rgba(30, 41, 59, 0.7);
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --border: rgba(255, 255, 255, 0.1);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      background-image:
+        radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(147, 51, 234, 0.15) 0, transparent 50%);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .login-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      padding: 40px;
+      border-radius: 24px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      animation: fadeIn 0.6s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .brand {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .brand .logo {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      color: var(--primary);
+      display: inline-block;
+    }
+
+    .brand span {
+      font-size: 24px;
+      font-weight: 400;
+      color: var(--text-muted);
+      margin-left: 4px;
+    }
+
+    h1 {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+
+    p {
+      color: var(--text-muted);
+      font-size: 14px;
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    input {
+      width: 100%;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--border);
+      padding: 12px 16px;
+      border-radius: 12px;
+      color: white;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+    }
+
+    .btn {
+      width: 100%;
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 14px;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 15px;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      margin-top: 10px;
+    }
+
+    .btn:hover {
+      background: var(--primary-hover);
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .error-msg {
+      background: rgba(239, 68, 68, 0.1);
+      color: #f87171;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      margin-bottom: 20px;
+      display: none;
+      border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+
+    .footer {
+      margin-top: 24px;
+      text-align: center;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .footer a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="login-card">
+    <div class="brand">
+      <div class="logo">AFK</div>
+      <span>RRHH</span>
+    </div>
+
+    <h1>Bienvenido de nuevo</h1>
+    <p>Ingresa tus credenciales para acceder</p>
+
+    <div id="errorBox" class="error-msg"></div>
+
+    <form id="loginForm">
+      <div class="form-group">
+        <label for="email">Email corporativo</label>
+        <input type="email" id="email" placeholder="nombre@empresa.com" required>
+      </div>
+      <div class="form-group">
+        <label for="password">Contraseña</label>
+        <input type="password" id="password" placeholder="••••••••" required>
+      </div>
+
+      <button type="submit" class="btn" id="btnLogin">Iniciar Sesión</button>
+    </form>
+
+    <div class="footer">
+      ¿No tienes cuenta? <a href="#" id="linkSignup">Contactar con soporte</a>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase.js"></script>
+  <script src="auth.js"></script>
+  <script>
+    const form = document.getElementById('loginForm');
+    const emailInput = document.getElementById('email');
+    const passInput = document.getElementById('password');
+    const errorBox = document.getElementById('errorBox');
+    const btn = document.getElementById('btnLogin');
+
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      btn.disabled = true;
+      btn.textContent = 'Autenticando...';
+      errorBox.style.display = 'none';
+
+      try {
+        const { error } = await window.supabase.auth.signInWithPassword({
+          email: emailInput.value,
+          password: passInput.value
+        });
+
+        if (error) throw error;
+
+        // Éxito: Redirigir al dashboard
+        window.location.href = 'index.html';
+      } catch (err) {
+        errorBox.textContent = 'Error: ' + (err.message === 'Invalid login credentials' ? 'Credenciales inválidas' : err.message);
+        errorBox.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Iniciar Sesión';
+      }
+    };
+  </script>
+</body>
+
+</html>
