@@ -839,6 +839,10 @@ console.log("[workers.supabase.js] archivo cargado");
       });
 
       renderWorkers(filtered);
+      updateTopSummary(filtered);
+      if (window.renderWorkerAnalytics) {
+        window.renderWorkerAnalytics(filtered, allExamRecords);
+      }
     };
 
     searchInput.oninput = applyFilters;
