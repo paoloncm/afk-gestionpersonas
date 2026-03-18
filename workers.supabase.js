@@ -52,13 +52,6 @@ console.log("[workers.supabase.js] archivo cargado");
     return examType === "infpsico" || name.includes("INFPSICO");
   }
 
-  function formatDate(dateStr) {
-    if (!dateStr) return "N/A";
-    const d = new Date(dateStr);
-    if (Number.isNaN(d.getTime())) return "N/A";
-    return d.toLocaleDateString("es-CL");
-  }
-
   function toDateOrEmpty(value) {
     if (!value) return "";
     const d = new Date(value);
@@ -189,7 +182,6 @@ console.log("[workers.supabase.js] archivo cargado");
           colaborador: worker.full_name || "",
           fecha: new Date(),
           examen: "SIN EXAMEN REGISTRADO",
-
           peso: null,
           talla: null,
           cintura: null,
@@ -307,8 +299,13 @@ console.log("[workers.supabase.js] archivo cargado");
       return;
     }
 
-    if (!window.supabase) {
-      setTimeout(init, 400);
+    if (!window.db) {
+      console.error("[workers.supabase.js] window.db no está disponible");
+      tableBody.innerHTML = `
+        <div style="padding:40px; text-align:center; color:var(--muted)">
+          Error: no se pudo inicializar la conexión con Supabase.
+        </div>
+      `;
       return;
     }
 
@@ -320,6 +317,7 @@ console.log("[workers.supabase.js] archivo cargado");
   async function loadAllData() {
     try {
       console.log("[workers.supabase.js] cargando datos...");
+
       tableBody.innerHTML = `
         <div style="padding:40px; text-align:center; color:var(--muted)">
           Cargando trabajadores y documentación...
@@ -330,8 +328,8 @@ console.log("[workers.supabase.js] archivo cargado");
         { data: workers, error: workersError },
         { data: exams, error: examsError }
       ] = await Promise.all([
-        supabase.from("workers").select("*").order("full_name", { ascending: true }),
-        supabase.from("medical_exam_records").select("*")
+        window.db.from("workers").select("*").order("full_name", { ascending: true }),
+        window.db.from("medical_exam_records").select("*")
       ]);
 
       if (workersError) throw workersError;
@@ -580,7 +578,7 @@ console.log("[workers.supabase.js] archivo cargado");
         if (!newFaena || !newFaena.trim()) return;
 
         try {
-          const { error } = await supabase
+          const { error } = await window.db
             .from("workers")
             .update({ company_name: newFaena.trim() })
             .eq("id", id);
@@ -615,7 +613,7 @@ console.log("[workers.supabase.js] archivo cargado");
       throw new Error("No hay trabajadores seleccionados.");
     }
 
-    const { data: workers, error: workersError } = await supabase
+    const { data: workers, error: workersError } = await window.db
       .from("workers")
       .select("*")
       .in("id", ids)
@@ -631,7 +629,7 @@ console.log("[workers.supabase.js] archivo cargado");
       return { workers: workers || [], exams: [] };
     }
 
-    const { data: exams, error: examsError } = await supabase
+    const { data: exams, error: examsError } = await window.db
       .from("medical_exam_records")
       .select("*")
       .eq("credential_category", "examen")
@@ -846,4 +844,6 @@ console.log("[workers.supabase.js] archivo cargado");
       }
     };
   }
+
+  init();
 })();
