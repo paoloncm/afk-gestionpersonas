@@ -8,7 +8,9 @@
     return;
   }
 
-  window.db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  window.db = client;
+  window.supabase = client;
 
   console.log("[supabase.js] cliente inicializado");
 })();
