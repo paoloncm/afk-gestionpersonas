@@ -1,3 +1,5 @@
+console.log("[workers.supabase.js] archivo cargado");
+
 (async function () {
   const $ = (s) => document.querySelector(s);
   const tableBody = $("#workersTable");
@@ -236,7 +238,6 @@
         return;
       }
 
-      // TODOS los exámenes del trabajador
       workerExams.forEach((exam) => {
         rows.push({
           obs: exam.obs || exam.observation || "",
@@ -311,12 +312,14 @@
       return;
     }
 
+    console.log("[workers.supabase.js] init ok");
     setupFilters();
     await loadAllData();
   }
 
   async function loadAllData() {
     try {
+      console.log("[workers.supabase.js] cargando datos...");
       tableBody.innerHTML = `
         <div style="padding:40px; text-align:center; color:var(--muted)">
           Cargando trabajadores y documentación...
@@ -333,6 +336,9 @@
 
       if (workersError) throw workersError;
       if (examsError) throw examsError;
+
+      console.log("[workers.supabase.js] workers:", workers?.length || 0);
+      console.log("[workers.supabase.js] exams:", exams?.length || 0);
 
       allWorkers = workers || [];
       allExamRecords = exams || [];
@@ -625,9 +631,6 @@
       return { workers: workers || [], exams: [] };
     }
 
-    // IMPORTANTE:
-    // no filtrar por .in("rut", selectedRuts) porque puede fallar si
-    // en una tabla el rut viene con puntos y en otra sin puntos.
     const { data: exams, error: examsError } = await supabase
       .from("medical_exam_records")
       .select("*")
@@ -639,6 +642,10 @@
     const filteredExams = (exams || []).filter((exam) =>
       selectedRuts.some((rut) => sameRut(rut, exam.rut))
     );
+
+    console.log("[export] workers:", workers);
+    console.log("[export] selectedRuts:", selectedRuts);
+    console.log("[export] filteredExams:", filteredExams);
 
     return {
       workers: workers || [],
@@ -677,6 +684,8 @@
     }
 
     const rows = buildExamRows(workers, exams);
+
+    console.log("[export] rows:", rows);
 
     if (!rows.length) {
       alert("No se encontraron datos para generar la planilla.");
