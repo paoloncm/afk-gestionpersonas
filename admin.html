@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AFK RRHH — Administración de Clientes</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+  <div class="dashboard">
+    <aside class="sidebar" aria-label="Navegación">
+      <div class="brand">
+        <div class="logo">AFK</div>
+        <span>RRHH</span>
+      </div>
+      <nav class="nav">
+        <div class="nav-category">Administración</div>
+        <a class="is-active" href="admin.html"><span class="label">Mapeo de Clientes</span></a>
+        <div class="nav-category">Gestión</div>
+        <a href="index.html"><span class="label">Volver al Dashboard</span></a>
+      </nav>
+    </aside>
+
+    <header class="topbar">
+      <button class="btn-menu">☰</button>
+      <div style="margin-left:auto;">
+        <strong>Panel de Administración</strong>
+      </div>
+    </header>
+
+    <main class="main">
+      <h1 class="h1">Configuración de Acceso por Cliente</h1>
+      <p style="color:var(--muted); margin-bottom:24px;">Vincula los IDs de carpeta de Google Drive con los UUID de
+        usuario de Supabase.</p>
+
+      <section class="grid-2">
+        <div class="card">
+          <div class="card__head"><strong>Vincular Nuevo Cliente</strong></div>
+          <div class="card__body">
+            <form id="mappingForm">
+              <div class="form-group">
+                <label>User UUID (de Supabase Auth)</label>
+                <input id="user_id" class="input" placeholder="Ej: cca91b87-eb50-..." required>
+              </div>
+              <div class="form-group">
+                <label>ID Carpeta Google Drive (del Webhook)</label>
+                <input id="folder_id" class="input" placeholder="Ej: 1f71ZCKEx_YwM-..." required>
+              </div>
+              <div class="form-group">
+                <label>Descripción / Nombre Cliente</label>
+                <input id="description" class="input" placeholder="Ej: Minera Norte">
+              </div>
+              <button type="submit" class="btn btn--primary" style="width:100%">Guardar Vinculación</button>
+            </form>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card__head"><strong>Mapeos Existentes</strong></div>
+          <div class="card__body">
+            <div id="mappingList" style="display:flex; flex-direction:column; gap:12px;">
+              <p class="text-muted">Cargando mapeos...</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase.js"></script>
+  <script src="auth.js"></script>
+  <script>
+    // admin.supabase.js - Lógica simplificada directamente aquí o en archivo separado
+    (function () {
+      const $ = (s) => document.querySelector(s);
+      const form = $('#mappingForm');
+      const list = $('#mappingList');
+
+      async function loadMappings() {
+        try {
+          const { data, error } = await window.supabase
+            .from('user_mappings')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+          if (error) throw error;
+
+          if (!data || data.length === 0) {
+            list.innerHTML = '<p class="text-muted">No hay mapeos configurados.</p>';
+            return;
+          }
+
+          list.innerHTML = data.map(m => `
+            <div class="card" style="background:rgba(0,0,0,0.2); padding:12px; border-radius:12px;">
+              <div style="display:flex; justify-content:space-between; align-items:start;">
+                <div>
+                  <strong>${m.description || 'Sin nombre'}</strong><br>
+                  <span style="font-size:11px; color:var(--muted)">USER: ${m.user_id}</span><br>
+                  <span style="font-size:11px; color:var(--muted)">FOLDER: ${m.folder_id}</span>
+                </div>
+                <button class="btn btn--mini btn-del" data-id="${m.id}" style="color:#f87171">X</button>
+              </div>
+            </div>
+          `).join('');
+
+          // Eventos de eliminar
+          document.querySelectorAll('.btn-del').forEach(btn => {
+            btn.onclick = async () => {
+              if (!confirm('¿Eliminar este mapeo?')) return;
+              const { error } = await window.supabase.from('user_mappings').delete().eq('id', btn.dataset.id);
+              if (error) alert(error.message);
+              else loadMappings();
+            };
+          });
+
+        } catch (err) {
+          list.innerHTML = `<p style="color:#f87171">Error: ${err.message}</p>`;
+        }
+      }
+
+      form.onsubmit = async (e) => {
+        e.preventDefault();
+        const btn = form.querySelector('button');
+        btn.disabled = true;
+
+        try {
+          const { error } = await window.supabase
+            .from('user_mappings')
+            .insert({
+              user_id: $('#user_id').value.trim(),
+              folder_id: $('#folder_id').value.trim(),
+              description: $('#description').value.trim()
+            });
+
+          if (error) throw error;
+
+          form.reset();
+          loadMappings();
+        } catch (err) {
+          alert('Error al guardar: ' + err.message);
+        } finally {
+          btn.disabled = false;
+        }
+      };
+
+      document.addEventListener('DOMContentLoaded', loadMappings);
+    })();
+  </script>
+</body>
+
+</html>

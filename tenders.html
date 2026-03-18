@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AFK RRHH — Licitaciones</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+  <div class="dashboard">
+    <aside class="sidebar" aria-label="Navegación">
+      <div class="brand">
+        <div class="logo">AFK</div>
+        <span>RRHH</span>
+      </div>
+      <nav class="nav">
+        <div class="nav-category">Gestión</div>
+        <a href="index.html"><span class="label">Dashboard</span></a>
+        <a href="workers.html"><span class="label">Trabajadores</span></a>
+        <a class="is-active" href="tenders.html"><span class="label">Licitaciones</span></a>
+        <a href="documents.html"><span class="label">Documentos</span></a>
+      </nav>
+    </aside>
+
+    <header class="topbar">
+      <button class="btn-menu">☰</button>
+      <div style="margin-left:auto;">
+        <button id="btnNewTender" class="btn btn--primary">+ Nueva Licitación</button>
+      </div>
+    </header>
+
+    <main class="main">
+      <h1 class="h1">Gestión de Licitaciones</h1>
+      <p class="text-muted">Define requerimientos y encuentra trabajadores aptos para futuros proyectos.</p>
+
+      <section id="tendersList" class="grid-3" style="margin-top:24px;">
+        <p>Cargando licitaciones...</p>
+      </section>
+    </main>
+
+    <!-- Modal Nueva Licitación -->
+    <div id="tenderModal" class="modal">
+      <div class="modal__content" style="max-width:600px">
+        <div class="modal__header">
+          <h2 class="h1">Configurar Licitación</h2>
+          <button class="close-modal">&times;</button>
+        </div>
+        <div class="modal__body">
+          <form id="tenderForm">
+            <div class="form-group">
+              <label>Nombre del Proyecto / Licitación</label>
+              <input name="name" class="input" placeholder="Ej: Mantenimiento Planta Norte 2024" required>
+            </div>
+            <div class="form-group">
+              <label>Descripción</label>
+              <textarea name="description" class="input" style="height:80px" placeholder="Detalles del proyecto..."></textarea>
+            </div>
+            
+            <div class="form-group">
+              <label>Requerimientos de Salud / Certificaciones</label>
+              <div id="reqContainer" style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px;">
+                <!-- Reqs dinámicos -->
+              </div>
+              <button type="button" id="btnAddReq" class="btn btn--mini">+ Añadir Requisito</button>
+            </div>
+
+            <button type="submit" class="btn btn--primary" style="width:100%; margin-top:20px;">Guardar Licitación</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Matchmaking (Resultados) -->
+    <div id="matchModal" class="modal">
+      <div class="modal__content" style="max-width:800px">
+        <div class="modal__header">
+          <h2 id="matchTitle" class="h1">Buscando Trabajadores Aptos...</h2>
+          <button class="close-modal">&times;</button>
+        </div>
+        <div class="modal__body">
+          <div id="matchResults" class="table">
+            <div class="t-head">
+              <div class="t-col-name">Trabajador</div>
+              <div class="t-col-prof">Estado</div>
+              <div class="t-col-status">Detalle</div>
+            </div>
+            <div id="matchBody"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase.js"></script>
+  <script src="auth.js"></script>
+  <script src="tenders.supabase.js"></script>
+</body>
+</html>

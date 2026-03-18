@@ -40,6 +40,19 @@
     // Buscar la barra lateral o el header para añadir el botón de logout
     const nav = document.querySelector('.nav');
     if (nav && !document.getElementById('btnLogout')) {
+      // Inyectar Links adicionales
+      if (!document.querySelector('a[href="tenders.html"]')) {
+        const tendersLink = document.createElement('a');
+        tendersLink.href = 'tenders.html';
+        tendersLink.innerHTML = '<span class="label">Licitaciones</span>';
+        nav.appendChild(tendersLink);
+      }
+
+      const adminLink = document.createElement('a');
+      adminLink.href = 'admin.html';
+      adminLink.innerHTML = '<span class="label">Administrar Clientes</span>';
+      nav.appendChild(adminLink);
+
       const logoutBtn = document.createElement('a');
       logoutBtn.id = 'btnLogout';
       logoutBtn.href = '#';
