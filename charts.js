@@ -227,14 +227,27 @@
     });
   }
 
+  function getLatestExamsPerWorker(exams) {
+    const latest = {};
+    exams.forEach(e => {
+      const id = e.worker_id || e.rut;
+      if (!id) return;
+      if (!latest[id] || new Date(e.exam_date) > new Date(latest[id].exam_date)) {
+        latest[id] = e;
+      }
+    });
+    return Object.values(latest);
+  }
+
   function renderWorkerIMC(exams) {
     const ctx = document.getElementById("chartIMC");
     if (!ctx) return;
     destroyIfExists(chartIMC);
 
+    const latestExams = getLatestExamsPerWorker(exams);
     const bins = { "Bajo": 0, "Normal": 0, "Sobrepeso": 0, "Obeso I": 0, "Obeso II+": 0 };
     
-    exams.forEach(e => {
+    latestExams.forEach(e => {
       const imc = num(e.imc);
       if (!Number.isFinite(imc)) return;
       if (imc < 18.5) bins["Bajo"]++;
@@ -268,7 +281,11 @@
         plugins: { legend: { display: false } },
         scales: {
           x: { ticks: { color: "#b3b7bd" }, grid: { display: false } },
-          y: { beginAtZero: true, ticks: { color: "#b3b7bd" }, grid: { color: "rgba(255,255,255,0.05)" } }
+          y: { 
+            beginAtZero: true, 
+            ticks: { color: "#b3b7bd", stepSize: 1 }, 
+            grid: { color: "rgba(255,255,255,0.05)" } 
+          }
         }
       }
     });
@@ -279,13 +296,14 @@
     if (!ctx) return;
     destroyIfExists(chartPressure);
 
-    const validExams = exams.map(e => {
+    const latestExams = getLatestExamsPerWorker(exams);
+    const validExams = latestExams.map(e => {
       const p = String(e.presion || "").split("/");
       if (p.length !== 2) return null;
       return { 
         x: num(p[0]), 
         y: num(p[1]),
-        worker_id: e.worker_id, // Necesario para drill-down
+        worker_id: e.worker_id,
         full_name: e.full_name
       };
     }).filter(p => p && Number.isFinite(p.x) && Number.isFinite(p.y));
@@ -294,7 +312,7 @@
       type: "scatter",
       data: {
         datasets: [{
-          label: "Tomas de Presión",
+          label: "Última toma de Presión",
           data: validExams,
           backgroundColor: "rgba(230, 126, 34, 0.6)",
           borderColor: "#e67e22",
