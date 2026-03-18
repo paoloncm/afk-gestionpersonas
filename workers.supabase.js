@@ -29,20 +29,46 @@
     return Number.isFinite(n) ? n : null;
   }
 
-  function sameRut(a, b) {
-    const clean = (v) => String(v || "")
+  function normalizeRut(value) {
+    return String(value || "")
       .replace(/\./g, "")
       .replace(/-/g, "")
+      .replace(/\s+/g, "")
       .trim()
       .toUpperCase();
+  }
 
-    return clean(a) && clean(a) === clean(b);
+  function sameRut(a, b) {
+    const ra = normalizeRut(a);
+    const rb = normalizeRut(b);
+    return ra && rb && ra === rb;
   }
 
   function isInfpsico(record) {
     const examType = String(record?.exam_type || "").toLowerCase();
     const name = String(record?.credential_name || "").toUpperCase();
     return examType === "infpsico" || name.includes("INFPSICO");
+  }
+
+  function formatDate(dateStr) {
+    if (!dateStr) return "N/A";
+    const d = new Date(dateStr);
+    if (Number.isNaN(d.getTime())) return "N/A";
+    return d.toLocaleDateString("es-CL");
+  }
+
+  function toDateOrEmpty(value) {
+    if (!value) return "";
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? "" : d;
+  }
+
+  function sortExamsNewest(exams) {
+    return [...exams].sort((a, b) => {
+      const da = a.exam_date ? new Date(a.exam_date).getTime() : 0;
+      const db = b.exam_date ? new Date(b.exam_date).getTime() : 0;
+      return db - da;
+    });
   }
 
   function getWorkerDocs(workerId) {
@@ -145,20 +171,6 @@
     };
   }
 
-  function toDateOrEmpty(value) {
-    if (!value) return "";
-    const d = new Date(value);
-    return Number.isNaN(d.getTime()) ? "" : d;
-  }
-
-  function sortExamsNewest(exams) {
-    return [...exams].sort((a, b) => {
-      const da = a.exam_date ? new Date(a.exam_date).getTime() : 0;
-      const db = b.exam_date ? new Date(b.exam_date).getTime() : 0;
-      return db - da;
-    });
-  }
-
   function buildExamRows(workers, examRecords) {
     const rows = [];
 
@@ -227,7 +239,7 @@
       // TODOS los exámenes del trabajador
       workerExams.forEach((exam) => {
         rows.push({
-          obs: exam.obs || "",
+          obs: exam.obs || exam.observation || "",
           faena: exam.faena || worker.company_name || "",
           rut: exam.rut || worker.rut || "",
           colaborador: exam.full_name || worker.full_name || "",
@@ -302,8 +314,6 @@
     setupFilters();
     await loadAllData();
   }
-
-  init();
 
   async function loadAllData() {
     try {
@@ -611,18 +621,28 @@
       .map((w) => w.rut)
       .filter(Boolean);
 
+    if (!selectedRuts.length) {
+      return { workers: workers || [], exams: [] };
+    }
+
+    // IMPORTANTE:
+    // no filtrar por .in("rut", selectedRuts) porque puede fallar si
+    // en una tabla el rut viene con puntos y en otra sin puntos.
     const { data: exams, error: examsError } = await supabase
       .from("medical_exam_records")
       .select("*")
-      .in("rut", selectedRuts)
       .eq("credential_category", "examen")
       .order("exam_date", { ascending: false });
 
     if (examsError) throw examsError;
 
+    const filteredExams = (exams || []).filter((exam) =>
+      selectedRuts.some((rut) => sameRut(rut, exam.rut))
+    );
+
     return {
       workers: workers || [],
-      exams: exams || []
+      exams: filteredExams
     };
   }
 
@@ -633,7 +653,7 @@
 
     const { workers, exams } = await fetchSelectedWorkersForExamSheet();
 
-    const nombreProyecto = document.querySelector("#projectName")?.value || "";
+    const nombreProyecto = document.querySelector("#projectName")?.value?.trim() || "";
 
     if (!nombreProyecto) {
       alert("Completa el Nombre del Proyecto.");
@@ -657,6 +677,11 @@
     }
 
     const rows = buildExamRows(workers, exams);
+
+    if (!rows.length) {
+      alert("No se encontraron datos para generar la planilla.");
+      return;
+    }
 
     worksheet.getCell("G1").value = nombreProyecto;
 
@@ -741,7 +766,7 @@
       { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }
     );
 
-    const safeProject = (nombreProyecto || "Proyecto").replace(/[^\w\-]+/g, "_");
+    const safeProject = nombreProyecto.replace(/[^\w\-]+/g, "_");
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
     link.download = `PLANILLA_Examenes_${safeProject}.xlsx`;
