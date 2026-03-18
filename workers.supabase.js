@@ -338,11 +338,22 @@ console.log("[workers.supabase.js] archivo cargado");
       console.log("[workers.supabase.js] workers:", workers?.length || 0);
       console.log("[workers.supabase.js] exams:", exams?.length || 0);
 
-      allWorkers = workers || [];
+      allWorkers = (workers || []).map(w => ({
+        ...w,
+        _complianceSummary: getComplianceSummary(w.id)
+      }));
       allExamRecords = exams || [];
 
       renderWorkers(allWorkers);
       updateTopSummary(allWorkers);
+
+      // Renderizar analíticas si la función existe
+      if (window.renderWorkerAnalytics) {
+        window.renderWorkerAnalytics(allWorkers, allExamRecords);
+        $("#analyticsSection").style.display = "block";
+      }
+
+      setupAnalyticsToggle();
     } catch (err) {
       console.error("Error cargando datos:", err);
       tableBody.innerHTML = `
@@ -351,6 +362,18 @@ console.log("[workers.supabase.js] archivo cargado");
         </div>
       `;
     }
+  }
+
+  function setupAnalyticsToggle() {
+    const btn = $("#toggleAnalytics");
+    const section = $("#analyticsBody");
+    if (!btn || !section) return;
+
+    btn.onclick = () => {
+      const isHidden = section.style.display === "none";
+      section.style.display = isHidden ? "block" : "none";
+      btn.textContent = isHidden ? "Ver menos" : "Ver más";
+    };
   }
 
   function updateTopSummary(items) {

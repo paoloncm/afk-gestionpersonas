@@ -8,6 +8,9 @@
   let chartScatter = null;
   let chartProfesiones = null;
   let chartPipeline = null;
+  let chartCompliance = null;
+  let chartIMC = null;
+  let chartPressure = null;
 
   function destroyIfExists(chart) {
     if (chart) chart.destroy();
@@ -170,6 +173,131 @@
           x: { ticks: { color: "#b3b7bd" }, grid: { color: "rgba(255,255,255,.06)" } },
           y: { ticks: { color: "#b3b7bd" }, grid: { color: "rgba(255,255,255,.06)" }, beginAtZero: true }
         }
+      }
+    });
+  }
+
+  window.renderWorkerAnalytics = function (workers, exams) {
+    renderWorkerCompliance(workers);
+    renderWorkerIMC(exams);
+    renderWorkerPressure(exams);
+  };
+
+  function renderWorkerCompliance(workers) {
+    const ctx = document.getElementById("chartCompliance");
+    if (!ctx) return;
+    destroyIfExists(chartCompliance);
+
+    // Contar estados basados en el resumen de cumplimiento
+    const counts = { "Habilitado": 0, "En riesgo": 0, "No habilitado": 0, "Sin información": 0 };
+    
+    workers.forEach(w => {
+      const s = w._complianceSummary;
+      if (!s) return;
+      if (s.faenaText === "Habilitado") counts["Habilitado"]++;
+      else if (s.faenaText === "En riesgo") counts["En riesgo"]++;
+      else if (s.faenaText === "No habilitado") counts["No habilitado"]++;
+      else counts["Sin información"]++;
+    });
+
+    chartCompliance = new Chart(ctx, {
+      type: "doughnut",
+      data: {
+        labels: Object.keys(counts),
+        datasets: [{
+          data: Object.values(counts),
+          backgroundColor: ["#2ecc71", "#f1c40f", "#e74c3c", "#95a5a6"],
+          borderWidth: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: "bottom", labels: { color: "#b3b7bd", padding: 20 } }
+        }
+      }
+    });
+  }
+
+  function renderWorkerIMC(exams) {
+    const ctx = document.getElementById("chartIMC");
+    if (!ctx) return;
+    destroyIfExists(chartIMC);
+
+    const bins = { "Bajo": 0, "Normal": 0, "Sobrepeso": 0, "Obeso I": 0, "Obeso II+": 0 };
+    
+    exams.forEach(e => {
+      const imc = num(e.imc);
+      if (!Number.isFinite(imc)) return;
+      if (imc < 18.5) bins["Bajo"]++;
+      else if (imc < 25) bins["Normal"]++;
+      else if (imc < 30) bins["Sobrepeso"]++;
+      else if (imc < 35) bins["Obeso I"]++;
+      else bins["Obeso II+"]++;
+    });
+
+    chartIMC = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: Object.keys(bins),
+        datasets: [{
+          label: "Trabajadores",
+          data: Object.values(bins),
+          backgroundColor: "#3498db",
+          borderRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: "#b3b7bd" }, grid: { display: false } },
+          y: { beginAtZero: true, ticks: { color: "#b3b7bd" }, grid: { color: "rgba(255,255,255,0.05)" } }
+        }
+      }
+    });
+  }
+
+  function renderWorkerPressure(exams) {
+    const ctx = document.getElementById("chartPressure");
+    if (!ctx) return;
+    destroyIfExists(chartPressure);
+
+    const data = exams.map(e => {
+      const p = String(e.presion || "").split("/");
+      if (p.length !== 2) return null;
+      return { x: num(p[0]), y: num(p[1]) };
+    }).filter(p => p && Number.isFinite(p.x) && Number.isFinite(p.y));
+
+    chartPressure = new Chart(ctx, {
+      type: "scatter",
+      data: {
+        datasets: [{
+          label: "Tomas de Presión",
+          data: data,
+          backgroundColor: "rgba(230, 126, 34, 0.6)",
+          borderColor: "#e67e22",
+          pointRadius: 5
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: { 
+            title: { display: true, text: "Sistólica", color: "#b3b7bd" }, 
+            ticks: { color: "#b3b7bd" },
+            grid: { color: "rgba(255,255,255,0.05)" }
+          },
+          y: { 
+            title: { display: true, text: "Diastólica", color: "#b3b7bd" }, 
+            ticks: { color: "#b3b7bd" },
+            grid: { color: "rgba(255,255,255,0.05)" }
+          }
+        },
+        plugins: { legend: { labels: { color: "#b3b7bd" } } }
       }
     });
   }

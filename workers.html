@@ -72,6 +72,29 @@
         </div>
       </div>
 
+      <div id="analyticsSection" class="card" style="margin-bottom: 20px; display: none;">
+        <div class="card__head" style="display:flex; justify-content:space-between; align-items:center;">
+          <strong>Análisis y Estadísticas</strong>
+          <button id="toggleAnalytics" class="btn btn--mini">Ver menos</button>
+        </div>
+        <div class="card__body" id="analyticsBody">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+            <div style="height: 300px;">
+              <h4 style="margin-bottom:10px; font-size:14px; color:var(--muted); text-align:center;">Estado de Habilitación</h4>
+              <canvas id="chartCompliance"></canvas>
+            </div>
+            <div style="height: 300px;">
+              <h4 style="margin-bottom:10px; font-size:14px; color:var(--muted); text-align:center;">Distribución de IMC</h4>
+              <canvas id="chartIMC"></canvas>
+            </div>
+            <div style="height: 300px;">
+              <h4 style="margin-bottom:10px; font-size:14px; color:var(--muted); text-align:center;">Presión Arterial</h4>
+              <canvas id="chartPressure"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="card">
         <div id="workersTable" class="table workers">
           <div class="loading-state" style="padding:40px; text-align:center; color:var(--muted);">
@@ -99,7 +122,8 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase.js?v=6.0"></script>
   <script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
-
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="charts.js?v=2.1"></script>
   <script defer src="workers.supabase.js?v=6.0"></script>
   <script defer src="chat.js?v=2.0"></script>
   <script defer src="responsive.js?v=2.0"></script>
