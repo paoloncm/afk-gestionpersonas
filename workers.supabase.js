@@ -851,7 +851,7 @@ console.log("[workers.supabase.js] archivo cargado");
     resetBtn.onclick = () => {
       searchInput.value = "";
       statusFilter.value = "";
-      renderWorkers(allWorkers);
+      applyFilters();
     };
   }
 
@@ -871,6 +871,42 @@ console.log("[workers.supabase.js] archivo cargado");
       }
     };
   }
+
+  window.onChartDrillDown = function (type, value) {
+    let filtered = [];
+    if (type === "compliance") {
+      filtered = allWorkers.filter(w => {
+        const s = w._complianceSummary;
+        if (!s) return value === "Sin información";
+        return s.faenaText === value;
+      });
+    } else if (type === "imc") {
+      filtered = allWorkers.filter(w => {
+        const exams = allExamRecords.filter(e => sameRut(e.rut, w.rut));
+        const last = exams.sort((a,b) => new Date(b.exam_date) - new Date(a.exam_date))[0];
+        if (!last) return false;
+        const imcNum = num(last.imc);
+        if (value === "Bajo") return imcNum < 18.5;
+        if (value === "Normal") return imcNum >= 18.5 && imcNum < 25;
+        if (value === "Sobrepeso") return imcNum >= 25 && imcNum < 30;
+        if (value === "Obeso I") return imcNum >= 30 && imcNum < 35;
+        if (value === "Obeso II+") return imcNum >= 35;
+        return false;
+      });
+    } else if (type === "worker_name") {
+      filtered = allWorkers.filter(w => 
+        String(w.full_name || "").toLowerCase().includes(String(value || "").toLowerCase())
+      );
+    }
+
+    if (filtered.length > 0) {
+      document.querySelector("#workerSearch").value = "";
+      document.querySelector("#filterStatus").value = "";
+      renderWorkers(filtered);
+      updateTopSummary(filtered);
+      document.getElementById("workersTable").scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
 
   init();
 })();

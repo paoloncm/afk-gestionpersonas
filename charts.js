@@ -213,6 +213,13 @@
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        onClick: (event, elements) => {
+          if (elements.length > 0) {
+            const index = elements[0].index;
+            const label = Object.keys(counts)[index];
+            if (window.onChartDrillDown) window.onChartDrillDown("compliance", label);
+          }
+        },
         plugins: {
           legend: { position: "bottom", labels: { color: "#b3b7bd", padding: 20 } }
         }
@@ -251,6 +258,13 @@
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        onClick: (event, elements) => {
+          if (elements.length > 0) {
+            const index = elements[0].index;
+            const label = Object.keys(bins)[index];
+            if (window.onChartDrillDown) window.onChartDrillDown("imc", label);
+          }
+        },
         plugins: { legend: { display: false } },
         scales: {
           x: { ticks: { color: "#b3b7bd" }, grid: { display: false } },
@@ -265,10 +279,15 @@
     if (!ctx) return;
     destroyIfExists(chartPressure);
 
-    const data = exams.map(e => {
+    const validExams = exams.map(e => {
       const p = String(e.presion || "").split("/");
       if (p.length !== 2) return null;
-      return { x: num(p[0]), y: num(p[1]) };
+      return { 
+        x: num(p[0]), 
+        y: num(p[1]),
+        worker_id: e.worker_id, // Necesario para drill-down
+        full_name: e.full_name
+      };
     }).filter(p => p && Number.isFinite(p.x) && Number.isFinite(p.y));
 
     chartPressure = new Chart(ctx, {
@@ -276,15 +295,34 @@
       data: {
         datasets: [{
           label: "Tomas de Presión",
-          data: data,
+          data: validExams,
           backgroundColor: "rgba(230, 126, 34, 0.6)",
           borderColor: "#e67e22",
-          pointRadius: 5
+          pointRadius: 6,
+          hoverRadius: 10
         }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        plugins: {
+          legend: { labels: { color: "#b3b7bd" } },
+          tooltip: {
+            callbacks: {
+              label: (context) => {
+                const p = context.raw;
+                return `${p.full_name}: ${p.x}/${p.y}`;
+              }
+            }
+          }
+        },
+        onClick: (event, elements) => {
+          if (elements.length > 0) {
+            const index = elements[0].index;
+            const dataPoint = validExams[index];
+            if (window.onChartDrillDown) window.onChartDrillDown("worker_name", dataPoint.full_name);
+          }
+        },
         scales: {
           x: { 
             title: { display: true, text: "Sistólica", color: "#b3b7bd" }, 
@@ -296,8 +334,7 @@
             ticks: { color: "#b3b7bd" },
             grid: { color: "rgba(255,255,255,0.05)" }
           }
-        },
-        plugins: { legend: { labels: { color: "#b3b7bd" } } }
+        }
       }
     });
   }
