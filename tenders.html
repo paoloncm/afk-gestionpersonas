@@ -49,13 +49,14 @@
         </div>
         <div class="modal__body">
           <form id="tenderForm">
+            <input type="hidden" id="tenderId" name="id">
             <div class="form-group">
               <label>Nombre del Proyecto / Licitación</label>
-              <input name="name" class="input" placeholder="Ej: Mantenimiento Planta Norte 2024" required>
+              <input id="tenderName" name="name" class="input" placeholder="Ej: Mantenimiento Planta Norte 2024" required>
             </div>
             <div class="form-group">
               <label>Descripción</label>
-              <textarea name="description" class="input" style="height:80px" placeholder="Detalles del proyecto..."></textarea>
+              <textarea id="tenderDesc" name="description" class="input" style="height:80px" placeholder="Detalles del proyecto..."></textarea>
             </div>
             
             <div class="form-group">

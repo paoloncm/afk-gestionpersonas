@@ -8,6 +8,18 @@
   const reqContainer = $('#reqContainer');
   const matchModal = $('#matchModal');
   const matchBody = $('#matchBody');
+  const tenderIdInput = $('#tenderId');
+  const tenderNameInput = $('#tenderName');
+  const tenderDescInput = $('#tenderDesc');
+
+  function normalizeText(text) {
+    if (!text) return '';
+    return text.toString()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim();
+  }
 
   // --- GESTIÓN DE INTERFAZ ---
 
@@ -19,9 +31,10 @@
   });
 
   $('#btnNewTender').onclick = () => {
+    tenderIdInput.value = '';
     tenderForm.reset();
     reqContainer.innerHTML = '';
-    addReqInput(); // Al menos uno
+    addReqInput();
     openModal(tenderModal);
   };
 
@@ -59,10 +72,14 @@
 
     tendersList.innerHTML = data.map(t => `
       <div class="card tender-card" data-id="${t.id}">
-        <div class="card__head">
-          <strong style="font-size:1.1rem">${t.name}</strong>
-        </div>
         <div class="card__body">
+          <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:10px;">
+            <strong style="font-size:1.1rem">${t.name}</strong>
+            <div style="display:flex; gap:6px;">
+              <button class="btn btn--mini btn-edit" data-id="${t.id}" title="Editar">✏️</button>
+              <button class="btn btn--mini btn-delete" data-id="${t.id}" title="Eliminar" style="color:#f87171">🗑️</button>
+            </div>
+          </div>
           <p style="font-size:13px; color:var(--muted); margin-bottom:12px;">${t.description || 'Sin descripción'}</p>
           <div style="display:flex; flex-wrap:wrap; gap:4px; margin-bottom:16px;">
             ${t.requirements.map(r => `<span class="badge" style="background:rgba(255,255,255,0.1)">${r}</span>`).join('')}
@@ -72,27 +89,61 @@
       </div>
     `).join('');
 
-    // Eventos de Matchmaking
+    // Eventos
     document.querySelectorAll('.btn-match').forEach(btn => {
       btn.onclick = () => runMatchmaking(data.find(x => x.id === btn.dataset.id));
     });
+
+    document.querySelectorAll('.btn-edit').forEach(btn => {
+      btn.onclick = () => editTender(data.find(x => x.id === btn.dataset.id));
+    });
+
+    document.querySelectorAll('.btn-delete').forEach(btn => {
+      btn.onclick = () => deleteTender(btn.dataset.id);
+    });
+  }
+
+  async function deleteTender(id) {
+    if (!confirm('¿Estás seguro de eliminar esta licitación?')) return;
+    const { error } = await window.supabase.from('tenders').delete().eq('id', id);
+    if (error) alert(error.message);
+    else loadTenders();
+  }
+
+  function editTender(tender) {
+    tenderIdInput.value = tender.id;
+    tenderNameInput.value = tender.name;
+    tenderDescInput.value = tender.description || '';
+    reqContainer.innerHTML = '';
+    if (tender.requirements && tender.requirements.length > 0) {
+      tender.requirements.forEach(r => addReqInput(r));
+    } else {
+      addReqInput();
+    }
+    openModal(tenderModal);
   }
 
   tenderForm.onsubmit = async (e) => {
     e.preventDefault();
-    const formData = new FormData(tenderForm);
+    const id = tenderIdInput.value;
+    const name = tenderNameInput.value;
+    const description = tenderDescInput.value;
     const reqs = Array.from(document.querySelectorAll('.req-input')).map(i => i.value.trim()).filter(v => v);
 
     const { data: { user } } = await window.supabase.auth.getUser();
 
-    const { error } = await window.supabase.from('tenders').insert({
-      name: formData.get('name'),
-      description: formData.get('description'),
-      requirements: reqs,
-      user_id: user.id
-    });
+    let res;
+    if (id) {
+      res = await window.supabase.from('tenders').update({
+        name, description, requirements: reqs
+      }).eq('id', id);
+    } else {
+      res = await window.supabase.from('tenders').insert({
+        name, description, requirements: reqs, user_id: user.id
+      });
+    }
 
-    if (error) alert(error.message);
+    if (res.error) alert(res.error.message);
     else {
       closeModal(tenderModal);
       loadTenders();
@@ -139,14 +190,14 @@
         const today = new Date();
 
         tender.requirements.forEach(req => {
-          const reqLower = req.toLowerCase().trim();
+          const reqNorm = normalizeText(req);
           
           // Buscamos si tiene algún documento que coincida con el requerimiento (por nombre o tipo)
           const found = myDocs.find(d => {
-            const nameMatch = (d.credential_name || "").toLowerCase().includes(reqLower);
-            const typeMatch = (d.exam_type || "").toLowerCase().includes(reqLower);
-            const categoryMatch = (d.credential_category || "").toLowerCase().includes(reqLower);
-            return nameMatch || typeMatch || categoryMatch;
+            const nameNorm = normalizeText(d.credential_name);
+            const typeNorm = normalizeText(d.exam_type);
+            const catNorm = normalizeText(d.credential_category);
+            return nameNorm.includes(reqNorm) || typeNorm.includes(reqNorm) || catNorm.includes(reqNorm);
           });
 
           if (!found) {
