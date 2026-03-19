@@ -111,30 +111,51 @@
       const { data: workers, error: wErr } = await window.supabase.from('workers').select('*');
       if (wErr) throw wErr;
 
-      // 2. Obtener TODAS las credenciales (simplificamos para procesar en JS)
-      const { data: creds, error: cErr } = await window.supabase
-        .from('worker_credentials')
-        .select('*')
-        .eq('result_status', 'apto');
+      // 2. Obtener TODAS las credenciales y exámenes (unificamos fuentes para máxima cobertura)
+      const [
+        { data: creds, error: cErr },
+        { data: exams, error: eErr }
+      ] = await Promise.all([
+        window.supabase.from('worker_credentials').select('*'),
+        window.supabase.from('medical_exam_records').select('*')
+      ]);
+
       if (cErr) throw cErr;
+      if (eErr) throw eErr;
+
+      const normalize = (r) => String(r || "").replace(/[^0-9kK]/g, "").toUpperCase();
 
       const results = workers.map(w => {
-        const myCreds = creds.filter(c => c.worker_id === w.id);
+        const wRutNormalized = normalize(w.rut);
+        
+        // Unificamos registros de ambas tablas que pertenezcan a este trabajador
+        const myDocs = [
+          ...(creds || []).filter(c => c.worker_id === w.id || normalize(c.rut) === wRutNormalized),
+          ...(exams || []).filter(e => normalize(e.rut) === wRutNormalized)
+        ];
+
         const missing = [];
         const expired = [];
         const today = new Date();
 
         tender.requirements.forEach(req => {
-          // Buscamos si tiene esa credencial vigente
-          const found = myCreds.find(c =>
-            c.credential_name?.toLowerCase().includes(req.toLowerCase()) ||
-            c.exam_type?.toLowerCase().includes(req.toLowerCase())
-          );
+          const reqLower = req.toLowerCase().trim();
+          
+          // Buscamos si tiene algún documento que coincida con el requerimiento (por nombre o tipo)
+          const found = myDocs.find(d => {
+            const nameMatch = (d.credential_name || "").toLowerCase().includes(reqLower);
+            const typeMatch = (d.exam_type || "").toLowerCase().includes(reqLower);
+            const categoryMatch = (d.credential_category || "").toLowerCase().includes(reqLower);
+            return nameMatch || typeMatch || categoryMatch;
+          });
 
           if (!found) {
             missing.push(req);
-          } else if (found.expiry_date && new Date(found.expiry_date) < today) {
-            expired.push(req);
+          } else {
+            // Verificar vigencia si tiene fecha de expiración
+            if (found.expiry_date && new Date(found.expiry_date) < today) {
+              expired.push(req);
+            }
           }
         });
 
