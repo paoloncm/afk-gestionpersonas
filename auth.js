@@ -37,33 +37,45 @@
   }
 
   function setupLogoutButton() {
-    // Buscar la barra lateral o el header para añadir el botón de logout
     const nav = document.querySelector('.nav');
     if (nav && !document.getElementById('btnLogout')) {
-      // Inyectar Links adicionales
-      if (!document.querySelector('a[href="tenders.html"]')) {
+      
+      // 1. Crear categoría de Configuración si no existe
+      if (!document.getElementById('navConfig')) {
+        const cat = document.createElement('div');
+        cat.id = 'navConfig';
+        cat.className = 'nav-category';
+        cat.style.marginTop = '20px';
+        cat.textContent = 'Configuración';
+        nav.appendChild(cat);
+
+        // Link de Licitaciones
         const tendersLink = document.createElement('a');
         tendersLink.href = 'tenders.html';
+        if (window.location.pathname.endsWith('tenders.html')) tendersLink.className = 'is-active';
         tendersLink.innerHTML = '<span class="label">Licitaciones</span>';
         nav.appendChild(tendersLink);
+
+        // Link de Administración
+        const adminLink = document.createElement('a');
+        adminLink.href = 'admin.html';
+        if (window.location.pathname.endsWith('admin.html')) adminLink.className = 'is-active';
+        adminLink.innerHTML = '<span class="label">Mapeo de Clientes</span>';
+        nav.appendChild(adminLink);
       }
 
-      const adminLink = document.createElement('a');
-      adminLink.href = 'admin.html';
-      adminLink.innerHTML = '<span class="label">Administrar Clientes</span>';
-      nav.appendChild(adminLink);
-
+      // 2. Botón de Cerrar Sesión (al final)
       const logoutBtn = document.createElement('a');
       logoutBtn.id = 'btnLogout';
       logoutBtn.href = '#';
       logoutBtn.style.marginTop = 'auto';
-      logoutBtn.style.color = '#f87171'; // Un rojo suave
+      logoutBtn.style.paddingTop = '20px';
+      logoutBtn.style.color = '#f87171';
       logoutBtn.innerHTML = '<span class="label">Cerrar Sesión</span>';
 
       logoutBtn.onclick = async (e) => {
         e.preventDefault();
-        const { error } = await window.supabase.auth.signOut();
-        if (error) alert("Error cerrando sesión: " + error.message);
+        await window.supabase.auth.signOut();
         window.location.href = 'login.html';
       };
 

@@ -107,15 +107,31 @@
 
       if (wErr) throw wErr;
 
-      const { data: credentials, error: cErr } = await supabase
-        .from("worker_credentials")
-        .select("*")
-        .eq("worker_id", workerId)
-        .order("expiry_date", { ascending: false });
+      const [
+        { data: credentials, error: cErr },
+        { data: exams, error: eErr }
+      ] = await Promise.all([
+        supabase
+          .from("worker_credentials")
+          .select("*")
+          .eq("worker_id", workerId)
+          .order("expiry_date", { ascending: false }),
+        supabase
+          .from("medical_exam_records")
+          .select("*")
+      ]);
 
       if (cErr) throw cErr;
+      if (eErr) throw eErr;
 
-      renderProfile(worker, credentials || []);
+      // Filtrar exámenes por RUT usando la misma lógica que el listado (workers.supabase.js)
+      const normalize = (r) => String(r || "").replace(/[^0-9kK]/g, "").toUpperCase();
+      const workerRut = normalize(worker.rut);
+      const filteredExams = (exams || []).filter(e => normalize(e.rut) === workerRut);
+
+      // Combinar ambos (usamos un Set para evitar duplicados exactos si ambos sistemas guardaron lo mismo)
+      // Pero por ahora, simplemente concatenamos para mostrar TODO lo que el sistema lee.
+      renderProfile(worker, [...(credentials || []), ...filteredExams]);
     } catch (err) {
       console.error("Error loading worker profile:", err);
       content.innerHTML = `
