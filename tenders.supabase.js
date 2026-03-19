@@ -1,6 +1,6 @@
 // tenders.supabase.js - Lógica para gestión de licitaciones y evaluación de trabajadores
 
-(function() {
+(function () {
   const $ = (s) => document.querySelector(s);
   const tendersList = $('#tendersList');
   const tenderModal = $('#tenderModal');
@@ -11,8 +11,8 @@
 
   // --- GESTIÓN DE INTERFAZ ---
 
-  function openModal(m) { m.classList.add('is-visible'); }
-  function closeModal(m) { m.classList.remove('is-visible'); }
+  function openModal(m) { m.classList.add('is-open'); }
+  function closeModal(m) { m.classList.remove('is-open'); }
 
   document.querySelectorAll('.close-modal').forEach(b => {
     b.onclick = () => { closeModal(tenderModal); closeModal(matchModal); };
@@ -126,8 +126,8 @@
 
         tender.requirements.forEach(req => {
           // Buscamos si tiene esa credencial vigente
-          const found = myCreds.find(c => 
-            c.credential_name?.toLowerCase().includes(req.toLowerCase()) || 
+          const found = myCreds.find(c =>
+            c.credential_name?.toLowerCase().includes(req.toLowerCase()) ||
             c.exam_type?.toLowerCase().includes(req.toLowerCase())
           );
 
@@ -161,10 +161,10 @@
             </span>
           </div>
           <div class="t-col-status" style="font-size:12px;">
-            ${r.isApto ? '<span style="color:var(--primary)">✓ Cumple todos los requisitos</span>' : 
-              (r.missing.length ? `<span style="color:#f87171">Faltan: ${r.missing.join(', ')}</span><br>` : '') +
-              (r.expired.length ? `<span style="color:#fbbf24">Vencidos: ${r.expired.join(', ')}</span>` : '')
-            }
+            ${r.isApto ? '<span style="color:var(--primary)">✓ Cumple todos los requisitos</span>' :
+          (r.missing.length ? `<span style="color:#f87171">Faltan: ${r.missing.join(', ')}</span><br>` : '') +
+          (r.expired.length ? `<span style="color:#fbbf24">Vencidos: ${r.expired.join(', ')}</span>` : '')
+        }
           </div>
         </div>
       `).join('');
