@@ -68,26 +68,59 @@
 
     async function loadAlerts() {
         try {
-            const { data, error } = await supabase
-                .from('worker_credentials')
-                .select(`
-                    id,
-                    credential_name,
-                    exam_type,
-                    expiry_date,
-                    result_status,
-                    is_active,
-                    is_latest,
-                    workers (
-                        full_name
-                    )
-                `)
-                .eq('is_latest', true)
-                .order('expiry_date', { ascending: true });
+            const [
+                { data: workers, error: wErr },
+                { data: creds, error: cErr },
+                { data: exams, error: eErr }
+            ] = await Promise.all([
+                supabase.from('workers').select('id, full_name, rut'),
+                supabase.from('worker_credentials').select('*').eq('is_latest', true),
+                supabase.from('medical_exam_records').select('*')
+            ]);
 
-            if (error) throw error;
-            allAlerts = data;
-            renderAlerts(data);
+            if (wErr) throw wErr;
+            if (cErr) throw cErr;
+            if (eErr) throw eErr;
+
+            const normalize = (r) => String(r || "").replace(/[^0-9kK]/g, "").toUpperCase();
+
+            // Unificar alertas
+            const alerts = [];
+            
+            // 1. Procesar credenciales
+            (creds || []).forEach(c => {
+                const w = (workers || []).find(worker => worker.id === c.worker_id);
+                alerts.push({ ...c, workers: w });
+            });
+
+            // 2. Procesar exámenes (evitar duplicados si ya están en credenciales por RUT y fecha)
+            (exams || []).forEach(e => {
+                const eRut = normalize(e.rut);
+                const w = (workers || []).find(worker => normalize(worker.rut) === eRut);
+                
+                // Si el examen no tiene un registro equivalente en las alertas ya añadidas, lo sumamos
+                const alreadyAdded = alerts.find(a => 
+                    (normalize(a.rut || (a.workers?.rut)) === eRut) && 
+                    (a.exam_type === e.exam_type) && 
+                    (a.expiry_date === e.expiry_date)
+                );
+
+                if (!alreadyAdded) {
+                    alerts.push({ 
+                        ...e, 
+                        workers: w, 
+                        credential_name: e.credential_name || (e.exam_type === 'basica' ? 'Examen Preocupacional' : 'Examen') 
+                    });
+                }
+            });
+
+            allAlerts = alerts.sort((a,b) => {
+                const da = a.expiry_date ? new Date(a.expiry_date).getTime() : 0;
+                const db = b.expiry_date ? new Date(b.expiry_date).getTime() : 0;
+                return da - db;
+            });
+
+            renderAlerts(allAlerts);
         } catch (err) {
             console.error('Error loading alerts:', err);
             table.innerHTML = `<div style="padding:40px; color:var(--muted)">Error al cargar alertas.</div>`;
