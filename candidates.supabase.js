@@ -10,6 +10,7 @@
   const compareCount = $("#compareCount");
   const btnNewCandidate = $("#btnNewCandidate");
   const btnGenerateTec02 = $("#btnGenerateTec02FromCandidates");
+  const btnGenerateTec02A = $("#btnGenerateTec02AFromCandidates");
 
   const kpiTotal = $("#kpi_total");
   const kpiPromNota = $("#kpi_prom_nota");
@@ -99,6 +100,7 @@
             experiencia_en_empresa_actual: num(formData.get("experiencia_en_empresa_actual")) || 0,
             exp_cargo_actual: num(formData.get("exp_cargo_actual")) || 0,
             exp_proy_similares: num(formData.get("exp_proy_similares")) || 0,
+            antecedentes_academicos: formData.get("antecedentes_academicos") || "",
             status: "Postulado"
           };
 
@@ -117,6 +119,10 @@
 
     if (btnGenerateTec02) {
       btnGenerateTec02.onclick = generateTec02FromSelectedCandidates;
+    }
+
+    if (btnGenerateTec02A) {
+      btnGenerateTec02A.onclick = generateTec02AFromSelectedCandidates;
     }
 
     if (btnCompare) {
@@ -428,6 +434,114 @@
       console.error("Error generando TEC-02 desde candidatos:", err);
       alert("No se pudo generar el TEC-02: " + err.message);
     }
+  }
+
+  async function generateTec02AFromSelectedCandidates() {
+    try {
+      const selectedIds = getSelectedCandidateIds();
+
+      if (!selectedIds.length) {
+        alert("Selecciona al menos un candidato.");
+        return;
+      }
+
+      const projectName = prompt("Nombre del proyecto:") || "Proyecto Sin Nombre";
+      const legalName = prompt("Razón Social del Proponente:") || "";
+      const legalRepresentative = prompt("Representante Legal:") || "";
+
+      const { data, error } = await supabase
+        .from("candidates")
+        .select("*")
+        .in("id", selectedIds)
+        .order("nombre_completo", { ascending: true });
+
+      if (error) throw error;
+
+      await exportTec02AFromTemplate(data || [], {
+        projectName,
+        legalName,
+        legalRepresentative
+      });
+    } catch (err) {
+      console.error("Error generando TEC-02-A:", err);
+      alert("No se pudo generar el TEC-02-A: " + err.message);
+    }
+  }
+
+  async function exportTec02AFromTemplate(candidates, headerData) {
+    if (!window.ExcelJS) throw new Error("No está cargada la librería ExcelJS.");
+
+    const templateUrl = "/templates/tec02-A_template.xlsx";
+    const response = await fetch(templateUrl);
+    if (!response.ok) throw new Error(`No se encontró ${templateUrl}`);
+
+    const arrayBuffer = await response.arrayBuffer();
+    const mainWorkbook = new ExcelJS.Workbook();
+    await mainWorkbook.xlsx.load(arrayBuffer);
+
+    const templateSheet = mainWorkbook.getWorksheet(1);
+    const dateStr = new Date().toLocaleDateString("es-ES");
+
+    for (const c of candidates) {
+      // Creamos una nueva hoja copiando la estructura (manual ya que exceljs no clona perfecto)
+      const sheetName = (c.nombre_completo || "Candidato").substring(0, 31).replace(/[\\\/\?\*\[\]]/g, "_");
+      const newSheet = mainWorkbook.addWorksheet(sheetName);
+
+      // Copiar valores y estilos de la plantilla (solo celdas necesarias para el CV)
+      // Nota: Este mapeo es basado en la imagen del formulario TEC-02A
+      
+      // Función auxiliar para copiar celdas
+      const copyCell = (from, to) => {
+        const fc = templateSheet.getCell(from);
+        const tc = newSheet.getCell(to);
+        tc.value = fc.value;
+        tc.style = fc.style;
+      };
+
+      // Copiar formato base (opcionalmente podrías iterar todo el rango, 
+      // pero para optimizar solo llenamos los datos)
+      
+      // Encabezados comunes del proyecto
+      newSheet.getCell("H6").value = headerData.legalName;
+      newSheet.getCell("H7").value = headerData.legalRepresentative;
+      newSheet.getCell("X7").value = dateStr;
+
+      // Datos personales del candidato
+      newSheet.getCell("H10").value = c.nombre_completo;
+      newSheet.getCell("H11").value = c.profesion;
+      newSheet.getCell("H12").value = headerData.projectName; // Cargo en el proyecto? O c.cargo_a_desempenar?
+      
+      // Si el usuario quiere el cargo específico:
+      if (c.cargo_a_desempenar) newSheet.getCell("H12").value = c.cargo_a_desempenar;
+
+      // Bloques de experiencia (Ajustar celdas según plantilla real)
+      // Basado en la imagen: B15, B22, B29, B35 (Headers)
+      // El contenido va debajo de cada header.
+      newSheet.getCell("B16").value = c.experiencia_general;
+      newSheet.getCell("B23").value = c.experiencia_especifica;
+      newSheet.getCell("B30").value = c.otras_experiencias;
+      newSheet.getCell("B36").value = c.antecedentes_academicos;
+
+      // Estilos rápidos para los bloques (envoltura de texto)
+      ["B16", "B23", "B30", "B36"].forEach(ref => {
+        const cell = newSheet.getCell(ref);
+        cell.alignment = { vertical: 'top', horizontal: 'left', wrapText: true };
+      });
+    }
+
+    // Opcional: Eliminar la hoja de plantilla original si no quieres que aparezca
+    // mainWorkbook.removeWorksheet(templateSheet.id);
+
+    const buffer = await mainWorkbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const link = document.createElement("a");
+    const safeProject = (headerData.projectName || "Proyecto").replace(/[^\w\-]+/g, "_");
+    
+    link.href = URL.createObjectURL(blob);
+    link.download = `TEC-02-A_${safeProject}.xlsx`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
   }
 
   init();

@@ -39,6 +39,7 @@
       <button class="btn-menu" aria-label="Abrir menú">☰</button>
       <div style="display:flex; gap:10px; margin-left:auto; flex-wrap:wrap;">
         <button id="btnGenerateTec02FromCandidates" class="btn">Generar TEC-02</button>
+        <button id="btnGenerateTec02AFromCandidates" class="btn">Generar TEC-02-A</button>
         <button class="btn" onclick="location.href='documents.html'">Subir documentos</button>
         <button class="btn btn--primary" id="btnChat">Abrir Chatbot</button>
       </div>
@@ -251,6 +252,11 @@
                 <label>Exp. proyectos similares</label>
                 <input name="exp_proy_similares" type="number" step="0.1" class="input" value="0">
               </div>
+            </div>
+
+            <div class="form-group">
+              <label>Antecedentes Académicos (Resumen)</label>
+              <textarea name="antecedentes_academicos" class="input" rows="3" placeholder="Ej: Ingeniero Civil, Magíster en..."></textarea>
             </div>
 
             <div class="form-group">
