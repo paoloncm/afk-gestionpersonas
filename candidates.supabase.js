@@ -479,58 +479,71 @@
     const mainWorkbook = new ExcelJS.Workbook();
     await mainWorkbook.xlsx.load(arrayBuffer);
 
-    const templateSheet = mainWorkbook.getWorksheet(1);
+    // Obtener la hoja de plantilla maestra
+    const masterSheet = mainWorkbook.getWorksheet("FORMULARIO TEC-02A CV PERSONAL") || mainWorkbook.getWorksheet(1);
     const dateStr = new Date().toLocaleDateString("es-ES");
 
     for (const c of candidates) {
-      // Creamos una nueva hoja copiando la estructura (manual ya que exceljs no clona perfecto)
       const sheetName = (c.nombre_completo || "Candidato").substring(0, 31).replace(/[\\\/\?\*\[\]]/g, "_");
       const newSheet = mainWorkbook.addWorksheet(sheetName);
 
-      // Copiar valores y estilos de la plantilla (solo celdas necesarias para el CV)
-      // Nota: Este mapeo es basado en la imagen del formulario TEC-02A
+      // CLONACIÓN PROFUNDA (Celdas, Estilos, Mezclas y Columnas)
       
-      // Función auxiliar para copiar celdas
-      const copyCell = (from, to) => {
-        const fc = templateSheet.getCell(from);
-        const tc = newSheet.getCell(to);
-        tc.value = fc.value;
-        tc.style = fc.style;
-      };
+      // 1. Clonar celdas combinadas (Muy importante para la estructura)
+      if (masterSheet.model.merges) {
+        masterSheet.model.merges.forEach(range => {
+          newSheet.mergeCells(range);
+        });
+      }
 
-      // Copiar formato base (opcionalmente podrías iterar todo el rango, 
-      // pero para optimizar solo llenamos los datos)
+      // 2. Clonar anchos de columna
+      masterSheet.columns.forEach((col, i) => {
+        if (col.width) newSheet.getColumn(i + 1).width = col.width;
+      });
+
+      // 3. Clonar celdas de forma masiva (Hasta la columna AJ y fila 80 para seguridad)
+      for (let r = 1; r <= 80; r++) {
+        const row = masterSheet.getRow(r);
+        const newRow = newSheet.getRow(r);
+        if (row.height) newRow.height = row.height;
+
+        for (let colIndex = 1; colIndex <= 36; colIndex++) { // Hasta columna AJ aprox
+          const fCell = row.getCell(colIndex);
+          const tCell = newRow.getCell(colIndex);
+          tCell.value = fCell.value;
+          tCell.style = fCell.style;
+        }
+      }
+
+      // AJUSTAR DATOS DINÁMICOS (Según captura de celdas final)
+      // Nota: H=8, X=24, NOMBRE=17, PROF=19, CARGO=21
       
       // Encabezados comunes del proyecto
-      newSheet.getCell("H6").value = headerData.legalName;
-      newSheet.getCell("H7").value = headerData.legalRepresentative;
-      newSheet.getCell("X7").value = dateStr;
+      newSheet.getCell("H10").value = headerData.legalName; // Razón Social en row 10
+      newSheet.getCell("H12").value = headerData.legalRepresentative; // Representante en row 12
+      newSheet.getCell("X12").value = dateStr; // Fecha en X12
 
       // Datos personales del candidato
-      newSheet.getCell("H10").value = c.nombre_completo;
-      newSheet.getCell("H11").value = c.profesion;
-      newSheet.getCell("H12").value = headerData.projectName; // Cargo en el proyecto? O c.cargo_a_desempenar?
-      
-      // Si el usuario quiere el cargo específico:
-      if (c.cargo_a_desempenar) newSheet.getCell("H12").value = c.cargo_a_desempenar;
+      newSheet.getCell("H17").value = c.nombre_completo;
+      newSheet.getCell("H19").value = c.profesion;
+      newSheet.getCell("H21").value = c.cargo_a_desempenar || headerData.projectName;
 
-      // Bloques de experiencia (Ajustar celdas según plantilla real)
-      // Basado en la imagen: B15, B22, B29, B35 (Headers)
-      // El contenido va debajo de cada header.
-      newSheet.getCell("B16").value = c.experiencia_general;
-      newSheet.getCell("B23").value = c.experiencia_especifica;
-      newSheet.getCell("B30").value = c.otras_experiencias;
-      newSheet.getCell("B36").value = c.antecedentes_academicos;
+      // Bloques de experiencia (Headers en 24, 31, 38, 44 - El contenido en la celda siguiente)
+      // Ajuste: El contenido suele ir en la celda mezclada justo debajo del header.
+      newSheet.getCell("B25").value = c.experiencia_general;
+      newSheet.getCell("B32").value = c.experiencia_especifica;
+      newSheet.getCell("B39").value = c.otras_experiencias;
+      newSheet.getCell("B45").value = c.antecedentes_academicos;
 
-      // Estilos rápidos para los bloques (envoltura de texto)
-      ["B16", "B23", "B30", "B36"].forEach(ref => {
-        const cell = newSheet.getCell(ref);
+      // Forzar wrap text en los bloques de texto
+      [25, 32, 39, 45].forEach(rowNum => {
+        const cell = newSheet.getCell(`B${rowNum}`);
         cell.alignment = { vertical: 'top', horizontal: 'left', wrapText: true };
       });
     }
 
-    // Opcional: Eliminar la hoja de plantilla original si no quieres que aparezca
-    // mainWorkbook.removeWorksheet(templateSheet.id);
+    // Opcional: Eliminar la hoja de plantilla original para que solo queden las de los trabajadores
+    // mainWorkbook.removeWorksheet(masterSheet.id);
 
     const buffer = await mainWorkbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
