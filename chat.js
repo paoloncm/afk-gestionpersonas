@@ -22,7 +22,11 @@
 
   if (!drawer || !body || !input || !btnSend) return;
 
-  const history = [];
+  let history = [];
+  try {
+    const saved = localStorage.getItem('afk_chat_history');
+    if (saved) history = JSON.parse(saved);
+  } catch(e) {}
 
   const sessionId =
     localStorage.getItem('afk_chat_session') ||
@@ -37,6 +41,12 @@
     body.appendChild(m);
     body.scrollTop = body.scrollHeight;
   };
+
+  // Restaurar historial visualmente
+  history.forEach(h => {
+    // n8n responde a veces con assistant o bot, lo mapeamos visualmente
+    append(h.role === 'user' ? 'user' : 'bot', h.content);
+  });
 
   const typing = (on = true) => {
     let el = d.getElementById('afk-typing');
@@ -163,6 +173,7 @@
         { role: 'user', content: text },
         { role: 'assistant', content: reply }
       );
+      localStorage.setItem('afk_chat_history', JSON.stringify(history));
 
       if (typeof callback === 'function') callback(reply);
 
@@ -203,7 +214,10 @@
     }
   };
 
-  if (!body.querySelector('.chat-msg')) {
+  if (!history.length && !body.querySelector('.chat-msg')) {
     append('bot', BOT_WELCOME);
   }
+
+  // Agregamos un botón para limpiar el chat sin borrar la memoria explícita (opcional)
+  // Pero por ahora solo manejamos el borrado desde console.
 })();
