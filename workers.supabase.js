@@ -575,12 +575,19 @@ console.log("[workers.supabase.js] archivo cargado");
         if (!newFaena || !newFaena.trim()) return;
 
         try {
-          const { error } = await window.db
+          const { data, error } = await window.db
             .from("workers")
             .update({ company_name: newFaena.trim() })
-            .eq("id", id);
+            .eq("id", id)
+            .select();
 
           if (error) throw error;
+          
+          if (!data || data.length === 0) {
+             throw new Error("No se pudo guardar. Es posible que no tengas permisos para editar este trabajador (RLS) o el ID sea incorrecto.");
+          }
+
+          // Si guardó bien, recargar la pantalla
           await loadAllData();
         } catch (err) {
           console.error("Error actualizando faena:", err);
