@@ -383,18 +383,12 @@ console.log("[workers.supabase.js] archivo cargado");
     if (!summary) {
       summary = document.createElement("div");
       summary.id = targetId;
-      summary.className = "card";
-      summary.style.marginBottom = "16px";
-      summary.innerHTML = `<div class="card__body"></div>`;
-
       const main = document.querySelector(".main");
       const toolbar = document.querySelector(".toolbar");
       if (main && toolbar) {
         main.insertBefore(summary, toolbar.nextSibling);
       }
     }
-
-    const body = summary.querySelector(".card__body");
 
     const totals = items.reduce(
       (acc, w) => {
@@ -411,28 +405,14 @@ console.log("[workers.supabase.js] archivo cargado");
       { total: 0, enabled: 0, atRisk: 0, notEnabled: 0, noInfo: 0 }
     );
 
-    body.innerHTML = `
-      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:12px;">
-        <div class="mini-kpi">
-          <div class="mini-kpi__label">Trabajadores visibles</div>
-          <div class="mini-kpi__value">${totals.total}</div>
-        </div>
-        <div class="mini-kpi">
-          <div class="mini-kpi__label">Habilitados</div>
-          <div class="mini-kpi__value">${totals.enabled}</div>
-        </div>
-        <div class="mini-kpi">
-          <div class="mini-kpi__label">En riesgo</div>
-          <div class="mini-kpi__value">${totals.atRisk}</div>
-        </div>
-        <div class="mini-kpi">
-          <div class="mini-kpi__label">No habilitados</div>
-          <div class="mini-kpi__value">${totals.notEnabled}</div>
-        </div>
-        <div class="mini-kpi">
-          <div class="mini-kpi__label">Sin información</div>
-          <div class="mini-kpi__value">${totals.noInfo}</div>
-        </div>
+    summary.innerHTML = `
+      <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap; padding: 4px 10px;">
+        <span style="color:var(--muted); font-size:13px; font-weight: 600;">Totales visibles: <span style="color:#fff;">${totals.total}</span></span>
+        <span style="color:var(--muted); font-size:13px;">|</span>
+        <span style="color:var(--ok); font-size:13px;">🟢 <b>${totals.enabled}</b> Habilitados</span>
+        <span style="color:${totals.atRisk > 0 ? '#fbbf24' : 'var(--muted)'}; font-size:13px;">🟡 <b>${totals.atRisk}</b> En riesgo</span>
+        <span style="color:${totals.notEnabled > 0 ? '#f87171' : 'var(--muted)'}; font-size:13px;">🔴 <b>${totals.notEnabled}</b> No habilitados</span>
+        ${totals.noInfo > 0 ? `<span style="color:var(--muted); font-size:13px;">⚪ <b>${totals.noInfo}</b> Sin info</span>` : ''}
       </div>
     `;
   }
@@ -442,9 +422,7 @@ console.log("[workers.supabase.js] archivo cargado");
       <div class="t-head workers-pro-head">
         <div style="width:40px"><input type="checkbox" id="selectAll"></div>
         <div class="t-col-name">Trabajador</div>
-        <div class="t-col-rut">RUT</div>
         <div class="t-col-faena">Empresa / Faena</div>
-        <div class="t-col-email">Email</div>
         <div>Semáforo</div>
         <div>Estado Faena</div>
         <div>Documentos</div>
@@ -513,16 +491,12 @@ console.log("[workers.supabase.js] archivo cargado");
             </div>
           </div>
 
-          <div class="t-col-rut" data-label="RUT">${rut}</div>
-
           <div class="faena-cell t-col-faena" data-label="Empresa / Faena">
             <span class="faena-text">${company}</span>
             <button class="btn btn--mini btn-assign" style="padding:2px 6px; font-size:10px; margin-left:8px; opacity:.8;">
               ${company === "Sin asignar" ? "Asignar" : "Editar"}
             </button>
           </div>
-
-          <div class="t-col-email" data-label="Email">${email}</div>
 
           <div data-label="Semáforo">
             <div style="display:flex; align-items:center; gap:8px;">

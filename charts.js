@@ -8,9 +8,10 @@
   let chartScatter = null;
   let chartProfesiones = null;
   let chartPipeline = null;
-  let chartCompliance = null;
+  let chartExpirations = null;
   let chartIMC = null;
   let chartPressure = null;
+  let chartCompanies = null;
 
   function destroyIfExists(chart) {
     if (chart) chart.destroy();
@@ -178,50 +179,83 @@
   }
 
   window.renderWorkerAnalytics = function (workers, exams) {
-    renderWorkerCompliance(workers);
+    renderWorkerExpirations(exams);
     renderWorkerIMC(exams);
     renderWorkerPressure(exams);
+    renderWorkerCompanies(workers);
   };
 
-  function renderWorkerCompliance(workers) {
+  function renderWorkerExpirations(exams) {
     const ctx = document.getElementById("chartCompliance");
     if (!ctx) return;
-    destroyIfExists(chartCompliance);
+    destroyIfExists(chartExpirations);
 
-    // Contar estados basados en el resumen de cumplimiento
-    const counts = { "Habilitado": 0, "En riesgo": 0, "No habilitado": 0, "Sin información": 0 };
-    
-    workers.forEach(w => {
-      const s = w._complianceSummary;
-      if (!s) return;
-      if (s.faenaText === "Habilitado") counts["Habilitado"]++;
-      else if (s.faenaText === "En riesgo") counts["En riesgo"]++;
-      else if (s.faenaText === "No habilitado") counts["No habilitado"]++;
-      else counts["Sin información"]++;
+    const now = new Date();
+    const buckets = {
+      "Vencidos":   { count: 0, color: "#e74c3c" },
+      "0–30 días":  { count: 0, color: "#e67e22" },
+      "31–60 días": { count: 0, color: "#f1c40f" },
+      "61–90 días": { count: 0, color: "#3498db" },
+      "+90 días":   { count: 0, color: "#2ecc71" }
+    };
+
+    exams.forEach(e => {
+      if (!e.expiry_date) return;
+      const exp = new Date(e.expiry_date);
+      if (isNaN(exp.getTime())) return;
+      const diffDays = Math.ceil((exp - now) / (1000 * 60 * 60 * 24));
+      if      (diffDays <= 0)   buckets["Vencidos"].count++;
+      else if (diffDays <= 30)  buckets["0–30 días"].count++;
+      else if (diffDays <= 60)  buckets["31–60 días"].count++;
+      else if (diffDays <= 90)  buckets["61–90 días"].count++;
+      else                      buckets["+90 días"].count++;
     });
 
-    chartCompliance = new Chart(ctx, {
-      type: "doughnut",
+    const labels  = Object.keys(buckets);
+    const values  = labels.map(k => buckets[k].count);
+    const colors  = labels.map(k => buckets[k].color);
+
+    chartExpirations = new Chart(ctx, {
+      type: "bar",
       data: {
-        labels: Object.keys(counts),
+        labels,
         datasets: [{
-          data: Object.values(counts),
-          backgroundColor: ["#2ecc71", "#f1c40f", "#e74c3c", "#95a5a6"],
-          borderWidth: 0
+          label: "Documentos",
+          data: values,
+          backgroundColor: colors.map(c => c + "cc"),
+          borderColor: colors,
+          borderWidth: 1.5,
+          borderRadius: 6
         }]
       },
       options: {
+        indexAxis: "y",
         responsive: true,
         maintainAspectRatio: false,
         onClick: (event, elements) => {
           if (elements.length > 0) {
-            const index = elements[0].index;
-            const label = Object.keys(counts)[index];
-            if (window.onChartDrillDown) window.onChartDrillDown("compliance", label);
+            const label = labels[elements[0].index];
+            if (window.onChartDrillDown) window.onChartDrillDown("expiration", label);
           }
         },
         plugins: {
-          legend: { position: "bottom", labels: { color: "#b3b7bd", padding: 20 } }
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => ` ${ctx.raw} documento${ctx.raw !== 1 ? "s" : ""}`
+            }
+          }
+        },
+        scales: {
+          x: {
+            beginAtZero: true,
+            ticks: { color: "#b3b7bd", stepSize: 1 },
+            grid: { color: "rgba(255,255,255,0.05)" }
+          },
+          y: {
+            ticks: { color: "#b3b7bd" },
+            grid: { display: false }
+          }
         }
       }
     });
@@ -264,7 +298,7 @@
         datasets: [{
           label: "Trabajadores",
           data: Object.values(bins),
-          backgroundColor: "#3498db",
+          backgroundColor: ["#f1c40f", "#2ecc71", "#e67e22", "#e74c3c", "#c0392b"],
           borderRadius: 6
         }]
       },
@@ -291,67 +325,132 @@
     });
   }
 
+  function classifyPressure(sys, dia) {
+    if (sys < 120 && dia < 80)                         return { label: "Normal",          color: "#2ecc71" };
+    if (sys < 130 && dia < 80)                         return { label: "Elevada",          color: "#f1c40f" };
+    if ((sys >= 130 && sys < 140) || (dia >= 80 && dia < 90)) return { label: "Hipertensión I",   color: "#e67e22" };
+    return                                                      { label: "Hipertensión II",  color: "#e74c3c" };
+  }
+
   function renderWorkerPressure(exams) {
     const ctx = document.getElementById("chartPressure");
     if (!ctx) return;
     destroyIfExists(chartPressure);
 
     const latestExams = getLatestExamsPerWorker(exams);
-    const validExams = latestExams.map(e => {
+
+    // Build per-risk-level buckets
+    const levels = {
+      "Normal":         { color: "#2ecc71", points: [] },
+      "Elevada":        { color: "#f1c40f", points: [] },
+      "Hipertensión I": { color: "#e67e22", points: [] },
+      "Hipertensión II":{ color: "#e74c3c", points: [] }
+    };
+
+    latestExams.forEach(e => {
       const p = String(e.presion || "").split("/");
-      if (p.length !== 2) return null;
-      return { 
-        x: num(p[0]), 
-        y: num(p[1]),
+      if (p.length !== 2) return;
+      const sys = num(p[0]);
+      const dia = num(p[1]);
+      if (!Number.isFinite(sys) || !Number.isFinite(dia)) return;
+      const cat = classifyPressure(sys, dia);
+      levels[cat.label].points.push({
+        x: sys,
+        y: dia,
         worker_id: e.worker_id,
-        full_name: e.full_name
-      };
-    }).filter(p => p && Number.isFinite(p.x) && Number.isFinite(p.y));
+        full_name: e.full_name || "Sin nombre",
+        classification: cat.label
+      });
+    });
+
+    const datasets = Object.entries(levels).map(([label, cfg]) => ({
+      label,
+      data: cfg.points,
+      backgroundColor: cfg.color + "cc",
+      borderColor: cfg.color,
+      pointRadius: 7,
+      hoverRadius: 11,
+      pointBorderWidth: 1.5
+    }));
 
     chartPressure = new Chart(ctx, {
       type: "scatter",
-      data: {
-        datasets: [{
-          label: "Última toma de Presión",
-          data: validExams,
-          backgroundColor: "rgba(230, 126, 34, 0.6)",
-          borderColor: "#e67e22",
-          pointRadius: 6,
-          hoverRadius: 10
-        }]
-      },
+      data: { datasets },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: { labels: { color: "#b3b7bd" } },
+          legend: {
+            position: "bottom",
+            labels: { color: "#b3b7bd", padding: 12, boxWidth: 12 }
+          },
           tooltip: {
+            backgroundColor: "rgba(15,17,26,0.92)",
+            titleColor: "#ffffff",
+            bodyColor: "#b3b7bd",
+            borderColor: "rgba(255,255,255,0.08)",
+            borderWidth: 1,
+            padding: 10,
             callbacks: {
-              label: (context) => {
-                const p = context.raw;
-                return `${p.full_name}: ${p.x}/${p.y}`;
+              title: (items) => items[0]?.raw?.full_name ?? "",
+              label: (ctx) => {
+                const p = ctx.raw;
+                return [
+                  `  Sistólica / Diastólica: ${p.x} / ${p.y} mmHg`,
+                  `  Clasificación: ${p.classification}`
+                ];
               }
             }
           }
         },
         onClick: (event, elements) => {
           if (elements.length > 0) {
-            const index = elements[0].index;
-            const dataPoint = validExams[index];
-            if (window.onChartDrillDown) window.onChartDrillDown("worker_name", dataPoint.full_name);
+            const ds = datasets[elements[0].datasetIndex];
+            const pt = ds.data[elements[0].index];
+            if (window.onChartDrillDown) window.onChartDrillDown("worker_name", pt.full_name);
           }
         },
         scales: {
-          x: { 
-            title: { display: true, text: "Sistólica", color: "#b3b7bd" }, 
+          x: {
+            title: { display: true, text: "Sistólica (mmHg)", color: "#b3b7bd" },
             ticks: { color: "#b3b7bd" },
             grid: { color: "rgba(255,255,255,0.05)" }
           },
-          y: { 
-            title: { display: true, text: "Diastólica", color: "#b3b7bd" }, 
+          y: {
+            title: { display: true, text: "Diastólica (mmHg)", color: "#b3b7bd" },
             ticks: { color: "#b3b7bd" },
             grid: { color: "rgba(255,255,255,0.05)" }
           }
+        }
+      }
+    });
+  }
+
+  function renderWorkerCompanies(workers) {
+    const ctx = document.getElementById("chartCompanies");
+    if (!ctx) return;
+    destroyIfExists(chartCompanies);
+
+    const counts = countBy(workers, w => w.company_name && w.company_name !== "Sin asignar" ? w.company_name : "Sin asignar");
+    const entries = [...counts.entries()]
+      .sort((a, b) => b[1] - a[1]) // highest first
+      .slice(0, 6); // max 6 slices for readability
+
+    chartCompanies = new Chart(ctx, {
+      type: "doughnut",
+      data: {
+        labels: entries.map(x => x[0]),
+        datasets: [{
+          data: entries.map(x => x[1]),
+          borderWidth: 0,
+          backgroundColor: ["#3498db", "#9b59b6", "#e67e22", "#1abc9c", "#f1c40f", "#7f8c8d"]
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: "right", labels: { color: "#b3b7bd", boxWidth: 12, font: { size: 10 } } }
         }
       }
     });

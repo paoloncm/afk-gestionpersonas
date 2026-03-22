@@ -377,10 +377,8 @@ body{
   display:grid;
   grid-template-columns:
     44px
-    minmax(260px, 2.3fr)
-    minmax(120px, 1fr)
-    minmax(180px, 1.5fr)
-    minmax(170px, 1.15fr)
+    minmax(280px, 3fr)
+    minmax(200px, 1.8fr)
     minmax(150px, 1fr)
     minmax(150px, 1fr)
     minmax(160px, 1.15fr)
@@ -429,6 +427,60 @@ body{
 
 .worker-row-pro .t-col-name{
   min-width:0;
+}
+
+/* =========================
+   Tenders table - aligned grid
+========================= */
+
+.table.tenders{
+  overflow-x:auto;
+}
+
+.table.tenders .t-head,
+.table.tenders .t-row{
+  display:grid;
+  grid-template-columns:
+    minmax(250px, 2fr)
+    minmax(250px, 2fr)
+    minmax(200px, 1.5fr)
+    140px;
+  align-items:center;
+  gap:0;
+  min-width:900px;
+  padding:0;
+}
+
+.table.tenders .t-head > div,
+.table.tenders .t-row > div{
+  padding:14px 14px;
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.table.tenders .t-head{
+  background:rgba(255,255,255,.02);
+  box-shadow:inset 0 -1px 0 rgba(255,255,255,.04);
+}
+
+.table.tenders .t-row{
+  transition:background .18s ease;
+}
+
+.table.tenders .t-row:hover{
+  background:rgba(255,255,255,.03);
+}
+
+.table.tenders .t-row > div:last-child,
+.table.tenders .t-head > div:last-child{
+  padding-right:18px;
+}
+
+.table.tenders .t-row > div:first-child,
+.table.tenders .t-head > div:first-child{
+  padding-left:18px;
 }
 
 .worker-row-pro .avatar{
@@ -796,6 +848,38 @@ input[type="checkbox"]{
   accent-color:var(--accent);
   cursor:pointer;
 }
+
+/* =========================
+   Section headers
+========================= */
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 20px 0 12px;
+}
+
+.section-header::before {
+  content: "";
+  display: block;
+  width: 3px;
+  height: 18px;
+  background: linear-gradient(180deg, var(--accent), var(--accent-2));
+  border-radius: 99px;
+  flex-shrink: 0;
+}
+
+.section-header__title {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  color: var(--muted);
+  flex: 1;
+}
+
 
 /* =========================
    Responsive

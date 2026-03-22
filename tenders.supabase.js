@@ -52,6 +52,10 @@
     reqContainer.appendChild(div);
   }
 
+  const tendersBody = $('#tendersBody');
+  const searchInput = $('#searchTender');
+  let allTenders = [];
+
   // --- LÓGICA DE BASE DE DATOS ---
 
   async function loadTenders() {
@@ -61,46 +65,79 @@
       .order('created_at', { ascending: false });
 
     if (error) {
-      tendersList.innerHTML = `<p class="error">${error.message}</p>`;
+      tendersBody.innerHTML = `<div style="padding: 40px; text-align: center; color: var(--danger);">${error.message}</div>`;
       return;
     }
 
-    if (!data || data.length === 0) {
-      tendersList.innerHTML = '<p class="text-muted">No has creado ninguna licitación todavía.</p>';
+    allTenders = data || [];
+    renderTenders();
+  }
+
+  function renderTenders() {
+    const searchTerm = searchInput ? searchInput.value.toLowerCase() : "";
+    
+    const filteredTenders = allTenders.filter(t => {
+      const nom = (t.name || "").toLowerCase();
+      const desc = (t.description || "").toLowerCase();
+      const reqs = (t.requirements || []).join(" ").toLowerCase();
+      return nom.includes(searchTerm) || desc.includes(searchTerm) || reqs.includes(searchTerm);
+    });
+
+    if (filteredTenders.length === 0) {
+      tendersBody.innerHTML = `
+        <div style="padding: 40px; text-align: center; color: var(--muted);">
+          ${allTenders.length === 0 ? "No has creado ninguna licitación todavía." : "No se encontraron licitaciones para tu búsqueda."}
+        </div>
+      `;
       return;
     }
 
-    tendersList.innerHTML = data.map(t => `
-      <div class="card tender-card" data-id="${t.id}">
-        <div class="card__body">
-          <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:10px;">
-            <strong style="font-size:1.1rem">${t.name}</strong>
-            <div style="display:flex; gap:6px;">
-              <button class="btn btn--mini btn-edit" data-id="${t.id}" title="Editar">✏️</button>
-              <button class="btn btn--mini btn-delete" data-id="${t.id}" title="Eliminar" style="color:#f87171">🗑️</button>
-            </div>
-          </div>
-          <p style="font-size:13px; color:var(--muted); margin-bottom:12px;">${t.description || 'Sin descripción'}</p>
-          <div style="display:flex; flex-wrap:wrap; gap:4px; margin-bottom:16px;">
-            ${t.requirements.map(r => `<span class="badge" style="background:rgba(255,255,255,0.1)">${r}</span>`).join('')}
-          </div>
-          <button class="btn btn--primary btn-match" data-id="${t.id}" style="width:100%">Ver Candidatos Aptos</button>
+    tendersBody.innerHTML = filteredTenders.map(t => `
+      <div class="t-row" style="padding: 14px 18px; border-bottom: 1px solid rgba(255,255,255,0.05); align-items: start;">
+        <div class="t-col-name" style="font-weight: 600;">${escapeHtml(t.name)}</div>
+        <div class="t-col-desc" style="color: var(--muted); font-size: 13px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;">
+          ${escapeHtml(t.description || 'Sin descripción')}
+        </div>
+        <div class="t-col-reqs" style="display: flex; gap: 4px; flex-wrap: wrap;">
+          ${t.requirements.slice(0, 3).map(r => `<span class="badge" style="background:rgba(255,255,255,0.1)">${escapeHtml(r)}</span>`).join('')}
+          ${t.requirements.length > 3 ? `<span class="badge" style="background:rgba(255,255,255,0.05)">+${t.requirements.length - 3}</span>` : ''}
+        </div>
+        <div class="t-col-actions" style="text-align: right; display: flex; gap: 6px; justify-content: flex-end;">
+          <button class="btn btn--mini btn--primary btn-match" data-id="${t.id}">Evaluar</button>
+          <button class="btn btn--mini btn-edit" data-id="${t.id}" title="Editar">✏️</button>
+          <button class="btn btn--mini btn-delete" data-id="${t.id}" title="Eliminar" style="color:#f87171">🗑️</button>
         </div>
       </div>
     `).join('');
 
     // Eventos
     document.querySelectorAll('.btn-match').forEach(btn => {
-      btn.onclick = () => runMatchmaking(data.find(x => x.id === btn.dataset.id));
+      btn.onclick = () => runMatchmaking(filteredTenders.find(x => x.id === btn.dataset.id));
     });
 
     document.querySelectorAll('.btn-edit').forEach(btn => {
-      btn.onclick = () => editTender(data.find(x => x.id === btn.dataset.id));
+      btn.onclick = () => editTender(filteredTenders.find(x => x.id === btn.dataset.id));
     });
 
     document.querySelectorAll('.btn-delete').forEach(btn => {
       btn.onclick = () => deleteTender(btn.dataset.id);
     });
+  }
+
+  if (searchInput) {
+    searchInput.addEventListener('input', () => {
+      renderTenders();
+    });
+  }
+
+  function escapeHtml(unsafe) {
+    if (!unsafe) return "";
+    return unsafe
+         .replace(/&/g, "&amp;")
+         .replace(/</g, "&lt;")
+         .replace(/>/g, "&gt;")
+         .replace(/"/g, "&quot;")
+         .replace(/'/g, "&#039;");
   }
 
   async function deleteTender(id) {

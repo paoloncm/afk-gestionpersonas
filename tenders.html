@@ -26,18 +26,32 @@
 
     <header class="topbar">
       <button class="btn-menu">☰</button>
-      <div style="margin-left:auto;">
-        <button id="btnNewTender" class="btn btn--primary">+ Nueva Licitación</button>
-      </div>
+      <div class="h1" style="font-size:18px; margin-right:auto; margin-bottom: 0;">Gestión de Licitaciones</div>
+      <button id="btnNewTender" class="btn btn--primary" style="margin-left:auto;">+ Nueva Licitación</button>
     </header>
 
     <main class="main">
-      <h1 class="h1">Gestión de Licitaciones</h1>
-      <p class="text-muted">Define requerimientos y encuentra trabajadores aptos para futuros proyectos.</p>
+      <div class="toolbar" style="margin-bottom: 16px;">
+        <div class="toolbar__left" style="display:flex; gap:10px; width:100%;">
+          <div class="input" style="flex: 1; max-width: 500px;">
+            <input id="searchTender" type="text" placeholder="Buscar licitación por nombre, descripción o requerimiento...">
+          </div>
+        </div>
+      </div>
 
-      <section id="tendersList" class="grid-3" style="margin-top:24px;">
-        <p>Cargando licitaciones...</p>
-      </section>
+      <div class="card" style="padding: 0;">
+        <div class="table tenders">
+          <div class="t-head tenders-head">
+            <div class="t-col-name">Licitación / Empresa</div>
+            <div class="t-col-desc">Descripción</div>
+            <div class="t-col-reqs">Requisitos Mínimos</div>
+            <div class="t-col-actions" style="text-align:right;">Acciones</div>
+          </div>
+          <div id="tendersBody" style="display:flex; flex-direction:column;">
+            <div style="padding: 40px; text-align: center; color: var(--muted);">Cargando licitaciones...</div>
+          </div>
+        </div>
+      </div>
     </main>
 
     <!-- Modal Nueva Licitación -->
@@ -97,6 +111,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase.js"></script>
   <script src="auth.js"></script>
-  <script src="tenders.supabase.js"></script>
+  <script src="tenders.supabase.js?v=2.0"></script>
 </body>
 </html>

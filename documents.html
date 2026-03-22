@@ -43,15 +43,10 @@ d.getElementById('btnChat')?.addEventListener('click',()=>{dr.classList.add('is-
 d.getElementById('openChatbot')?.addEventListener('click',e=>{e.preventDefault();dr.classList.add('is-open');i.focus()});
 d.getElementById('closeChat').onclick=()=>dr.classList.remove('is-open');
 d.getElementById('chatSend').onclick=()=>{const v=i.value.trim();if(!v)return;const m=d.createElement('div');m.className='chat-msg user';m.textContent=v;b.appendChild(m);i.value='';};
-/* Uploader simulado */
-const dz=d.getElementById('dropzone'), fi=d.getElementById('fileInput'), pf=d.getElementById('pickFiles'), list=d.getElementById('files'), up=d.getElementById('uploadNow');
-let files=[]; const bytes=n=>n<1024?n+' B':n<1048576?(n/1024).toFixed(1)+' KB':(n/1048576).toFixed(1)+' MB';
-const render=()=>{list.innerHTML='';files.forEach((f,i)=>{const row=d.createElement('div');row.className='file';row.innerHTML=`<span class="dot" style="background:#60a5fa"></span><div class="name">${f.name} <span class="size">· ${bytes(f.size)}</span></div><button class="btn">Quitar</button>`;row.querySelector('button').onclick=()=>{files.splice(i,1);render()};list.appendChild(row)});};
-const onFiles=s=>{for(const f of s){files.push(f)}render()};
-['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add('drag')}));
-['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove('drag')}));
-dz.addEventListener('drop',e=>onFiles(e.dataTransfer.files)); pf.onclick=()=>fi.click(); fi.onchange=e=>onFiles(e.target.files);
-up.onclick=()=>{if(!files.length)return alert('No hay archivos.');alert('Subidos '+files.length+' archivo(s). (Simulado)');files=[];render()};
 </script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase.js?v=2.0"></script>
+<script src="auth.js?v=1.1"></script>
+<script src="documents.supabase.js?v=1.0"></script>
 <script defer src="responsive.js?v=2.0"></script>
 </body></html>

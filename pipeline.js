@@ -132,7 +132,7 @@
                 const newPhase = body.dataset.phase;
 
                 // Find candidate local data
-                const candi = candidates.find(item => item.id === id);
+                const candi = candidates.find(item => String(item.id) === String(id));
                 if (!candi) return;
 
                 const oldPhase = candi.status || 'Postulado';
@@ -154,7 +154,7 @@
                     console.log('✅ Estado actualizado en Supabase');
                     
                     // Update local state and re-render immediately
-                    const idx = candidates.findIndex(c => c.id === id);
+                    const idx = candidates.findIndex(c => String(c.id) === String(id));
                     if (idx !== -1) {
                         candidates[idx].status = newPhase;
                         renderBoard(candidates);
