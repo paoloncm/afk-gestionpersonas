@@ -146,6 +146,13 @@
       return text.substring(0, 2000);
     };
 
+    // Capturar el ID del usuario actualmente logueado para garantizar la privacidad de los datos
+    let session_user_id = null;
+    if (window.supabase) {
+      const { data } = await window.supabase.auth.getSession();
+      if (data?.session?.user) session_user_id = data.session.user.id;
+    }
+
     const payload = {
       message: text,
       history,
@@ -153,7 +160,8 @@
       meta: {
         page: location.pathname,
         ts: Date.now(),
-        screen_context: scrapeScreen()
+        screen_context: scrapeScreen(),
+        user_id: session_user_id
       }
     };
 

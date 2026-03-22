@@ -75,6 +75,8 @@
 
       logoutBtn.onclick = async (e) => {
         e.preventDefault();
+        localStorage.removeItem('afk_chat_history');
+        localStorage.removeItem('afk_chat_session');
         await window.supabase.auth.signOut();
         window.location.href = 'login.html';
       };
@@ -89,6 +91,8 @@
   // Exponer funciones útiles globalmente
   window.authApp = {
     signOut: async () => {
+      localStorage.removeItem('afk_chat_history');
+      localStorage.removeItem('afk_chat_session');
       await window.supabase.auth.signOut();
       window.location.href = 'login.html';
     },
