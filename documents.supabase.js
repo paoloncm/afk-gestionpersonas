@@ -225,8 +225,12 @@
         const { error: stErr } = await window.supabase.storage.from('tenders_and_docs').remove([path]);
         if (stErr) return alert("Error en Storage: " + stErr.message);
 
-        // Luego borramos el registro
+        // Luego borramos el registro central
         await window.supabase.from('client_documents').delete().eq('id', id);
+
+        // Finalmente, borramos todos los pedazos vectorizados de la IA que tengan este document_id en su metadata
+        const { error: vecErr } = await window.supabase.from('document_chunks').delete().contains('metadata', { document_id: id });
+        if (vecErr) console.warn("No se pudieron borrar todos los vectores:", vecErr.message);
         
         loadMyDocuments();
       };
