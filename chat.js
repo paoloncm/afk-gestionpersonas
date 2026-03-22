@@ -132,13 +132,24 @@
     input.value = '';
     typing(true);
 
+    // Extraer contexto visual de la pantalla (lo que el usuario está viendo)
+    const scrapeScreen = () => {
+      if (window.AFK_PAGE_CONTEXT) return window.AFK_PAGE_CONTEXT;
+      const cards = Array.from(d.querySelectorAll('.card'));
+      if (!cards.length) return '';
+      // Unir los textos visibles y truncar a 2000 caracteres para no ocluir el ancho de banda del LLM
+      const text = cards.map(c => c.innerText.replace(/\n+/g, ' ').trim()).join(' | ');
+      return text.substring(0, 2000);
+    };
+
     const payload = {
       message: text,
       history,
       sessionId,
       meta: {
         page: location.pathname,
-        ts: Date.now()
+        ts: Date.now(),
+        screen_context: scrapeScreen()
       }
     };
 
