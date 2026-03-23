@@ -414,9 +414,10 @@ console.log("[workers.supabase.js] archivo cargado");
         <div style="width:40px"><input type="checkbox" id="selectAll"></div>
         <div class="t-col-name">Trabajador</div>
         <div class="t-col-faena">Empresa / Faena</div>
-        <div>Estado Operacional</div>
-        <div>Próximos Vencimientos</div>
-        <div>Acciones</div>
+        <div class="t-col-status">Estado Operacional</div>
+        <div class="t-col-risk">Nivel Riesgo</div>
+        <div class="t-col-exp">Próximos Vencimientos</div>
+        <div class="t-col-actions">Acciones</div>
       </div>
     `;
 
@@ -442,7 +443,7 @@ console.log("[workers.supabase.js] archivo cargado");
       const email = escapeHtml(w.email || "-");
       const status = normalizeStatus(w.status);
       const statusClass = status === "Activo" ? "badge--active" : "badge--inactive";
-      const summary = getComplianceSummary(id);
+
 
       const initials = (w.full_name || "Desconocido")
         .split(" ")
@@ -451,15 +452,32 @@ console.log("[workers.supabase.js] archivo cargado");
         .map((x) => x[0]?.toUpperCase() || "")
         .join("");
 
+      // Lógica de Cumplimiento - Level God
+      const workerExams = exams.filter(e => e.worker_id === id || e.rut === w.rut);
+      const examsCount = workerExams.length;
+      let minDays = 999;
+      workerExams.forEach(e => {
+          if (e.expiry_date) {
+              const diff = Math.ceil((new Date(e.expiry_date) - new Date()) / (1000 * 60 * 60 * 24));
+              if (diff < minDays) minDays = diff;
+          }
+      });
+
+      const opStatusLabel = w.status === 'Blocked' ? 'BLOQUEADO' : 'HABILITADO';
+      const opStatusClass = w.status === 'Blocked' ? 'badge--danger' : (minDays <= 15 ? 'badge--warning' : 'badge--success');
+
+      let riskText = '🟢 Bajo';
+      let riskColor = '#10b981';
+      if (w.status === 'Blocked') { riskText = '🔴 CRÍTICO'; riskColor = '#ef4444'; }
+      else if (minDays <= 15) { riskText = '⚠️ MEDIO'; riskColor = '#f59e0b'; }
+
+      const expLabel = minDays <= 0 ? 'Vencido' : (minDays > 365 ? 'Al día' : `En ${minDays} días`);
+      const expColor = w.status === 'Blocked' ? 'badge--danger' : (minDays <= 30 ? 'badge--warning' : 'badge--success');
+
       html += `
         <div class="t-row worker-row-pro" data-id="${id}">
           <div style="width:40px" data-label="Seleccionar">
-            <input
-              type="checkbox"
-              class="worker-check"
-              value="${id}"
-              ${selectedWorkers.has(id) ? "checked" : ""}
-            >
+            <input type="checkbox" class="worker-check" value="${id}" ${selectedWorkers.has(id) ? "checked" : ""}>
           </div>
 
           <div class="emp t-col-name" data-label="Trabajador">
@@ -467,11 +485,7 @@ console.log("[workers.supabase.js] archivo cargado");
               ${escapeHtml(initials)}
             </div>
             <div style="display:flex; flex-direction:column; gap:4px; min-width:0;">
-              <a
-                href="worker.html?id=${encodeURIComponent(id)}"
-                class="emp__name"
-                style="color:var(--text); text-decoration:none;"
-              >
+              <a href="worker.html?id=${encodeURIComponent(id)}" class="emp__name" style="color:var(--text); text-decoration:none;">
                 ${name}
               </a>
               <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
@@ -483,19 +497,8 @@ console.log("[workers.supabase.js] archivo cargado");
 
           <div class="faena-cell t-col-faena" data-label="Empresa / Faena">
             <span class="faena-text">${company}</span>
-            <button class="btn btn--mini btn-assign" style="padding:2px 6px; font-size:10px; margin-left:8px; opacity:.8;">
-              ${company === "Sin asignar" ? "Asignar" : "Editar"}
-            </button>
           </div>
 
-          <div data-label="Estado Operacional">
-            <div style="display:flex; align-items:center; gap:8px;">
-              <span class="${summary.dotClass}"></span>
-              <span class="badge ${summary.faenaClass}" style="min-width:110px;">${summary.faenaText}</span>
-            </div>
-          </div>
-
-          <div data-label="Próximos Vencimientos">
           <div class="t-col-status" data-label="Estado Operacional">
             <span class="badge ${opStatusClass}" style="width:100px; text-align:center;">${opStatusLabel}</span>
           </div>
