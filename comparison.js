@@ -64,6 +64,29 @@
             reason += `Recomendado para avanzar a entrevista final de inmediato.`;
             reasonEl.textContent = reason;
         }
+
+        const btnQuick = $('#btnQuickSchedule');
+        const btnSelect = $('#btnSelectWinner');
+        
+        if (btnQuick) {
+            btnQuick.onclick = () => {
+                location.href = `candidates.html?id=${winner.id}`;
+            };
+        }
+        
+        if (btnSelect) {
+            btnSelect.onclick = async () => {
+                if (confirm(`¿Seleccionar a ${winner.nombre_completo} como el candidato finalista?`)) {
+                    const { error } = await window.supabase
+                        .from('candidates')
+                        .update({ status: 'Entrevista final' })
+                        .eq('id', winner.id);
+                    
+                    if (error) alert('Error: ' + error.message);
+                    else alert(`${winner.nombre_completo} ha sido marcado para Entrevista Final.`);
+                }
+            };
+        }
     }
 
     function renderMatrix(candidates) {
