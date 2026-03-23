@@ -66,11 +66,11 @@
     for (const f of newFiles) {
       const ext = f.name.substring(f.name.lastIndexOf('.')).toLowerCase();
       if (!ALLOWED_EXTS.includes(ext)) {
-        alert(`Formato no permitido: ${f.name}`);
+        window.notificar?.(`Formato no permitido: ${f.name}`, 'warning');
         continue;
       }
       if (f.size > MAX_SIZE) {
-        alert(`Archivo muy pesado (Máx 25MB): ${f.name}`);
+        window.notificar?.(`Archivo muy pesado (Máx 25MB): ${f.name}`, 'warning');
         continue;
       }
       filesToUpload.push(f);
@@ -94,8 +94,8 @@
 
   // --- SUBIDA SEGURA ---
   uploadBtn.onclick = async () => {
-    if (!filesToUpload.length) return alert('No hay archivos para subir.');
-    if (!currentUser) return alert('Falta autenticación.');
+    if (!filesToUpload.length) return window.notificar?.('No hay archivos para subir.', 'warning');
+    if (!currentUser) return window.notificar?.('Falta autenticación.', 'error');
 
     uploadBtn.textContent = 'Subiendo...';
     uploadBtn.disabled = true;
@@ -125,23 +125,37 @@
 
         if (dbError) throw dbError;
 
+        // 2.5 Generar URL firmada temporal de 10 minutos (600s) para que n8n pueda descargar el PDF real y no choque con el muro de privacidad
+        const { data: signedData, error: signErr } = await window.supabase.storage
+          .from('tenders_and_docs')
+          .createSignedUrl(storagePath, 600);
+          
+        const downloadUrl = signedData ? signedData.signedUrl : '';
+
         // 3. Avisar a n8n (Webhook) para inicializar Vectorización AI
         try {
-          const n8nUrl = "https://primary-production-aa252.up.railway.app/webhook/39501108-66d4-4117-99d1-7bc9cd21ca08";
+          const n8nUrl = \"https://primary-production-aa252.up.railway.app/webhook/39501108-66d4-4117-99d1-7bc9cd21ca08\";
+          const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+          
           await fetch(n8nUrl, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+              'Content-Type': 'application/json',
+              'X-AFK-Secret': 'AFK_PRO_2024_SECURE_KEY' // Blindaje de seguridad
+            },
             body: JSON.stringify({
               document_id: dbData.id,
               user_id: currentUser.id,
               file_name: file.name,
+              file_type: ext, // Para que n8n sepa si vectorizar (PDF) o extraer (Excel)
               storage_path: storagePath,
+              signed_url: downloadUrl,
               bucket: 'tenders_and_docs'
             })
           });
-          console.log("Notificando webhook de vectorización a n8n...");
+          window.notificar?.(`Procesando ${file.name} con IA...`, 'success');
         } catch(whErr) {
-          console.warn("Hubo un error temporal enviando aviso a n8n:", whErr);
+          console.warn(\"Hubo un error temporal enviando aviso a n8n:\", whErr);
         }
       }
 
@@ -228,10 +242,11 @@
         // Luego borramos el registro central
         await window.supabase.from('client_documents').delete().eq('id', id);
 
-        // Finalmente, borramos todos los pedazos vectorizados de la IA que tengan este document_id en su metadata
+        // Doble escudo: si el borrado automático de la base de datos (Cascade) no alcanzó a los documentos antiguos,
+        // este script los forzará a borrarse usando el ID que está guardado en texto dentro de la metadata.
         const { error: vecErr } = await window.supabase.from('document_chunks').delete().contains('metadata', { document_id: id });
-        if (vecErr) console.warn("No se pudieron borrar todos los vectores:", vecErr.message);
-        
+        if (vecErr) console.warn("No se borraron vectores huérfanos:", vecErr.message);
+
         loadMyDocuments();
       };
 

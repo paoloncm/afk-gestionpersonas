@@ -8,7 +8,7 @@
   const USE_BASIC_AUTH = false, BASIC_USER = 'user', BASIC_PASS = 'pass';
   const BEARER_TOKEN = '';
   const BOT_WELCOME = 'Hola 👋 Soy el asistente de AFK. ¿En qué te ayudo?';
-  const TIMEOUT_MS = 20000;
+  const TIMEOUT_MS = 180000; // 3 minutos como pidió el usuario
   const RETRIES = 1;
 
   const d = document;
@@ -66,7 +66,10 @@
   };
 
   function buildHeaders() {
-    const h = { 'Content-Type': 'application/json' };
+    const h = { 
+      'Content-Type': 'application/json',
+      'X-AFK-Secret': 'AFK_PRO_2024_SECURE_KEY' // Blindaje de seguridad
+    };
     if (USE_BASIC_AUTH) h['Authorization'] = 'Basic ' + btoa(`${BASIC_USER}:${BASIC_PASS}`);
     if (BEARER_TOKEN) h['Authorization'] = 'Bearer ' + BEARER_TOKEN;
     return h;
@@ -181,6 +184,12 @@
         { role: 'user', content: text },
         { role: 'assistant', content: reply }
       );
+
+      // Limitar historial a los últimos 10 mensajes (5 interacciones) para no sobrecargar n8n
+      if (history.length > 10) {
+        history = history.slice(-10);
+      }
+
       localStorage.setItem('afk_chat_history', JSON.stringify(history));
 
       if (typeof callback === 'function') callback(reply);
