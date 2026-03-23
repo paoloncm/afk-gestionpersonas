@@ -225,7 +225,7 @@
       row.querySelector('.btn-download').onclick = async (e) => {
         const path = e.target.dataset.path;
         const { data, error } = await window.supabase.storage.from('tenders_and_docs').createSignedUrl(path, 60); // 60s
-        if (error) return window.notificar?.(\"Error al firmar URL: \" + error.message, 'error');
+        if (error) return window.notificar?.('Error al firmar URL: ' + error.message, 'error');
         window.open(data.signedUrl, '_blank');
       };
 
@@ -237,7 +237,7 @@
 
         // Primero borramos el binario del storage
         const { error: stErr } = await window.supabase.storage.from('tenders_and_docs').remove([path]);
-        if (stErr) return window.notificar?.(\"Error en Storage: \" + stErr.message, 'error');
+        if (stErr) return window.notificar?.('Error en Storage: ' + stErr.message, 'error');
 
         // Luego borramos el registro central
         await window.supabase.from('client_documents').delete().eq('id', id);
