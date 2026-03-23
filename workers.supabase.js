@@ -453,7 +453,7 @@ console.log("[workers.supabase.js] archivo cargado");
         .join("");
 
       // Lógica de Cumplimiento - Level God
-      const workerExams = exams.filter(e => e.worker_id === id || e.rut === w.rut);
+      const workerExams = allExamRecords.filter(e => e.worker_id === id || e.rut === w.rut);
       const examsCount = workerExams.length;
       let minDays = 999;
       workerExams.forEach(e => {
