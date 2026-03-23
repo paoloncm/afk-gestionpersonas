@@ -496,20 +496,24 @@ console.log("[workers.supabase.js] archivo cargado");
           </div>
 
           <div data-label="Próximos Vencimientos">
-            <div style="display:flex; flex-direction:column; gap:4px;">
-              <span class="badge ${summary.badgeClass}">${summary.badgeText}</span>
-              <span style="font-size:11px; color:var(--muted)">
-                ${summary.total} docs totales
-              </span>
-            </div>
+          <div class="t-col-status" data-label="Estado Operacional">
+            <span class="badge ${opStatusClass}" style="width:100px; text-align:center;">${opStatusLabel}</span>
           </div>
 
-          <div data-label="Acciones">
-            <div style="display:flex; gap:8px; flex-wrap:wrap;">
-              <a href="worker.html?id=${encodeURIComponent(id)}" class="btn btn--mini">Ver ficha</a>
-              <button class="btn btn--mini btn-generate-one" data-worker-id="${id}">
-                Exámenes
-              </button>
+          <div class="t-col-risk" data-label="Nivel de Riesgo">
+            <span style="color:${riskColor}; font-weight:800; font-size:11px;">${riskText}</span>
+          </div>
+
+          <div class="t-col-exp" data-label="Próximos Vencimientos">
+            <div class="badge ${expColor}" style="font-size:10px; margin-bottom:4px;">${expLabel}</div>
+            <div style="font-size:9px; color:var(--muted)">${examsCount} docs totales</div>
+          </div>
+
+          <div class="t-col-actions" data-label="Acciones">
+            <div style="display:flex; gap:5px; flex-wrap:wrap;">
+              <a href="worker.html?id=${encodeURIComponent(id)}" class="btn btn--mini" title="Ver Perfil">👁️ Ver</a>
+              <button class="btn btn--mini" title="Ver Documentos">📄 Docs</button>
+              <button class="btn btn--mini btn--primary btn-generate-one" data-worker-id="${id}" title="Notificar Riesgo" style="padding:0 8px;">📲 Notificar</button>
             </div>
           </div>
         </div>

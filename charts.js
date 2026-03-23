@@ -12,6 +12,9 @@
   let chartIMC = null;
   let chartPressure = null;
   let chartCompanies = null;
+  let chartWorkerStatus = null;
+  let chartExpMonthly = null;
+  let chartRiskTypes = null;
 
   function destroyIfExists(chart) {
     if (chart) chart.destroy();
@@ -456,10 +459,17 @@
     });
   }
 
-  window.renderAfkCharts = function (items) {
-    renderNotas(items || []);
-    renderScatter(items || []);
-    renderProfesiones(items || []);
-    renderPipeline(items || []);
+  window.renderAfkCharts = function (items, workers, exams) {
+    if (items) {
+        renderNotas(items);
+        renderScatter(items);
+        renderProfesiones(items);
+        renderPipeline(items);
+    }
+    if (workers || exams) {
+        renderWorkerStatus(workers || [], exams || []);
+        renderExpMonthly(exams || []);
+        renderRiskTypes(exams || []);
+    }
   };
 })();

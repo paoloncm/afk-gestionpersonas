@@ -35,57 +35,84 @@
 
     <header class="topbar">
       <button class="btn-menu" aria-label="Abrir menú">☰</button>
-      <div style="display:flex; gap:10px; margin-left:auto; flex-wrap:wrap; align-items:center;">
-        <div style="display:flex; gap:10px; align-items:center; background:rgba(255,255,255,0.05); padding:6px 14px; border-radius:12px; border:1px solid var(--card-border);">
-          <input id="projectName" class="input" type="text" placeholder="Nombre del Proyecto" style="max-width:200px; padding:6px; border:none; background:transparent;">
-          <button id="btnGenerateTec02" class="btn btn--primary" style="padding:6px 12px; font-size:12px;">Generar planilla</button>
-        </div>
-        <button class="btn" id="btnChat">Chatbot</button>
+      <div style="margin-left:auto; display:flex; gap:10px; align-items:center;">
+          <input type="text" id="projectName" placeholder="Nombre del Proyecto" class="input" style="width:180px; height:36px; font-size:12px;">
+          <button class="btn" id="btnExportExcel">Generar planilla</button>
+          <button class="btn btn--primary" id="btnGenerateReport">📄 Generar reporte de cumplimiento</button>
+          <button class="btn" id="btnChat">Chatbot</button>
       </div>
     </header>
 
     <main class="main">
       <section class="hero-dashboard">
         <div class="hero-dashboard__text">
-          <div class="badge badge--info" style="margin-bottom:10px;">Gestión de Personal</div>
-          <h2>Centro de Control Operativo</h2>
-          <p>Monitorea habilitaciones y gestiona el cumplimiento de tu equipo en tiempo real.</p>
+          <div class="badge badge--primary" style="margin-bottom:10px;">Gestión de Personal</div>
+          <h2 style="margin-bottom:5px;">Centro de Control Operativo</h2>
+          <div id="operationalSummary" style="font-size:14px; color:rgba(255,255,255,0.7); margin-bottom:20px; font-weight:600;">
+             ⌛ Sincronizando estados...
+          </div>
           
           <div class="ai-command-bar">
             <div class="pulse"></div>
             <input id="aiWorkerSearch" type="text" placeholder="Pregunta a AFK: ¿Quién vence esta semana? o ¿Quién está bloqueado?">
             <button id="btnAiWorker" class="btn btn--primary" style="border-radius:14px">Consultar</button>
           </div>
+          <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
+             <button class="btn btn--mini ai-suggest-w" data-query="¿Quién está bloqueado hoy?">🚨 Bloqueados</button>
+             <button class="btn btn--mini ai-suggest-w" data-query="¿Qué documentos vencen en menos de 15 días?">⏳ Vencimientos críticos</button>
+             <button class="btn btn--mini ai-suggest-w" data-query="Dame un resumen de riesgos por faena">🏭 Riesgos por faena</button>
+          </div>
         </div>
-        <div class="hero-dashboard__visual" style="text-align:right;">
-           <div id="quickStats" style="display:flex; flex-direction:column; gap:5px;">
-              <!-- Se llenará dinámicamente -->
-           </div>
+        <div id="liveValidation" style="position:absolute; bottom:15px; right:20px; font-size:10px; color:rgba(255,255,255,0.4);">
+           ⚡ Última validación automática: hace unos segundos
         </div>
       </section>
 
-      <section class="decision-grid" id="workersSummaryCards">
-        <div class="card card--success-alt">
+      <!-- Nueva Sección: Recomendación AFK Proactiva -->
+      <section id="workerRecommendation" class="card" style="margin-bottom:24px; border: 1px solid rgba(16, 185, 129, 0.3); background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(0,0,0,0.2)); display:none;">
+         <div class="card__body" style="display:flex; gap:20px; align-items:center;">
+             <div style="font-size:28px;">🧠</div>
+             <div style="flex:1;">
+                <h3 style="margin:0; font-size:14px; font-weight:800; color:#10b981; text-transform:uppercase; letter-spacing:1px;">Recomendación AFK</h3>
+                <p id="recText" style="margin:4px 0 0; font-size:13px; color:rgba(255,255,255,0.9);">
+                   Analizando cumplimiento... No se detectan bloqueos inminentes.
+                </p>
+             </div>
+             <button class="btn btn--mini btn--primary" style="border-radius:8px;">NOTIFICAR COORDINADOR</button>
+         </div>
+      </section>
+
+      <section class="decision-grid">
+        <div class="card card--success-alt" id="card_w_active">
           <div class="card__body kpi">
-            <span class="label">👷 Activos</span>
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+               <span style="font-size:14px;">👷</span>
+               <span class="label">ACTIVOS</span>
+            </div>
             <span id="kpi_w_total" class="value">0</span>
             <div style="font-size:11px; color:var(--ok); margin-top:5px;">Personal vigente en sistema</div>
           </div>
         </div>
 
-        <div class="card card--critical">
+        <div class="card card--critical" id="card_w_blocked">
           <div class="card__body kpi">
-            <span class="label">🚨 Bloqueados</span>
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+               <span style="font-size:14px;">🚫</span>
+               <span class="label">BLOQUEADOS</span>
+            </div>
             <span id="kpi_w_blocked" class="value">0</span>
-            <div style="font-size:11px; color:rgba(239, 68, 68, 0.8); margin-top:5px;">Vencimientos críticos obligatorios</div>
+            <div style="font-size:11px; color:rgba(255,255,255,0.6); margin-top:5px;">Vencimientos críticos obligatorios</div>
           </div>
         </div>
 
-        <div class="card card--warning-alt">
+        <div class="card card--warning-alt" id="card_w_risk">
           <div class="card__body kpi">
-            <span class="label">⏳ En Riesgo</span>
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+               <span style="font-size:14px;">⏳</span>
+               <span class="label">EN RIESGO</span>
+            </div>
             <span id="kpi_w_risk" class="value">0</span>
-            <div style="font-size:11px; color:var(--warning); margin-top:5px;">Vencimientos en menos de 15 días</div>
+            <div style="font-size:11px; color:rgba(255,255,255,0.6); margin-top:5px;">Vencimientos en menos de 15 días</div>
           </div>
         </div>
       </section>
@@ -134,22 +161,27 @@
       </div>
 
       <div class="section-header">
-        <span class="section-header__title">Directorio de Gestión</span>
-      </div>
-
-        <div class="card">
-          <div id="workersTable" class="table workers">
-            <div class="loading-state" style="padding:40px; text-align:center; color:var(--muted);">
-              Cargando listado de trabajadores...
+        <section class="section">
+         <div class="card">
+            <div class="card__body">
+               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                  <h3 style="margin:0; font-size:16px; font-weight:900; text-transform:uppercase;">Directorio de Gestión Operativa</h3>
+                  <div style="font-size:11px; color:var(--muted);">Visualizando tiempo real</div>
+               </div>
+               <div id="workersTable" class="table workers-table">
+                  <div class="t-head">
+                     <div class="t-col-cb" style="width:40px"></div>
+                     <div class="t-col-name">Trabajador</div>
+                     <div class="t-col-faena">Empresa / Faena</div>
+                     <div class="t-col-status">Estado Operacional</div>
+                     <div class="t-col-risk" style="width:100px;">Nivel Riesgo</div>
+                     <div class="t-col-exp">Próximos Vencimientos</div>
+                     <div class="t-col-actions">Acciones</div>
+                  </div>
+               </div>
             </div>
-          </div>
-        </div>
-    </main>
-
-    <aside id="chatbot" class="chatbot">
-      <div class="chatbot__head">
-        <strong>AFK Chatbot</strong>
-        <button id="closeChat" class="btn" type="button">Cerrar</button>
+         </div>
+      </section>
       </div>
 
       <div id="chatBody" class="chatbot__body"></div>
