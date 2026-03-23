@@ -7,7 +7,7 @@
   const pickFilesBtn = d.getElementById('pickFiles');
   const filesQueue = d.getElementById('files');
   const uploadBtn = d.getElementById('uploadNow');
-  
+
   // Agregar un contenedor para los documentos ya subidos bajo el formulario (si no existe lo creamos)
   let uploadedList = d.getElementById('uploadedDocs');
   if (!uploadedList) {
@@ -31,7 +31,7 @@
   async function checkAuth() {
     // Esperar a que el auth.js cargue y Supabase inicialice
     if (!window.supabase) {
-      setTimeout(checkAuth, 100);
+      setTimeout(checkAuth, 10000);
       return;
     }
     const { data: { user } } = await window.supabase.auth.getUser();
@@ -87,7 +87,7 @@
     e.preventDefault();
     dropzone.classList.remove('drag');
   }));
-  
+
   dropzone.addEventListener('drop', e => handleFiles(e.dataTransfer.files));
   pickFilesBtn.onclick = () => fileInput.click();
   fileInput.onchange = e => handleFiles(e.target.files);
@@ -129,17 +129,17 @@
         const { data: signedData, error: signErr } = await window.supabase.storage
           .from('tenders_and_docs')
           .createSignedUrl(storagePath, 600);
-          
+
         const downloadUrl = signedData ? signedData.signedUrl : '';
 
         // 3. Avisar a n8n (Webhook) para inicializar Vectorización AI
         try {
           const n8nUrl = \"https://primary-production-aa252.up.railway.app/webhook/39501108-66d4-4117-99d1-7bc9cd21ca08\";
           const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
-          
+
           await fetch(n8nUrl, {
             method: 'POST',
-            headers: { 
+            headers: {
               'Content-Type': 'application/json',
               'X-AFK-Secret': 'AFK_PRO_2024_SECURE_KEY' // Blindaje de seguridad
             },
@@ -154,7 +154,7 @@
             })
           });
           window.notificar?.(`Procesando ${file.name} con IA...`, 'success');
-        } catch(whErr) {
+        } catch (whErr) {
           console.warn(\"Hubo un error temporal enviando aviso a n8n:\", whErr);
         }
       }
@@ -177,7 +177,7 @@
 
   // --- CARGA DE DOCUMENTOS DEL USUARIO ---
   async function loadMyDocuments() {
-    if(!currentUser) return;
+    if (!currentUser) return;
     uploadedListItems.innerHTML = '<p class="text-muted">Cargando...</p>';
 
     // 1. Obtener registros (RLS nativo solo devuelve los propios)
@@ -198,7 +198,7 @@
 
     // 2. Renderizar lista
     uploadedListItems.innerHTML = '';
-    
+
     // Obtenemos URLs firmadas temporales si queremos permitir descarga real,
     // o simplemente listamos y generamos la URL cuando hagan clic.
     for (const doc of docs) {
@@ -206,7 +206,7 @@
       row.className = 'file';
       row.style.background = 'rgba(255,255,255,0.02)';
       row.style.marginBottom = '6px';
-      
+
       const date = new Date(doc.created_at).toLocaleDateString();
 
       row.innerHTML = `
@@ -234,7 +234,7 @@
         if (!confirm('¿Eliminar documento definitivamente?')) return;
         const path = e.target.dataset.path;
         const id = e.target.dataset.id;
-        
+
         // Primero borramos el binario del storage
         const { error: stErr } = await window.supabase.storage.from('tenders_and_docs').remove([path]);
         if (stErr) return alert("Error en Storage: " + stErr.message);

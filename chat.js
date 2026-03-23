@@ -4,7 +4,7 @@
   // Unificar a un único Chatbot Maestro (n8n Agent)
   const WEBHOOK_URL = 'https://primary-production-aa252.up.railway.app/webhook/a35e75ae-9003-493b-a00e-8edd8bd2b12a';
   const CHAT_API = window.AFK_CHAT_WEBHOOK || WEBHOOK_URL;
-  
+
   const USE_BASIC_AUTH = false, BASIC_USER = 'user', BASIC_PASS = 'pass';
   const BEARER_TOKEN = '';
   const BOT_WELCOME = 'Hola 👋 Soy el asistente de AFK. ¿En qué te ayudo?';
@@ -26,7 +26,7 @@
   try {
     const saved = localStorage.getItem('afk_chat_history');
     if (saved) history = JSON.parse(saved);
-  } catch(e) {}
+  } catch (e) { }
 
   const sessionId =
     localStorage.getItem('afk_chat_session') ||
@@ -66,7 +66,7 @@
   };
 
   function buildHeaders() {
-    const h = { 
+    const h = {
       'Content-Type': 'application/json',
       'X-AFK-Secret': 'AFK_PRO_2024_SECURE_KEY' // Blindaje de seguridad
     };
