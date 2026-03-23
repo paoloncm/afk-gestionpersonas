@@ -3,8 +3,11 @@
 (function () {
   const d = document;
   const dropzone = d.getElementById('dropzone');
-  const fileInput = d.getElementById('fileInput');
   const pickFilesBtn = d.getElementById('pickFiles');
+  const pickFolderBtn = d.getElementById('pickFolder');
+  const fileInput = d.getElementById('fileInput');
+  const folderInput = d.getElementById('folderInput');
+  const categoryInput = d.getElementById('categoryInput');
   const filesQueue = d.getElementById('files');
   const uploadBtn = d.getElementById('uploadNow');
 
@@ -63,6 +66,15 @@
   }
 
   function handleFiles(newFiles) {
+    // Si es una carga de carpeta, intentar sugerir el nombre de la categoría del primer archivo
+    if (newFiles.length > 0 && newFiles[0].webkitRelativePath) {
+       const firstPath = newFiles[0].webkitRelativePath;
+       const folderName = firstPath.split('/')[0];
+       if (folderName && categoryInput && !categoryInput.value) {
+          categoryInput.value = folderName;
+       }
+    }
+
     for (const f of newFiles) {
       const ext = f.name.substring(f.name.lastIndexOf('.')).toLowerCase();
       if (!ALLOWED_EXTS.includes(ext)) {
@@ -90,7 +102,9 @@
 
   dropzone.addEventListener('drop', e => handleFiles(e.dataTransfer.files));
   pickFilesBtn.onclick = () => fileInput.click();
+  if (pickFolderBtn) pickFolderBtn.onclick = () => folderInput.click();
   fileInput.onchange = e => handleFiles(e.target.files);
+  if (folderInput) folderInput.onchange = e => handleFiles(e.target.files);
 
   // --- SUBIDA SEGURA ---
   uploadBtn.onclick = async () => {
@@ -114,12 +128,14 @@
         if (uploadError) throw uploadError;
 
         // 2. Insertar Metadatos
+        const category = (categoryInput?.value || 'General').trim();
         const { data: dbData, error: dbError } = await window.supabase
           .from('client_documents')
           .insert({
             file_name: file.name,
             file_size: file.size,
-            storage_path: storagePath
+            storage_path: storagePath,
+            category: category
           }).select().single();
 
         if (dbError) throw dbError;
@@ -194,62 +210,92 @@
       return;
     }
 
-    // 2. Renderizar lista
+    // 2. Agrupar por categoría
+    const groups = docs.reduce((acc, doc) => {
+      const cat = doc.category || 'General';
+      if (!acc[cat]) acc[cat] = [];
+      acc[cat].push(doc);
+      return acc;
+    }, {});
+
+    // 3. Renderizar lista agrupada
     uploadedListItems.innerHTML = '';
 
-    // Obtenemos URLs firmadas temporales si queremos permitir descarga real,
-    // o simplemente listamos y generamos la URL cuando hagan clic.
-    for (const doc of docs) {
-      const row = d.createElement('div');
-      row.className = 'file';
-      row.style.background = 'rgba(255,255,255,0.02)';
-      row.style.marginBottom = '6px';
+    Object.keys(groups).sort().forEach(cat => {
+      const folderDiv = d.createElement('div');
+      folderDiv.className = 'folder-group';
+      folderDiv.style.marginBottom = '20px';
 
-      const date = new Date(doc.created_at).toLocaleDateString();
+      const filesInCat = groups[cat];
 
-      row.innerHTML = `
-        <span class="dot" style="background:#10b981"></span>
-        <div class="name" style="flex:1">
-          <strong>${doc.file_name}</strong> 
-          <span class="size" style="margin-left:8px; font-size:12px; color:var(--muted);">· ${bytesToText(doc.file_size)} · Subido el ${date}</span>
+      folderDiv.innerHTML = `
+        <div class="folder-header" style="display:flex; align-items:center; gap:10px; padding:10px; background:rgba(255,255,255,0.05); border-radius:8px; cursor:pointer;">
+          <span style="font-size:18px;">📂</span>
+          <strong style="flex:1">${cat}</strong>
+          <span class="badge" style="background:rgba(255,255,255,0.1)">${filesInCat.length}</span>
         </div>
-        <div style="display:flex; gap:6px;">
-          <button class="btn btn-mini btn-download" data-path="${doc.storage_path}">Descargar</button>
-          <button class="btn btn-mini btn-delete-doc text-danger" data-id="${doc.id}" data-path="${doc.storage_path}">🗑️</button>
-        </div>
+        <div class="folder-content" style="padding:10px 0 10px 20px;"></div>
       `;
 
-      // Evento de descarga segura
-      row.querySelector('.btn-download').onclick = async (e) => {
-        const path = e.target.dataset.path;
-        const { data, error } = await window.supabase.storage.from('tenders_and_docs').createSignedUrl(path, 60); // 60s
-        if (error) return window.notificar?.('Error al firmar URL: ' + error.message, 'error');
-        window.open(data.signedUrl, '_blank');
+      const content = folderDiv.querySelector('.folder-content');
+      const header = folderDiv.querySelector('.folder-header');
+
+      // Toggle colapsable
+      header.onclick = () => {
+        const isHidden = content.style.display === 'none';
+        content.style.display = isHidden ? 'block' : 'none';
       };
 
-      // Evento de borrado
-      row.querySelector('.btn-delete-doc').onclick = async (e) => {
-        if (!confirm('¿Eliminar documento definitivamente?')) return;
-        const path = e.target.dataset.path;
-        const id = e.target.dataset.id;
+      filesInCat.forEach(doc => {
+        const row = d.createElement('div');
+        row.className = 'file';
+        row.style.background = 'rgba(255,255,255,0.01)';
+        row.style.marginBottom = '4px';
+        row.style.padding = '8px 12px';
+        row.style.borderRadius = '6px';
 
-        // Primero borramos el binario del storage
-        const { error: stErr } = await window.supabase.storage.from('tenders_and_docs').remove([path]);
-        if (stErr) return window.notificar?.('Error en Storage: ' + stErr.message, 'error');
+        const date = new Date(doc.created_at).toLocaleDateString();
 
-        // Luego borramos el registro central
-        await window.supabase.from('client_documents').delete().eq('id', id);
+        row.innerHTML = `
+          <span class="dot" style="background:#10b981; width:8px; height:8px;"></span>
+          <div class="name" style="flex:1; font-size:13px;">
+            <strong>${doc.file_name}</strong> 
+            <span class="size" style="margin-left:8px; font-size:11px; color:var(--muted);">· ${bytesToText(doc.file_size)} · ${date}</span>
+          </div>
+          <div style="display:flex; gap:6px;">
+            <button class="btn btn-mini btn-download" data-path="${doc.storage_path}">Descargar</button>
+            <button class="btn btn-mini btn-delete-doc text-danger" style="padding:2px 6px;" data-id="${doc.id}" data-path="${doc.storage_path}">🗑️</button>
+          </div>
+        `;
 
-        // Doble escudo: si el borrado automático de la base de datos (Cascade) no alcanzó a los documentos antiguos,
-        // este script los forzará a borrarse usando el ID que está guardado en texto dentro de la metadata.
-        const { error: vecErr } = await window.supabase.from('document_chunks').delete().contains('metadata', { document_id: id });
-        if (vecErr) console.warn("No se borraron vectores huérfanos:", vecErr.message);
+        // Evento de descarga segura
+        row.querySelector('.btn-download').onclick = async (e) => {
+          const path = e.target.dataset.path;
+          const { data, error } = await window.supabase.storage.from('tenders_and_docs').createSignedUrl(path, 60);
+          if (error) return window.notificar?.('Error al firmar URL: ' + error.message, 'error');
+          window.open(data.signedUrl, '_blank');
+        };
 
-        loadMyDocuments();
-      };
+        // Evento de borrado
+        row.querySelector('.btn-delete-doc').onclick = async (e) => {
+          if (!confirm('¿Eliminar documento definitivamente?')) return;
+          const path = e.target.dataset.path;
+          const id = e.target.dataset.id;
 
-      uploadedListItems.appendChild(row);
-    }
+          const { error: stErr } = await window.supabase.storage.from('tenders_and_docs').remove([path]);
+          if (stErr) return window.notificar?.('Error en Storage: ' + stErr.message, 'error');
+
+          await window.supabase.from('client_documents').delete().eq('id', id);
+          await window.supabase.from('document_chunks').delete().contains('metadata', { document_id: id });
+
+          loadMyDocuments();
+        };
+
+        content.appendChild(row);
+      });
+
+      uploadedListItems.appendChild(folderDiv);
+    });
   }
 
   // Inicializar todo

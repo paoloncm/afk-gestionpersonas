@@ -26,10 +26,17 @@
     <div class="card"><div class="card__body">
       <div class="uploader">
         <div id="dropzone" class="dropzone" tabindex="0">
-          <p class="m-0">Arrastra archivos aquí o <span class="btn btn--primary" id="pickFiles">Selecciona</span></p>
+          <p class="m-0">Arrastra archivos aquí o <span class="btn btn--primary" id="pickFiles">Selecciona</span> o <span class="btn btn--outline" id="pickFolder">Carpeta</span></p>
           <p class="text-muted m-0">PDF, DOCX, XLSX, PNG (máx. 25MB)</p>
           <input id="fileInput" type="file" multiple hidden>
+          <input id="folderInput" type="file" webkitdirectory mozdirectory msdirectory odirectory directory hidden>
         </div>
+        
+        <div class="folder-selector" style="margin-top: 15px; display: flex; gap: 10px; align-items: center;">
+          <label for="categoryInput" style="font-size: 14px; font-weight: 600;">Nombre de Carpeta / Categoría:</label>
+          <input id="categoryInput" class="input" type="text" placeholder="Ej: Licitación 2024" style="max-width: 300px;">
+        </div>
+
         <div id="files" class="files"></div>
         <div><button id="uploadNow" class="btn btn--primary">Subir ahora</button></div>
       </div>
