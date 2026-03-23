@@ -46,48 +46,45 @@
     </header>
 
     <main class="main" id="app">
-      <h1 class="h1">Dashboard</h1>
-
-      <section class="toolbar">
-        <div class="toolbar__left" style="display:flex; gap:12px; flex-wrap:wrap;">
-          <select id="filterEstado" class="select">
-            <option value="">Todos los estados</option>
-          </select>
-
-          <select id="filterCargo" class="select">
-            <option value="">Todos los cargos</option>
-          </select>
-
-          <button id="btnResetFilters" class="btn">Reset</button>
+      <section class="hero-dashboard">
+        <div class="hero-dashboard__text">
+          <h2>Centro de Control Inteligente</h2>
+          <p>Copiloto de Cumplimiento Laboral: Evita multas y bloqueos en faena automáticamente.</p>
+          
+          <div class="ai-command-bar">
+            <div class="pulse"></div>
+            <input id="aiQuickSearch" type="text" placeholder="Pregunta a la IA: ¿Quién no puede entrar hoy a faena?">
+            <button id="btnAiQuick" class="btn btn--primary" style="border-radius:14px">Consultar</button>
+          </div>
+        </div>
+        <div class="hero-dashboard__visual" style="text-align:right;">
+           <div class="badge badge--success" style="font-size:16px; padding:8px 16px; margin-bottom:10px;">🛡️ Sistema Protegido</div>
+           <div style="font-size:12px; color:var(--muted)">Última actualización: Hoy, hace pocos segundos</div>
         </div>
       </section>
 
-      <section class="grid-kpi">
-        <div class="card">
+      <section class="decision-grid">
+        <div class="card card--critical">
           <div class="card__body kpi">
-            <span class="label">Total candidatos</span>
-            <span id="kpi_total" class="value">—</span>
+            <span class="label">🚨 Riesgos Críticos</span>
+            <span id="kpi_risks" class="value">0</span>
+            <div style="font-size:11px; color:rgba(239, 68, 68, 0.8); margin-top:5px;">Trabajadores bloqueados de faena</div>
           </div>
         </div>
 
-        <div class="card">
+        <div class="card card--warning-alt">
           <div class="card__body kpi">
-            <span class="label">Promedio nota</span>
-            <span id="kpi_prom_nota" class="value">—</span>
+            <span class="label">⏳ Próximos Vencimientos</span>
+            <span id="kpi_expiring" class="value">0</span>
+            <div style="font-size:11px; color:var(--warning); margin-top:5px;">Documentos que caducan en < 30 días</div>
           </div>
         </div>
 
-        <div class="card">
+        <div class="card card--success-alt">
           <div class="card__body kpi">
-            <span class="label">Experiencia promedio</span>
-            <span id="kpi_prom_exp" class="value">—</span>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card__body kpi">
-            <span class="label">% Nota ≥ 6</span>
-            <span id="kpi_pct_n6" class="value">—</span>
+            <span class="label">✅ Índice de Cumplimiento</span>
+            <span id="kpi_compliance_pct" class="value">0%</span>
+            <div style="font-size:11px; color:var(--ok); margin-top:5px;">Salud documental total de la empresa</div>
           </div>
         </div>
       </section>
@@ -278,6 +275,7 @@
   <script src="auth.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
 
+  <script defer src="dashboard.supabase.js?v=1.0"></script>
   <script defer src="charts.js?v=3.0"></script>
   <script defer src="candidates.supabase.js?v=3.0"></script>
   <script defer src="chat.js?v=5.0"></script>

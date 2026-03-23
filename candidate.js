@@ -151,6 +151,42 @@
     const evalg = $('#phEval');
     if (evalg) evalg.textContent = r.evaluacion_general || '—';
 
+    // Status Badge
+    const statusVal = r.status || 'Nuevo';
+    const statusBadge = $('#phStatusBadge');
+    if (statusBadge) {
+        statusBadge.textContent = statusVal;
+        statusBadge.className = 'badge ' + (statusVal === 'Contratado' ? 'badge--success' : (statusVal === 'Rechazado' ? 'badge--danger' : 'badge--info'));
+    }
+
+    // Recommendation Badge
+    const recBadge = $('#aiRecBadge');
+    if (recBadge) {
+        const nota = num(r.nota);
+        if (nota >= 6.5) {
+            recBadge.textContent = 'Alto Potencial';
+            recBadge.style.background = 'rgba(16, 185, 129, 0.1)';
+            recBadge.style.color = '#10b981';
+            recBadge.style.borderColor = '#10b981';
+        } else if (nota >= 5.5) {
+            recBadge.textContent = 'Recomendable';
+            recBadge.style.background = 'rgba(245, 158, 11, 0.1)';
+            recBadge.style.color = '#f59e0b';
+            recBadge.style.borderColor = '#f59e0b';
+        } else if (nota > 0) {
+            recBadge.textContent = 'Bajo Calce';
+            recBadge.style.background = 'rgba(239, 68, 68, 0.1)';
+            recBadge.style.color = '#ef4444';
+            recBadge.style.borderColor = '#ef4444';
+        }
+    }
+
+    // Ranking Badge
+    const rkBadge = $('#phRankingBadge');
+    if (rkBadge) {
+        rkBadge.textContent = `Ranking: #${num(r.ranking) || '--'} en la vacante`;
+    }
+
     const activeProc = $('#activeProcess');
     if (activeProc) {
         const hasProcess = r.vacancy_id || r.vacancies;
@@ -387,19 +423,21 @@
 
   if (btnAi) {
     btnAi.onclick = async () => {
+      summaryBox.parentElement.parentElement.style.display = 'block';
       summaryBox.innerHTML = '<i>Analizando perfil con IA...</i>';
       
-      // Dispatch event to chat.js if needed, or call n8n directly
       const candidateInfo = `Candidato: ${row.nombre_completo}, Profesión: ${row.profesion}, Experiencia: ${row.experiencia_total} años, Nota: ${row.nota}. Evaluación actual: ${row.evaluacion_general}`;
-      const prompt = `Por favor, genera un resumen ejecutivo de 3 puntos clave para este candidato: ${candidateInfo}. Sé breve y profesional.`;
+      const prompt = `Por favor, genera un resumen ejecutivo de 3 puntos clave para este candidato: ${candidateInfo}. Sé breve y profesional. Sé muy directo sobre sus fortalezas y debilidades.`;
 
-      // We can use the window.afkChat function if we expose it in chat.js
       if (window.afkChatSend) {
           window.afkChatSend(prompt, (reply) => {
               summaryBox.innerHTML = reply.replace(/\n/g, '<br>');
+              if ($('#aiSummaryPreview')) {
+                  $('#aiSummaryPreview').textContent = reply.split('.')[0] + '...';
+              }
           });
       } else {
-          summaryBox.innerHTML = 'El chatbot no está listo. Intenta de nuevo en un momento.';
+          summaryBox.innerHTML = 'El asistente de IA se está cargando...';
       }
     };
   }

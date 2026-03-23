@@ -93,27 +93,64 @@
     </header>
 
     <main class="main">
-      <div style="margin-bottom:20px;">
+      <div style="margin-bottom:20px; display:flex; justify-content:space-between; align-items:center;">
         <a href="index.html" style="color:var(--text-muted); text-decoration:none; font-size:14px;">← Volver al Dashboard</a>
+        <div style="display:flex; gap:8px;">
+           <button class="btn btn--mini" onclick="window.print()">Imprimir Ficha</button>
+           <button class="btn btn--mini" id="btnExportPDF">Exportar PDF</button>
+        </div>
       </div>
-      <h1 class="h1">Ficha del Candidato</h1>
 
       <div class="profile">
-
-        <div class="card">
-          <div class="card__body">
-            <div class=\"profile__header\">
-              <div>
-                <div id="phName" class="h1" style="margin:0">—</div>
-                <div id="phProf" class="text-muted">—</div>
-                <div id="phContact" class="text-muted">—</div>
-                <div id="activeProcess" style="margin-top:8px"></div>
-                <div id="aiMatchContainer" style="margin-top:8px; display:none;">
-                    <span class="tag" style="background:rgba(255,165,0,0.1); color:#ffa500; font-size:12px; font-weight:bold;">Match IA: <span id="matchScoreVal">--</span>%</span>
-                </div>
+        <!-- Hero del Candidato -->
+        <section class="hero-dashboard" style="display:block; padding:32px;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:20px;">
+            <div class="hero-dashboard__text">
+              <div style="display:flex; gap:10px; align-items:center; margin-bottom:12px;">
+                <span id="phStatusBadge" class="badge badge--info">Postulado</span>
+                <span id="aiRecBadge" class="badge" style="background:var(--accent-glow); color:var(--accent); border:1px solid var(--accent);">Esperando Análisis IA</span>
+              </div>
+              <h1 id="phName" style="font-size:42px; font-weight:900; margin:0; line-height:1.1;">—</h1>
+              <p id="phProf" style="font-size:20px; color:var(--text-muted); margin:8px 0 16px;">—</p>
+              
+              <div style="display:flex; gap:20px; flex-wrap:wrap; align-items:center;">
+                <div id="phContact" style="font-size:14px; color:var(--text-muted);">—</div>
+                <div style="width:1px; height:20px; background:var(--border);"></div>
+                <div id="activeProcess" style="font-size:14px; font-weight:600; color:var(--ok);"></div>
               </div>
             </div>
+
+            <div style="text-align:right; display:flex; flex-direction:column; align-items:flex-end; gap:10px;">
+               <div class="card" style="background:rgba(255,255,255,0.03); border:1px solid var(--accent); padding:16px; border-radius:20px; min-width:180px;">
+                  <div style="font-size:12px; text-transform:uppercase; color:var(--text-muted); margin-bottom:4px; font-weight:700;">Match de Perfil IA</div>
+                  <div style="display:flex; align-items:baseline; gap:4px;">
+                    <span id="matchScoreVal" style="font-size:48px; font-weight:900; color:var(--accent); text-shadow:0 0 20px var(--accent-glow);">--</span>
+                    <span style="font-size:20px; font-weight:700; color:var(--accent);">%</span>
+                  </div>
+               </div>
+               <div id="phRankingBadge" style="font-size:12px; color:var(--text-muted); font-weight:600;">Ranking: #-- en la vacante</div>
+            </div>
           </div>
+
+          <div class="ai-command-bar" style="margin-top:32px; max-width:100%;">
+            <div class="pulse"></div>
+            <div id="aiQuickSummaryHeader" style="font-weight:700; color:#fff; font-size:15px; flex:1;">
+               <span id="aiSummaryPreview">El asistente está listo para analizar este perfil...</span>
+            </div>
+            <button id="btnAiSummary" class="btn btn--primary" style="border-radius:14px; padding:8px 20px;">Generar Análisis Completo</button>
+          </div>
+        </section>
+
+        <!-- Bloque de Inteligencia Central -->
+        <div id="aiSummaryFullCard" class="card card--success-alt" style="display:none; margin-bottom:16px;">
+           <div class="card__body">
+              <h3 style="margin:0 0 12px; font-size:16px; font-weight:800; display:flex; align-items:center; gap:8px;">
+                ✨ Resumen Ejecutivo IA
+              </h3>
+              <div id="aiSummaryContent" style="font-size:15px; line-height:1.7; color:rgba(255,255,255,0.9);">
+                 <!-- Se llena con IA -->
+              </div>
+           </div>
         </div>
 
         <div class="grid2">
@@ -160,12 +197,9 @@
 
           <div class="card" style="grid-column:1 / -1">
             <div class="card__body">
-              <div style="display:flex; justify-content:space-between; align-items:center;">
-                <h2 class="h1" style="font-size:18px">Resumen AI (Copiloto)</h2>
-                <button id="btnAiSummary" class="btn btn--primary" style="font-size:12px; padding: 4px 12px;">Generar Resumen</button>
-              </div>
-              <div id="aiSummaryContent" class="text-muted" style="margin-top:12px; line-height:1.6;">
-                Haz clic en "Generar Resumen" para que el asistente analice el perfil...
+              <h2 class="h1" style="font-size:18px">Línea de Vida Laboral</h2>
+              <div class="chart-box" style="height:140px;">
+                <canvas id="expTimeline"></canvas>
               </div>
             </div>
           </div>

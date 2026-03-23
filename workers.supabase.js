@@ -377,19 +377,6 @@ console.log("[workers.supabase.js] archivo cargado");
   }
 
   function updateTopSummary(items) {
-    const targetId = "workersSummaryBar";
-    let summary = document.getElementById(targetId);
-
-    if (!summary) {
-      summary = document.createElement("div");
-      summary.id = targetId;
-      const main = document.querySelector(".main");
-      const toolbar = document.querySelector(".toolbar");
-      if (main && toolbar) {
-        main.insertBefore(summary, toolbar.nextSibling);
-      }
-    }
-
     const totals = items.reduce(
       (acc, w) => {
         const s = getComplianceSummary(w.id);
@@ -405,16 +392,20 @@ console.log("[workers.supabase.js] archivo cargado");
       { total: 0, enabled: 0, atRisk: 0, notEnabled: 0, noInfo: 0 }
     );
 
-    summary.innerHTML = `
-      <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap; padding: 4px 10px;">
-        <span style="color:var(--muted); font-size:13px; font-weight: 600;">Totales visibles: <span style="color:#fff;">${totals.total}</span></span>
-        <span style="color:var(--muted); font-size:13px;">|</span>
-        <span style="color:var(--ok); font-size:13px;">🟢 <b>${totals.enabled}</b> Habilitados</span>
-        <span style="color:${totals.atRisk > 0 ? '#fbbf24' : 'var(--muted)'}; font-size:13px;">🟡 <b>${totals.atRisk}</b> En riesgo</span>
-        <span style="color:${totals.notEnabled > 0 ? '#f87171' : 'var(--muted)'}; font-size:13px;">🔴 <b>${totals.notEnabled}</b> No habilitados</span>
-        ${totals.noInfo > 0 ? `<span style="color:var(--muted); font-size:13px;">⚪ <b>${totals.noInfo}</b> Sin info</span>` : ''}
-      </div>
-    `;
+    // Actualizar Tarjetas Decision-Grid
+    if ($('#kpi_w_total')) $('#kpi_w_total').textContent = totals.total;
+    if ($('#kpi_w_blocked')) $('#kpi_w_blocked').textContent = totals.notEnabled;
+    if ($('#kpi_w_risk')) $('#kpi_w_risk').textContent = totals.atRisk;
+    
+    // Quick Stats en el Hero
+    const quickStats = $('#quickStats');
+    if (quickStats) {
+      quickStats.innerHTML = `
+        <div class="badge badge--success">${totals.enabled} Habilitados</div>
+        ${totals.atRisk > 0 ? `<div class="badge badge--warning">${totals.atRisk} En Riesgo</div>` : ''}
+        ${totals.notEnabled > 0 ? `<div class="badge badge--danger">${totals.notEnabled} Bloqueados</div>` : ''}
+      `;
+    }
   }
 
   function renderWorkers(items) {
@@ -423,9 +414,8 @@ console.log("[workers.supabase.js] archivo cargado");
         <div style="width:40px"><input type="checkbox" id="selectAll"></div>
         <div class="t-col-name">Trabajador</div>
         <div class="t-col-faena">Empresa / Faena</div>
-        <div>Semáforo</div>
-        <div>Estado Faena</div>
-        <div>Documentos</div>
+        <div>Estado Operacional</div>
+        <div>Próximos Vencimientos</div>
         <div>Acciones</div>
       </div>
     `;
@@ -498,22 +488,18 @@ console.log("[workers.supabase.js] archivo cargado");
             </button>
           </div>
 
-          <div data-label="Semáforo">
+          <div data-label="Estado Operacional">
             <div style="display:flex; align-items:center; gap:8px;">
               <span class="${summary.dotClass}"></span>
-              <span class="badge ${summary.badgeClass}">${summary.badgeText}</span>
+              <span class="badge ${summary.faenaClass}" style="min-width:110px;">${summary.faenaText}</span>
             </div>
           </div>
 
-          <div data-label="Estado Faena">
-            <span class="badge ${summary.faenaClass}">${summary.faenaText}</span>
-          </div>
-
-          <div data-label="Documentos">
+          <div data-label="Próximos Vencimientos">
             <div style="display:flex; flex-direction:column; gap:4px;">
-              <span><strong>${summary.total}</strong> total</span>
-              <span style="font-size:12px; color:var(--muted)">
-                ${summary.expired} vencidos · ${summary.upcoming} por vencer
+              <span class="badge ${summary.badgeClass}">${summary.badgeText}</span>
+              <span style="font-size:11px; color:var(--muted)">
+                ${summary.total} docs totales
               </span>
             </div>
           </div>
@@ -806,7 +792,7 @@ console.log("[workers.supabase.js] archivo cargado");
         const fullName = String(w.full_name || "").toLowerCase();
         const rut = String(w.rut || "").toLowerCase();
         const company = String(w.company_name || "").toLowerCase();
-        const workerStatus = String(normalizeStatus(w.status)).toLowerCase();
+        const opStatus = String(w._complianceSummary?.faenaText || "").toLowerCase();
 
         const matchSearch =
           !query ||
@@ -814,7 +800,7 @@ console.log("[workers.supabase.js] archivo cargado");
           rut.includes(query) ||
           company.includes(query);
 
-        const matchStatus = !status || workerStatus === status;
+        const matchStatus = !status || opStatus === status;
 
         return matchSearch && matchStatus;
       });
@@ -829,11 +815,24 @@ console.log("[workers.supabase.js] archivo cargado");
     searchInput.oninput = applyFilters;
     statusFilter.onchange = applyFilters;
 
-    resetBtn.onclick = () => {
-      searchInput.value = "";
-      statusFilter.value = "";
-      applyFilters();
-    };
+    // Copiloto IA Integrado
+    const aiInput = $("#aiWorkerSearch");
+    const aiBtn = $("#btnAiWorker");
+    if (aiInput && aiBtn) {
+      const execAi = () => {
+        const val = aiInput.value.trim();
+        if (!val) return;
+        if (window.btnChat) window.btnChat.click();
+        const chatIn = document.getElementById("chatInput");
+        if (chatIn) {
+          chatIn.value = val;
+          document.getElementById("chatSend")?.click();
+        }
+        aiInput.value = "";
+      };
+      aiBtn.onclick = execAi;
+      aiInput.onkeydown = (e) => { if (e.key === "Enter") execAi(); };
+    }
   }
 
   const btnGen = $("#btnGenerateTec02");

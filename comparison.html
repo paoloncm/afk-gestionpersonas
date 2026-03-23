@@ -1,41 +1,60 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>AFK RRHH — Comparativo</title>
-
+  <title>AFK RRHH — Centro de Decisiones</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-
   <style>
     .comparison-grid {
       display: grid;
-      gap: 16px;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      margin-top: 24px;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 24px;
+      margin-top: 32px;
     }
-    .comp-avatar {
-      width: 60px;
-      height: 60px;
-      border-radius: 999px;
-      margin-bottom: 12px;
-    }
-    .comp-value {
-      font-size: 24px;
+    .best-option-badge {
+      position: absolute;
+      top: -12px;
+      left: 20px;
+      background: #10b981;
+      color: #fff;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 11px;
       font-weight: 800;
-      color: var(--primary);
-    }
-    .comp-label {
-      font-size: 12px;
       text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--text-muted);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+      z-index: 10;
     }
-    .radar-box {
-      height: 250px;
-      margin-top: 16px;
+    .winner-card {
+      border: 2px solid #10b981 !important;
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(0, 0, 0, 0.2)) !important;
+    }
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      font-size: 14px;
+    }
+    .comparison-table th, .comparison-table td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .comparison-table th {
+      color: var(--muted);
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 1px;
+    }
+    .matrix-view {
+        background: var(--card-2);
+        border-radius: var(--radius-lg);
+        padding: 24px;
+        margin-bottom: 32px;
+        border: 1px solid var(--border);
     }
   </style>
 </head>
@@ -52,50 +71,62 @@
         <a href="vacancies.html"><span class="label">Vacantes</span></a>
         <a href="interviews.html"><span class="label">Entrevistas</span></a>
         <a href="pipeline.html"><span class="label">Pipeline</span></a>
-
         <div class="nav-category">Gestión</div>
         <a href="workers.html"><span class="label">Trabajadores</span></a>
         <a href="alerts.html"><span class="label">Alertas</span></a>
         <a href="documents.html"><span class="label">Documentos</span></a>
         <a href="reports.html"><span class="label">Reportes</span></a>
-        <a id="openChatbot" href="#chatbot"><span class="label">Chatbot</span></a>
       </nav>
     </aside>
 
     <header class="topbar">
       <button class="btn-menu" aria-label="Abrir menú">☰</button>
-      <button class="btn" onclick="location.href='index.html'">Volver</button>
+      <div style="margin-left:auto;">
+         <button class="btn btn--primary" onclick="window.print()">Generar Informe PDF</button>
+      </div>
     </header>
 
     <main class="main">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h1 class="h1">Comparativo de Candidatos</h1>
+      <div style="margin-bottom:20px;">
+        <a href="index.html" style="color:var(--text-muted); text-decoration:none; font-size:14px;">← Volver al Dashboard</a>
       </div>
 
-      <div id="comparisonContainer" class="comparison-grid">
-        <!-- Tarjetas dinámicas -->
-      </div>
+      <section class="hero-dashboard" id="decisionHero">
+        <div class="hero-dashboard__text">
+          <div class="badge badge--success" style="margin-bottom:10px;">🏆 Recomendación de IA AFK</div>
+          <h2 id="winnerName">Analizando candidatos...</h2>
+          <p id="winnerReason" style="max-width:700px; line-height:1.6; margin-top:12px; color:rgba(255,255,255,0.8);">
+            Estamos procesando los perfiles para determinar el mejor calce operacional.
+          </p>
+          <div style="margin-top:24px; display:flex; gap:12px;">
+             <button id="btnQuickSchedule" class="btn btn--primary" style="height:44px; padding:0 24px;">📅 Agendar con el Ganador</button>
+             <button id="btnSelectWinner" class="btn" style="height:44px; padding:0 24px;">🟢 Seleccionar Candidato</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="matrix-view">
+         <h3 style="margin:0 0 16px; font-size:18px; font-weight:900;">Matriz de Decisión</h3>
+         <div id="matrixTableWrapper">
+            <table class="comparison-table">
+               <thead>
+                  <tr id="matrixHeader">
+                     <th>Factor</th>
+                  </tr>
+               </thead>
+               <tbody id="matrixBody"></tbody>
+            </table>
+         </div>
+      </section>
+
+      <h3 style="margin:40px 0 20px; font-size:18px; font-weight:900;">Análisis Detallado</h3>
+      <div id="comparisonContainer" class="comparison-grid"></div>
     </main>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="supabase.js"></script>
-  <script src="comparison.js"></script>
-  <script defer src="responsive.js?v=2.0"></script>
-    <aside id="chatbot" class="chatbot">
-      <div class="chatbot__head">
-        <strong>AFK Chatbot</strong>
-        <button id="closeChat" class="btn" type="button">Cerrar</button>
-      </div>
-
-      <div id="chatBody" class="chatbot__body"></div>
-
-      <div class="chatbot__input">
-        <input id="chatInput" type="text" placeholder="Escribe aqu�">
-        <button id="chatSend" class="btn btn--primary" type="button">Enviar</button>
-      </div>
-    </aside>
+  <script src="supabase.js?v=2.0"></script>
+  <script defer src="comparison.js?v=2.0"></script>
   <script defer src="chat.js?v=5.0"></script>
 </body>
 </html>
-
