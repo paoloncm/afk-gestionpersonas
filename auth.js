@@ -56,12 +56,6 @@
         tendersLink.innerHTML = '<span class="label">Licitaciones</span>';
         nav.appendChild(tendersLink);
 
-        // Link de Administración
-        const adminLink = document.createElement('a');
-        adminLink.href = 'admin.html';
-        if (window.location.pathname.endsWith('admin.html')) adminLink.className = 'is-active';
-        adminLink.innerHTML = '<span class="label">Mapeo de Clientes</span>';
-        nav.appendChild(adminLink);
       }
 
       // 2. Botón de Cerrar Sesión (al final)

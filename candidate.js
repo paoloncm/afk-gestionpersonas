@@ -104,10 +104,6 @@
   }
 
   function fill(r) {
-    const seed = encodeURIComponent(r.nombre_completo || 'AFK');
-    const avatar = $('#phAvatar');
-    if (avatar) avatar.src = `https://i.pravatar.cc/72?u=${seed}`;
-
     const name = $('#phName');
     if (name) name.textContent = r.nombre_completo || '—';
 

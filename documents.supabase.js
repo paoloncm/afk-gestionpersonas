@@ -102,9 +102,9 @@
 
     try {
       for (const file of filesToUpload) {
-        // 1. Generar path seguro en Storage: [user_id]/[timestamp]-[nombre]
+        // 1. Generar path en Storage: uploads/[timestamp]-[nombre]
         const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-        const storagePath = `${currentUser.id}/${Date.now()}_${safeName}`;
+        const storagePath = `uploads/${Date.now()}_${safeName}`;
 
         // Subir binario al bucket privado
         const { error: uploadError } = await window.supabase.storage
@@ -113,11 +113,10 @@
 
         if (uploadError) throw uploadError;
 
-        // 2. Insertar Metadatos en la tabla segura con RLS
+        // 2. Insertar Metadatos
         const { data: dbData, error: dbError } = await window.supabase
           .from('client_documents')
           .insert({
-            user_id: currentUser.id,
             file_name: file.name,
             file_size: file.size,
             storage_path: storagePath
@@ -145,7 +144,6 @@
             },
             body: JSON.stringify({
               document_id: dbData.id,
-              user_id: currentUser.id,
               file_name: file.name,
               file_type: ext, // Para que n8n sepa si vectorizar (PDF) o extraer (Excel)
               storage_path: storagePath,

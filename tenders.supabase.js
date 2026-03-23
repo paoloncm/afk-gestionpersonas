@@ -187,8 +187,6 @@
     const description = tenderDescInput.value;
     const reqs = Array.from(document.querySelectorAll('.req-input')).map(i => i.value.trim()).filter(v => v);
 
-    const { data: { user } } = await window.supabase.auth.getUser();
-
     let res;
     if (id) {
       res = await window.supabase.from('tenders').update({
@@ -196,7 +194,7 @@
       }).eq('id', id);
     } else {
       res = await window.supabase.from('tenders').insert({
-        name, description, requirements: reqs, user_id: user.id
+        name, description, requirements: reqs
       });
     }
 
