@@ -111,8 +111,8 @@
           modal.classList.remove("is-open");
           await loadCandidates();
         } catch (err) {
-          console.error("Error guardando candidato:", err);
-          alert("No se pudo guardar el candidato: " + err.message);
+          console.error('Error guardando candidato:', err);
+          window.notificar?.('No se pudo guardar el candidato: ' + err.message, 'error');
         }
       };
     }
@@ -137,6 +137,31 @@
 
   async function loadCandidates() {
     try {
+      // Shimmer Loading State
+      if (table) {
+        table.innerHTML = `
+          <div class="t-head">
+            <div class="t-col-cb"></div>
+            <div class="t-col-name">Nombre</div>
+            <div class="t-col-prof">Profesión</div>
+            <div class="t-col-vac">Cargo a desempeñar</div>
+            <div class="t-col-score">Puntaje</div>
+            <div class="t-col-exp">Años exp.</div>
+            <div class="t-col-status">Estado</div>
+          </div>
+          ` + Array(5).fill(0).map(() => `
+          <div class="t-row">
+            <div class="t-col-cb"></div>
+            <div class="t-col-name"><div class="skeleton skeleton-text" style="width:80%"></div></div>
+            <div class="t-col-prof"><div class="skeleton skeleton-text" style="width:60%"></div></div>
+            <div class="t-col-vac"><div class="skeleton skeleton-text" style="width:70%"></div></div>
+            <div class="t-col-score"><div class="skeleton skeleton-badge"></div></div>
+            <div class="t-col-exp"><div class="skeleton skeleton-badge"></div></div>
+            <div class="t-col-status"><div class="skeleton skeleton-badge"></div></div>
+          </div>
+          `).join('');
+      }
+
       const { data, error } = await supabase
         .from("candidates")
         .select("*")
@@ -407,7 +432,7 @@
       const selectedIds = getSelectedCandidateIds();
 
       if (!selectedIds.length) {
-        alert("Selecciona al menos un candidato.");
+        window.notificar?.('Selecciona al menos un candidato.', 'warning');
         return;
       }
 
@@ -431,8 +456,8 @@
         legalRepresentative
       });
     } catch (err) {
-      console.error("Error generando TEC-02 desde candidatos:", err);
-      alert("No se pudo generar el TEC-02: " + err.message);
+      console.error('Error generando TEC-02 desde candidatos:', err);
+      window.notificar?.('No se pudo generar el TEC-02: ' + err.message, 'error');
     }
   }
 
@@ -441,7 +466,7 @@
       const selectedIds = getSelectedCandidateIds();
 
       if (!selectedIds.length) {
-        alert("Selecciona al menos un candidato.");
+        window.notificar?.('Selecciona al menos un candidato.', 'warning');
         return;
       }
 
@@ -463,8 +488,8 @@
         legalRepresentative
       });
     } catch (err) {
-      console.error("Error generando TEC-02-A:", err);
-      alert("No se pudo generar el TEC-02-A: " + err.message);
+      console.error('Error generando TEC-02-A:', err);
+      window.notificar?.('No se pudo generar el TEC-02-A: ' + err.message, 'error');
     }
   }
 

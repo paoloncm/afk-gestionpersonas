@@ -16,6 +16,23 @@
 
     async function loadInterviews() {
         try {
+            // Shimmer Loading
+            container.innerHTML = `<h1 class="h1">Gestión de Entrevistas</h1>` + 
+                `<div class="interview-grid">` +
+                Array(3).fill(0).map(() => `
+                    <div class="interview-card">
+                        <div class="interview-card__header">
+                            <div class="skeleton skeleton-avatar"></div>
+                            <div class="skeleton skeleton-badge" style="width:80px"></div>
+                        </div>
+                        <div class="interview-card__body">
+                            <div class="skeleton skeleton-text" style="width:70%; height:20px"></div>
+                            <div class="skeleton skeleton-text" style="width:50%"></div>
+                            <div class="skeleton skeleton-text" style="width:90%"></div>
+                        </div>
+                    </div>
+                `).join('') + `</div>`;
+
             const { data, error } = await supabase
                 .from('interviews')
                 .select(`
@@ -187,7 +204,7 @@
                 console.log('🚀 Navigating to profile for ID:', cid, 'Status:', status);
                 
                 if (!cid || cid === 'undefined' || cid === 'null') {
-                    alert('Error: No se encontró el ID del candidato para esta entrevista.');
+                    window.notificar?.('Error: No se encontró el ID del candidato para esta entrevista.', 'error');
                     return;
                 }
 
@@ -235,8 +252,9 @@
                 .update({ status, notes })
                 .eq('id', id);
 
-            if (error) alert('Error al actualizar: ' + error.message);
+            if (error) window.notificar?.('Error al actualizar: ' + error.message, 'error');
             else {
+                window.notificar?.('Entrevista actualizada correctamente', 'success');
                 modal.classList.remove('is-open');
                 loadInterviews();
             }

@@ -31,7 +31,7 @@
   async function checkAuth() {
     // Esperar a que el auth.js cargue y Supabase inicialice
     if (!window.supabase) {
-      setTimeout(checkAuth, 10000);
+      setTimeout(checkAuth, 100);
       return;
     }
     const { data: { user } } = await window.supabase.auth.getUser();
@@ -134,7 +134,7 @@
 
         // 3. Avisar a n8n (Webhook) para inicializar Vectorización AI
         try {
-          const n8nUrl = \"https://primary-production-aa252.up.railway.app/webhook/39501108-66d4-4117-99d1-7bc9cd21ca08\";
+          const n8nUrl = 'https://primary-production-aa252.up.railway.app/webhook/39501108-66d4-4117-99d1-7bc9cd21ca08';
           const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
 
           await fetch(n8nUrl, {
@@ -155,18 +155,18 @@
           });
           window.notificar?.(`Procesando ${file.name} con IA...`, 'success');
         } catch (whErr) {
-          console.warn(\"Hubo un error temporal enviando aviso a n8n:\", whErr);
+          console.warn('Hubo un error temporal enviando aviso a n8n:', whErr);
         }
       }
 
-      alert(`Se subieron ${filesToUpload.length} documentos correctamente.`);
+      window.notificar?.(`Se subieron ${filesToUpload.length} documentos correctamente.`, 'success');
       filesToUpload = [];
       renderQueue();
       loadMyDocuments();
 
     } catch (err) {
       console.error('Error al subir documento:', err);
-      alert('Error en la carga: ' + err.message);
+      window.notificar?.('Error en la carga: ' + err.message, 'error');
     } finally {
       uploadBtn.textContent = 'Subir ahora';
       uploadBtn.disabled = false;
@@ -225,7 +225,7 @@
       row.querySelector('.btn-download').onclick = async (e) => {
         const path = e.target.dataset.path;
         const { data, error } = await window.supabase.storage.from('tenders_and_docs').createSignedUrl(path, 60); // 60s
-        if (error) return alert("Error al firmar URL: " + error.message);
+        if (error) return window.notificar?.(\"Error al firmar URL: \" + error.message, 'error');
         window.open(data.signedUrl, '_blank');
       };
 
@@ -237,7 +237,7 @@
 
         // Primero borramos el binario del storage
         const { error: stErr } = await window.supabase.storage.from('tenders_and_docs').remove([path]);
-        if (stErr) return alert("Error en Storage: " + stErr.message);
+        if (stErr) return window.notificar?.(\"Error en Storage: \" + stErr.message, 'error');
 
         // Luego borramos el registro central
         await window.supabase.from('client_documents').delete().eq('id', id);

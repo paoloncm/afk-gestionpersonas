@@ -59,8 +59,19 @@
   // --- LÓGICA DE BASE DE DATOS ---
 
   async function loadTenders() {
-    const { data, error } = await window.supabase
-      .from('tenders')
+    try {
+      if (tendersBody) {
+        tendersBody.innerHTML = Array(3).fill(0).map(() => `
+          <div class="t-row" style="padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+            <div class="t-col-name"><div class="skeleton skeleton-text" style="width:150px"></div></div>
+            <div class="t-col-desc"><div class="skeleton skeleton-text" style="width:100%"></div></div>
+            <div class="t-col-reqs"><div class="skeleton skeleton-badge"></div></div>
+          </div>
+        `).join('');
+      }
+
+      const { data, error } = await window.supabase
+        .from('tenders')
       .select('*')
       .order('created_at', { ascending: false });
 
@@ -71,6 +82,12 @@
 
     allTenders = data || [];
     renderTenders();
+    } catch (err) {
+      console.error('Error cargando licitaciones:', err);
+      if (tendersBody) {
+        tendersBody.innerHTML = `<div style="padding: 40px; text-align: center; color: var(--danger);">Error: ${err.message}</div>`;
+      }
+    }
   }
 
   function renderTenders() {
@@ -143,8 +160,11 @@
   async function deleteTender(id) {
     if (!confirm('¿Estás seguro de eliminar esta licitación?')) return;
     const { error } = await window.supabase.from('tenders').delete().eq('id', id);
-    if (error) alert(error.message);
-    else loadTenders();
+    if (error) window.notificar?.(error.message, 'error');
+    else {
+      window.notificar?.('Licitación eliminada', 'success');
+      loadTenders();
+    }
   }
 
   function editTender(tender) {
@@ -180,8 +200,9 @@
       });
     }
 
-    if (res.error) alert(res.error.message);
+    if (res.error) window.notificar?.(res.error.message, 'error');
     else {
+      window.notificar?.('Cambios guardados correctamente', 'success');
       closeModal(tenderModal);
       loadTenders();
     }
