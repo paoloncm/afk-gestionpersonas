@@ -410,7 +410,7 @@ console.log("[workers.supabase.js] archivo cargado");
 
   function renderWorkers(items) {
     const header = `
-      <div class="t-head workers-pro-head">
+      <div class="t-head">
         <div style="width:40px"><input type="checkbox" id="selectAll"></div>
         <div class="t-col-name">Trabajador</div>
         <div class="t-col-faena">Empresa / Faena</div>
@@ -475,7 +475,7 @@ console.log("[workers.supabase.js] archivo cargado");
       const expColor = w.status === 'Blocked' ? 'badge--danger' : (minDays <= 300 ? 'badge--warning' : 'badge--success');
 
       html += `
-        <div class="t-row worker-row-pro" data-id="${id}">
+        <div class="t-row" data-id="${id}">
           <div style="width:40px" data-label="Seleccionar">
             <input type="checkbox" class="worker-check" value="${id}" ${selectedWorkers.has(id) ? "checked" : ""}>
           </div>
@@ -842,7 +842,7 @@ console.log("[workers.supabase.js] archivo cargado");
     }
   }
 
-  const btnGen = $("#btnGenerateTec02");
+  const btnGen = $("#btnExportExcel");
   if (btnGen) {
     btnGen.onclick = async () => {
       try {
