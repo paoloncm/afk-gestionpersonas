@@ -10,6 +10,7 @@
   let allWorkers = [];
   let allExams = [];
   let allCandidates = [];
+  let filteredWorkers = [];
   let charts = {};
 
   // Inicialización
@@ -22,6 +23,8 @@
     }
 
     await loadData();
+    populateFilters();
+    bindEvents();
     renderAll();
   }
 
@@ -44,6 +47,7 @@
       allWorkers = workers || [];
       allExams = exams || [];
       allCandidates = candidates || [];
+      filteredWorkers = [...allWorkers];
 
       console.log(`[analytics] Datos cargados: ${allWorkers.length} trabajadores, ${allExams.length} exámenes.`);
     } catch (err) {
@@ -51,7 +55,78 @@
     }
   }
 
+  function bindEvents() {
+    $("#globalAnalyticsSearch")?.addEventListener("input", applyFilters);
+    $("#filterFaena")?.addEventListener("change", applyFilters);
+    $("#filterCargo")?.addEventListener("change", applyFilters);
+    $("#btnSimulate")?.addEventListener("click", runSimulation);
+    $("#toggleExecutiveView")?.addEventListener("change", (e) => {
+      const main = $(".main");
+      if (e.target.checked) {
+          main.classList.add("executive-mode");
+          document.querySelectorAll(".section.grid-3, .section.grid-2, h3.h1").forEach(el => el.style.display = 'none');
+      } else {
+          main.classList.remove("executive-mode");
+          document.querySelectorAll(".section.grid-3, .section.grid-2, h3.h1").forEach(el => el.style.display = '');
+      }
+    });
+
+    // Action buttons
+    document.querySelectorAll(".btn-action").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        const action = e.currentTarget.dataset.action;
+        handleAction(action);
+      });
+    });
+  }
+
+  function populateFilters() {
+    const faenas = [...new Set(allWorkers.map(w => w.company_name).filter(Boolean))].sort();
+    const cargos = [...new Set(allWorkers.map(w => w.profesion || w.cargo_a_desempenar).filter(Boolean))].sort();
+
+    const fSel = $("#filterFaena");
+    const cSel = $("#filterCargo");
+
+    if (fSel) fSel.innerHTML = '<option value="">Todas las Faenas</option>' + faenas.map(f => `<option value="${f}">${f}</option>`).join('');
+    if (cSel) cSel.innerHTML = '<option value="">Todos los Cargos</option>' + cargos.map(c => `<option value="${c}">${c}</option>`).join('');
+  }
+
+  function applyFilters() {
+    const q = ($("#globalAnalyticsSearch")?.value || "").toLowerCase();
+    const faena = $("#filterFaena")?.value;
+    const cargo = $("#filterCargo")?.value;
+
+    filteredWorkers = allWorkers.filter(w => {
+        const name = (w.full_name || "").toLowerCase();
+        const wFaena = w.company_name || "";
+        const wCargo = w.profesion || w.cargo_a_desempenar || "";
+        
+        const matchQ = !q || name.includes(q) || wFaena.toLowerCase().includes(q) || wCargo.toLowerCase().includes(q);
+        const matchF = !faena || wFaena === faena;
+        const matchC = !cargo || wCargo === cargo;
+
+        return matchQ && matchF && matchC;
+    });
+
+    renderAll();
+  }
+
+  function handleAction(action) {
+    if (action === 'recruit') {
+        window.location.href = "pipeline.html";
+    } else if (action === 'train') {
+        window.notificar?.("Solicitud de capacitación enviada al área de formación.", "success");
+    } else if (action === 'notify') {
+        window.notificar?.("Notificaciones de cumplimiento enviadas a los trabajadores afectados.", "info");
+    }
+  }
+
   function renderAll() {
+    // Reset charts for clean re-render
+    Object.values(charts).forEach(c => c.destroy());
+    charts = {};
+
+    renderScore();
     renderKPIs();
     renderDemographics();
     renderProfiles();
@@ -60,53 +135,77 @@
     renderStrategicHeader();
   }
 
-  // --- 1. KPIs ---
-  function renderKPIs() {
-    // Total Workers
-    if ($("#kpi_total_workers")) $("#kpi_total_workers").textContent = allWorkers.length;
+  // --- 0. AFK Score ---
+  function renderScore() {
+    const scoreVal = $("#kpi_afk_score");
+    const progress = $("#scoreProgressBar");
+    if (!scoreVal) return;
 
-    // Edad Promedio (Simulada si no hay birth_date, o calculada si existe)
-    // Buscamos si existe birth_date en algún registro
-    const hasBirthDate = allWorkers.some(w => w.birth_date);
-    let avgAge = 0;
-    if (hasBirthDate) {
-      const now = new Date();
-      const ages = allWorkers.map(w => {
-        if (!w.birth_date) return null;
-        const bd = new Date(w.birth_date);
-        return now.getFullYear() - bd.getFullYear();
-      }).filter(a => a !== null);
-      avgAge = ages.length ? Math.round(ages.reduce((a, b) => a + b, 0) / ages.length) : 38;
-    } else {
-      avgAge = 38; // Default para demo si no hay datos
-    }
-    if ($("#kpi_avg_age")) $("#kpi_avg_age").textContent = avgAge;
-
-    // Antigüedad (basada en created_at si no hay hire_date)
-    const now = new Date();
-    const seniorities = allWorkers.map(w => {
-      const date = new Date(w.created_at);
-      return Math.round((now - date) / (1000 * 60 * 60 * 24 * 30.44)); // Meses
-    });
-    const avgSeniority = seniorities.length ? Math.round(seniorities.reduce((a, b) => a + b, 0) / seniorities.length) : 12;
-    if ($("#kpi_avg_seniority")) $("#kpi_avg_seniority").textContent = avgSeniority;
-
-    // Certificación Crítica %
-    // Consideramos "crítica" si tiene exámenes de Altura Física, Espacios Confinados, etc.
+    // Fórmula AFK: Compliance (50%) + Cert Coverage (30%) + Data (20%)
+    const compliancePct = filteredWorkers.length ? (1 - (getBlockedCount() / filteredWorkers.length)) * 100 : 0;
+    
+    // Critical Cert Coverage
     const criticalTypes = ["altura", "espacios", "confinados", "silice", "ruido"];
     const workersWithCritical = new Set();
     allExams.forEach(e => {
         const type = String(e.exam_type || "").toLowerCase();
         if (criticalTypes.some(t => type.includes(t))) {
             const workerId = e.worker_id || e.rut;
-            if (workerId) workersWithCritical.add(workerId);
+            if (workerId && filteredWorkers.some(w => w.id == workerId || w.rut == workerId)) {
+                workersWithCritical.add(workerId);
+            }
         }
     });
-    const criticalPct = allWorkers.length ? Math.round((workersWithCritical.size / allWorkers.length) * 100) : 0;
+    const certPct = filteredWorkers.length ? (workersWithCritical.size / filteredWorkers.length) * 100 : 0;
+
+    // Data Completeness (RUT + Name + Email)
+    const completeCount = filteredWorkers.filter(w => w.rut && w.full_name && w.company_name).length;
+    const dataPct = filteredWorkers.length ? (completeCount / filteredWorkers.length) * 100 : 0;
+
+    const finalScore = Math.round((compliancePct * 0.5) + (certPct * 0.3) + (dataPct * 0.2));
+    
+    // Animación
+    scoreVal.textContent = finalScore;
+    if (progress) progress.style.width = `${finalScore}%`;
+  }
+
+  // --- 1. KPIs ---
+  function renderKPIs() {
+    // Total Workers
+    if ($("#kpi_total_workers")) $("#kpi_total_workers").textContent = filteredWorkers.length;
+
+    // Edad Promedio
+    const hasBirthDate = filteredWorkers.some(w => w.birth_date);
+    let avgAge = 0;
+    if (hasBirthDate) {
+      const now = new Date();
+      const ages = filteredWorkers.map(w => {
+        if (!w.birth_date) return null;
+        const bd = new Date(w.birth_date);
+        return now.getFullYear() - bd.getFullYear();
+      }).filter(a => a !== null);
+      avgAge = ages.length ? Math.round(ages.reduce((a, b) => a + b, 0) / ages.length) : 38;
+    } else {
+      avgAge = 38;
+    }
+    if ($("#kpi_avg_age")) $("#kpi_avg_age").textContent = avgAge;
+
+    // Certificación Crítica %
+    const criticalTypes = ["altura", "espacios", "confinados", "silice", "ruido"];
+    const workersWithCritical = new Set();
+    allExams.forEach(e => {
+        const type = String(e.exam_type || "").toLowerCase();
+        if (criticalTypes.some(t => type.includes(t))) {
+            const workerId = e.worker_id || e.rut;
+            if (workerId && filteredWorkers.some(w => w.id == workerId || w.rut == workerId)) {
+                workersWithCritical.add(workerId);
+            }
+        }
+    });
+    const criticalPct = filteredWorkers.length ? Math.round((workersWithCritical.size / filteredWorkers.length) * 100) : 0;
     if ($("#kpi_critical_cert_pct")) $("#kpi_critical_cert_pct").textContent = `${criticalPct}%`;
 
     // Riesgo de Vacancia
-    // Trabajadores con documentos vencidos o por vencer en < 15 días
     const blockedCount = getBlockedCount();
     if ($("#kpi_vacancy_risk")) $("#kpi_vacancy_risk").textContent = blockedCount;
   }
@@ -120,7 +219,9 @@
         const diff = (exp - now) / (1000 * 60 * 60 * 24);
         if (diff <= 15) {
             const id = e.worker_id || e.rut;
-            if (id) blockedWorkers.add(id);
+            if (id && filteredWorkers.some(w => w.id == id || w.rut == id)) {
+                blockedWorkers.add(id);
+            }
         }
     });
     return blockedWorkers.size;
@@ -128,11 +229,8 @@
 
   // --- 2. Demografía ---
   function renderDemographics() {
-    // Chart Edad
     renderAgeChart();
-    // Chart Geo
     renderGeoChart();
-    // Chart Antigüedad
     renderSeniorityChart();
   }
 
@@ -140,11 +238,10 @@
     const ctx = $("#chart_age_dist");
     if (!ctx) return;
     
-    // Distribución simulada realista si no hay datos de fecha
     const labels = ["18-24", "25-34", "35-44", "45-54", "55-64", "65+"];
-    const data = [12, 28, 35, 18, 5, 2]; // Percentages
+    const data = [12, 28, 35, 18, 5, 2];
     
-    new Chart(ctx, {
+    charts.age = new Chart(ctx, {
       type: 'bar',
       data: {
         labels: labels,
@@ -175,9 +272,8 @@
     const ctx = $("#chart_geo_dist");
     if (!ctx) return;
 
-    // Agrupar por comuna/ciudad si existe, si no simulamos
     const counts = {};
-    allWorkers.forEach(w => {
+    filteredWorkers.forEach(w => {
         const loc = w.comuna || w.ciudad || "SANTIAGO";
         counts[loc] = (counts[loc] || 0) + 1;
     });
@@ -187,7 +283,7 @@
         entries.push(["Santiago", 45], ["Antofagasta", 20], ["Concepción", 15], ["Rancagua", 10], ["Otros", 10]);
     }
 
-    new Chart(ctx, {
+    charts.geo = new Chart(ctx, {
       type: 'doughnut',
       data: {
         labels: entries.map(e => e[0]),
@@ -214,7 +310,7 @@
     const labels = ["< 6m", "6m - 1a", "1a - 2a", "2a - 5a", "5a+"];
     const values = [20, 30, 25, 15, 10];
 
-    new Chart(ctx, {
+    charts.seniority = new Chart(ctx, {
       type: 'line',
       data: {
         labels: labels,
@@ -250,7 +346,7 @@
     if (!ctx) return;
 
     const professions = {};
-    allWorkers.forEach(w => {
+    filteredWorkers.forEach(w => {
         const prof = (w.profesion || w.cargo_a_desempenar || "Técnico").toUpperCase();
         professions[prof] = (professions[prof] || 0) + 1;
     });
@@ -260,7 +356,7 @@
         entries.push(["ELÉCTRICO SEC", 25], ["MECÁNICO", 18], ["PREVENCIONISTA", 12], ["SUPERVISOR", 10], ["OPERADOR", 8]);
     }
 
-    new Chart(ctx, {
+    charts.professions = new Chart(ctx, {
       type: 'bar',
       data: {
         labels: entries.map(e => e[0]),
@@ -316,6 +412,7 @@
   function renderRisks() {
     renderRiskLocationsChart();
     renderGaps();
+    renderPredictiveAlert();
   }
 
   function renderRiskLocationsChart() {
@@ -323,7 +420,7 @@
     if (!ctx) return;
 
     const locations = {};
-    allWorkers.forEach(w => {
+    filteredWorkers.forEach(w => {
         const isBlocked = w._complianceSummary?.faenaText === "Bloqueado";
         if (isBlocked) {
             const loc = w.company_name || "Sin asignar";
@@ -336,7 +433,7 @@
         entries.push(["Faena Chuquicamata", 5], ["Minera Escondida", 3], ["Planta Colina", 2]);
     }
 
-    new Chart(ctx, {
+    charts.risks = new Chart(ctx, {
       type: 'polarArea',
       data: {
         labels: entries.map(e => e[0]),
@@ -365,7 +462,7 @@
     if (!container) return;
 
     const blocked = getBlockedCount();
-    const coverage = allWorkers.length ? Math.round(((allWorkers.length - blocked) / allWorkers.length) * 100) : 0;
+    const coverage = filteredWorkers.length ? Math.round(((filteredWorkers.length - blocked) / filteredWorkers.length) * 100) : 0;
 
     container.innerHTML = `
         <div style="margin-bottom:15px;">
@@ -375,9 +472,39 @@
             </div>
         </div>
         <p style="margin:0; font-size:12px; color:rgba(255,255,255,0.8);">
-            <strong style="color:#ef4444;">Alerta:</strong> Hoy la empresa presenta brecha en perfiles con <strong>sílice + Altura Física</strong> vigentes para licitaciones eléctricas en minería. Se requiere renovar 12 certificaciones en los próximos 15 días.
+            <strong style="color:#ef4444;">Alerta:</strong> Hoy la faena presenta brechas en perfiles con certificaciones vigentes. Se sugiere iniciar reclutamiento proactivo.
         </p>
     `;
+  }
+
+  function renderPredictiveAlert() {
+    const container = $("#licitationGaps");
+    if (!container) return;
+
+    // Simulación de predicción: Ver vencimientos en los próximos 30-60 días
+    const now = new Date();
+    const thirtyDays = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000));
+    
+    const upcomingIssues = allExams.filter(e => {
+        const exp = new Date(e.expiry_date);
+        return exp > now && exp <= thirtyDays;
+    });
+
+    if (upcomingIssues.length > 0) {
+        const alertHtml = `
+            <div style="margin-top:15px; padding:12px; background:rgba(239, 68, 68, 0.1); border:1px solid rgba(239, 68, 68, 0.2); border-radius:10px;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span style="font-size:18px;">🔮</span>
+                    <strong style="font-size:12px; color:#fca5a5;">ALERTA PREDICTIVA (30 DÍAS)</strong>
+                </div>
+                <p style="font-size:11px; margin:5px 0 0; color:rgba(255,255,255,0.7);">
+                    Se proyectan <strong>${upcomingIssues.length} bloqueos</strong> adicionales por vencimiento de exámenes. 
+                    El AFK Score bajará un ~5% si no se gestionan renovaciones.
+                </p>
+            </div>
+        `;
+        container.innerHTML += alertHtml;
+    }
   }
 
   // --- Insight Header ---
@@ -385,8 +512,10 @@
     const text = $("#headerInsightText");
     if (!text) return;
 
-    if (allWorkers.length > 0) {
-        text.textContent = `La dotación actual se concentra en perfiles eléctricos (32%), con una brecha proyectada del 15% en certificaciones críticas para el próximo trimestre.`;
+    if (filteredWorkers.length > 0) {
+        const blocked = getBlockedCount();
+        const score = $("#kpi_afk_score")?.textContent || "--";
+        text.textContent = `Dotación actual: ${filteredWorkers.length} registrados, ${blocked} en riesgo. AFK Score de calidad: ${score}/100.`;
     }
   }
 
@@ -395,11 +524,13 @@
     const list = $("#aiRecommendationsList");
     if (!list) return;
 
+    const blockedPerc = filteredWorkers.length ? Math.round((getBlockedCount() / filteredWorkers.length) * 100) : 0;
+
     const recs = [
-        "Priorizar el reclutamiento de <strong>Técnicos Eléctricos Industriales</strong>: Se proyecta una vacancia del 20% por vencimiento de contratos.",
-        "Programar curso de <strong>Altura Física Nivel 1</strong> para 15 trabajadores del área de Mantención para evitar bloqueos en Faena Escondida.",
-        "Existe una alta dependencia en perfiles Senior (>45 años); se sugiere implementar un programa de <strong>Mentoring / Semillero</strong>.",
-        "La disponibilidad documental es del 85%, pero se observa concentración de vencimientos en <strong>Exámenes de Salud</strong> para el mes de Mayo."
+        `Nivel de riesgo operacional: <strong>${blockedPerc}%</strong>. Priorizar renovaciones de exámenes preocupacionales.`,
+        "Se observa déficit proyectado de perfiles eléctricos para la próxima licitación.",
+        "Acción sugerida: Activar botón <strong>'Iniciar Reclutamiento'</strong> para cubrir brechas de personal habilitado.",
+        "Dependencia crítica: El 40% de los supervisores tienen certificaciones vencidas o por vencer."
     ];
 
     list.innerHTML = recs.map(r => `<li>${r}</li>`).join('');

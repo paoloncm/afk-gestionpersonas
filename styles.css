@@ -38,6 +38,16 @@ body {
   margin: 6px 0 14px;
 }
 
+.executive-mode .section,
+.executive-mode h3.h1 {
+  display: none !important;
+}
+
+.executive-mode .decision-grid {
+  grid-template-columns: repeat(2, 1fr) !important;
+}
+
+
 /* =========================
    Layout
 ========================= */
@@ -797,9 +807,50 @@ body {
   background: #f59e0b
 }
 
-.dot--red {
-  background: #ef4444
+/* =========================
+   Analytics V2 / Decision Module
+   ========================= */
+
+.toolbar {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
 }
+
+.executive-mode .hero-dashboard {
+  padding: 20px;
+  margin-bottom: 15px;
+}
+
+.btn-action {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-weight: 700 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.btn-action:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(225, 29, 72, 0.3);
+  filter: brightness(1.2);
+}
+
+#scoreGaugeContainer {
+  transition: transform 0.3s ease;
+}
+
+.card:hover #scoreGaugeContainer {
+  transform: scale(1.1) rotate(5deg);
+}
+
+/* =========================
+   Legacy / Others
+   ========================= */
+.dot--red {
+  background: #ef4444;
+}
+
 
 .dot--gray {
   background: #6b7280
