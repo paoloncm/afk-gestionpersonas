@@ -995,6 +995,27 @@ body {
   font-size: 13px;
 }
 
+.form-group input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, .1);
+  background: #fff;
+  color: #111;
+  font-size: 14px;
+  outline: none;
+  transition: all .2s ease;
+}
+
+.form-group input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(225, 29, 72, 0.1);
+}
+
+.form-group input::placeholder {
+  color: #999;
+}
+
 .grid-2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
