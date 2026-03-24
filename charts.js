@@ -15,6 +15,8 @@
   let chartWorkerStatus = null;
   let chartExpMonthly = null;
   let chartRiskTypes = null;
+  let chartCredentialsPct = null;
+  let chartExamsDistribution = null;
 
   function destroyIfExists(chart) {
     if (chart) chart.destroy();
@@ -581,6 +583,88 @@
       }
     });
   }
+  
+  function renderCredentialsPct(workers, exams) {
+    const ctx = document.getElementById("chart_credentials_pct");
+    if (!ctx) return;
+    destroyIfExists(chartCredentialsPct);
+
+    if (!workers.length) return;
+
+    // Get unique worker IDs that have at least one exam record
+    const workerIdsWithExams = new Set();
+    exams.forEach(e => {
+      if (e.worker_id) workerIdsWithExams.add(String(e.worker_id));
+      // Fallback to RUT matching if needed, but in this schema worker_id is preferred
+    });
+
+    const total = workers.length;
+    const withDocs = workers.filter(w => workerIdsWithExams.has(String(w.id))).length;
+    const withoutDocs = total - withDocs;
+
+    chartCredentialsPct = new Chart(ctx, {
+      type: "doughnut",
+      data: {
+        labels: ["Con Exámenes", "Sin Exámenes"],
+        datasets: [{
+          data: [withDocs, withoutDocs],
+          backgroundColor: ["#10b981", "#6b7280"],
+          borderWidth: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: "bottom", labels: { color: "#b3b7bd", boxWidth: 12 } },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => {
+                const val = ctx.raw;
+                const pct = Math.round((val / total) * 100);
+                return ` ${val} trabajadores (${pct}%)`;
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  function renderExamsDistribution(exams) {
+    const ctx = document.getElementById("chart_exams_distribution");
+    if (!ctx) return;
+    destroyIfExists(chartExamsDistribution);
+
+    // Count by credential_name or exam_type
+    const counts = countBy(exams, e => e.credential_name || e.exam_type || "Otros");
+    const entries = [...counts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8);
+
+    chartExamsDistribution = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: entries.map(x => x[0]),
+        datasets: [{
+          label: "Cantidad",
+          data: entries.map(x => x[1]),
+          backgroundColor: "#3498db",
+          borderRadius: 4
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { beginAtZero: true, ticks: { color: "#b3b7bd", stepSize: 1 }, grid: { color: "rgba(255,255,255,.05)" } },
+          y: { ticks: { color: "#b3b7bd", font: { size: 10 } }, grid: { display: false } }
+        }
+      }
+    });
+  }
 
   window.renderAfkCharts = function (items, workers, exams) {
     if (items) {
@@ -591,8 +675,8 @@
     }
     if (workers || exams) {
         renderWorkerStatus(workers || [], exams || []);
-        renderExpMonthly(exams || []);
-        renderRiskTypes(exams || []);
+        renderCredentialsPct(workers || [], exams || []);
+        renderExamsDistribution(exams || []);
     }
   };
 })();

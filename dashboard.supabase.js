@@ -26,7 +26,7 @@
                 { data: candidates, error: cErr }
             ] = await Promise.all([
                 db.from('workers').select('id, status'),
-                db.from('medical_exam_records').select('expiry_date'),
+                db.from('medical_exam_records').select('worker_id, expiry_date, credential_name, exam_type'),
                 db.from('candidates').select('id, nombre_completo, nota, cv_url, status')
             ]);
 
