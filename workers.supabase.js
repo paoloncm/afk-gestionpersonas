@@ -940,7 +940,7 @@ console.log("[workers.supabase.js] archivo cargado");
           full_name: formData.get("full_name").trim(),
           rut: normalizeRut(formData.get("rut")),
           company_name: formData.get("company_name").trim() || "Sin asignar",
-          status: "Activo"
+          status: "Active"
         };
         
         if (user_id) payload.user_id = user_id;
