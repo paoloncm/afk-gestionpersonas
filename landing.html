@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
+    <title>AFK RRHH — Inteligencia de Cumplimiento Minero e Industrial</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0b0c0e;
+            --primary: #3b82f6;
+            --primary-glow: rgba(59, 130, 246, 0.4);
+            --danger: #ef4444;
+            --warning: #fbbf24;
+            --success: #10b981;
+            --border: rgba(255, 255, 255, 0.08);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text-main);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+        /* Navigation */
+        nav {
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            background: rgba(11, 12, 14, 0.8);
+            backdrop-filter: blur(12px);
+            z-index: 100;
+        }
+        .logo { font-weight: 900; font-size: 24px; color: #fff; letter-spacing: -1px; }
+        .logo span { color: var(--danger); }
+        .nav-links { display: flex; gap: 32px; list-style: none; }
+        .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 14px; font-weight: 600; transition: color .2s; }
+        .nav-links a:hover { color: #fff; }
+
+        /* Hero */
+        .hero {
+            padding: 120px 0 80px;
+            text-align: center;
+            position: relative;
+        }
+        .hero-title { font-size: clamp(40px, 6vw, 72px); font-weight: 900; line-height: 1.1; letter-spacing: -2px; margin-bottom: 24px; }
+        .hero-title span { background: linear-gradient(to right, #fff, var(--text-muted)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .hero-subtitle { font-size: 20px; color: var(--text-muted); max-width: 700px; margin: 0 auto 40px; }
+        
+        .cta-group { display: flex; gap: 16px; justify-content: center; }
+        .btn {
+            padding: 16px 32px;
+            border-radius: 40px;
+            font-weight: 700;
+            text-decoration: none;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn--primary {
+            background: var(--primary);
+            color: #fff;
+            box-shadow: 0 10px 30px var(--primary-glow);
+        }
+        .btn--primary:hover { transform: translateY(-4px); box-shadow: 0 15px 40px var(--primary-glow); }
+        .btn--outline { border: 1px solid var(--border); color: #fff; }
+        .btn--outline:hover { background: rgba(255,255,255,0.05); }
+
+        .hero-img {
+            margin-top: 80px;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 0 100px rgba(0,0,0,0.8);
+            border: 1px solid var(--border);
+            max-width: 1000px;
+            margin-inline: auto;
+            position: relative;
+        }
+        .hero-img img { width: 100%; display: block; filter: brightness(0.9); }
+        .hero-img::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, var(--bg), transparent 40%);
+        }
+
+        /* Features */
+        .features { padding: 100px 0; }
+        .section-tag { color: var(--primary); text-transform: uppercase; font-weight: 800; font-size: 13px; letter-spacing: 2px; display: block; margin-bottom: 12px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; margin-top: 60px; }
+        
+        .feature-card {
+            padding: 40px;
+            border-radius: 24px;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid var(--border);
+            transition: all .3s;
+        }
+        .feature-card:hover { border-color: var(--primary); transform: translateY(-10px); background: rgba(255,255,255,0.04); }
+        .feature-icon { font-size: 32px; margin-bottom: 24px; display: block; }
+        .feature-card h3 { font-size: 22px; margin-bottom: 16px; }
+        .feature-card p { color: var(--text-muted); font-size: 15px; }
+
+        /* Pricing */
+        .pricing { padding: 100px 0; background: radial-gradient(circle at top left, rgba(59,130,246,0.05), transparent 40%); }
+        .pricing-table { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 60px; align-items: flex-end; }
+        
+        .price-card {
+            padding: 40px;
+            border-radius: 32px;
+            background: #121417;
+            border: 1px solid var(--border);
+            position: relative;
+        }
+        .price-card.featured {
+            border: 2px solid var(--primary);
+            background: linear-gradient(135deg, #121417, #1a1e26);
+            padding: 60px 40px;
+        }
+        .price-card.featured::after {
+            content: 'RECOMENDADO';
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--primary);
+            color: #fff;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 800;
+        }
+
+        .price-card h4 { font-size: 20px; color: var(--text-muted); margin-bottom: 8px; }
+        .price-amount { font-size: 48px; font-weight: 900; margin-bottom: 16px; }
+        .price-amount span { font-size: 16px; color: var(--text-muted); font-weight: 500; }
+        
+        .price-list { list-style: none; margin: 32px 0; border-top: 1px solid var(--border); padding-top: 32px; }
+        .price-list li { margin-bottom: 16px; display: flex; align-items: center; gap: 10px; font-size: 14px; }
+        .price-list li::before { content: '✓'; color: var(--success); font-weight: 900; }
+
+        @media (max-width: 768px) {
+            .grid-3, .pricing-table { grid-template-columns: 1fr; }
+            .hero-title { font-size: 42px; }
+            .nav-links { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div class="container" style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+            <div class="logo">AFK<span>RRHH</span></div>
+            <ul class="nav-links">
+                <li><a href="#solucion">Solución</a></li>
+                <li><a href="#features">Tecnología</a></li>
+                <li><a href="#precios">Precios</a></li>
+            </ul>
+            <a href="#" class="btn btn--outline" style="padding: 10px 20px; font-size: 13px;">Agendar Demo</a>
+        </div>
+    </nav>
+
+    <header class="hero">
+        <div class="container">
+            <span class="section-tag">EL FUTURO DEL CONTROL OPERATIVO</span>
+            <h1 class="hero-title">
+                Elimina Multiplicadores de Riesgo <br> <span>con Inteligencia de Datos.</span>
+            </h1>
+            <p class="hero-subtitle">
+                Auditoría continua de cumplimiento laboral para minería e industria. 
+                Evita bloqueos, multas y detenciones de faena con AFK.
+            </p>
+            <div class="cta-group">
+                <a href="#solucion" class="btn btn--primary">Ver Solución en Acción</a>
+                <a href="#precios" class="btn btn--outline">Ver Planes de Suscripción</a>
+            </div>
+
+            <div class="hero-img">
+                <img src="./landing_hero_dashboard.png" alt="AFK Dashboard Pro">
+            </div>
+        </div>
+    </header>
+
+    <section id="features" class="features">
+        <div class="container">
+            <div style="text-align: center; max-width: 800px; margin: 0 auto;">
+                <span class="section-tag">TECNOLOGÍA AFK</span>
+                <h2 style="font-size: 42px; font-weight: 900; margin-bottom: 24px;">Diseñado para Operaciones Críticas.</h2>
+            </div>
+
+            <div class="grid-3">
+                <div class="feature-card">
+                    <span class="feature-icon">🛡️</span>
+                    <h3>Semáforo de Cumplimiento</h3>
+                    <p>Jerarquía visual automática (Rojo/Amarillo/Verde). Identifica riesgos críticos en segundos antes de que impacten la faena.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">📑</span>
+                    <h3>Reportabilidad TEC-02</h3>
+                    <p>Generación automatizada de planillas de cumplimiento y TEC-02-A en segundos. Sin errores humanos, sin retrasos.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">🤖</span>
+                    <h3>Copiloto IA Propio</h3>
+                    <p>Un asistente inteligente que conoce tu data. Pregúntale "¿Quién vence hoy?" o "¿Quién es apto para altura?" y obtén respuestas mágicas.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">📱</span>
+                    <h3>Optimización Móvil</h3>
+                    <p>Control total desde el terreno. Diseñado para ser perfecto en celulares, permitiendo a los supervisores tomar decisiones in-situ.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">📊</span>
+                    <h3>Analítica de Salud</h3>
+                    <p>Monitoreo inteligente de indicadores médicos (IMC, Presión, Exámenes) para asegurar un entorno de trabajo 100% seguro.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">🚀</span>
+                    <h3>Implementación en 24h</h3>
+                    <p>Carga masiva inteligente. Pasamos tu base de datos actual a inteligencia operativa en menos de un día.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="precios" class="pricing">
+        <div class="container">
+            <div style="text-align: center;">
+                <span class="section-tag">PLANES Y PRECIOS</span>
+                <h2 style="font-size: 42px; font-weight: 900;">Elige el Poder de tu Dashboard.</h2>
+            </div>
+
+            <div class="pricing-table">
+                <div class="price-card">
+                    <h4>Base Control</h4>
+                    <div class="price-amount">$5 <span>/ trabajador / mes</span></div>
+                    <ul class="price-list">
+                        <li>Directorio de Gestión</li>
+                        <li>Almacenamiento de Docs</li>
+                        <li>Dashboard de Control Básico</li>
+                        <li>Soporte vía Email</li>
+                    </ul>
+                    <a href="#" class="btn btn--outline" style="width:100%; justify-content:center;">Empezar Gratis</a>
+                </div>
+
+                <div class="price-card featured">
+                    <h4>AFK Pro Alert</h4>
+                    <div class="price-amount">$12 <span>/ trabajador / mes</span></div>
+                    <ul class="price-list">
+                        <li>Semáforo Preventivo Pro</li>
+                        <li>Reportabilidad TEC-02 Auto</li>
+                        <li>Expertise en Celulares</li>
+                        <li>Gestión de Vencimientos</li>
+                    </ul>
+                    <a href="#" class="btn btn--primary" style="width:100%; justify-content:center;">Cerrar Trato Pro</a>
+                </div>
+
+                <div class="price-card">
+                    <h4>Copiloto IA</h4>
+                    <div class="price-amount">$20 <span>/ trabajador / mes</span></div>
+                    <ul class="price-list">
+                        <li>Chatbot AI de Cumplimiento</li>
+                        <li>Búsqueda por Vectores</li>
+                        <li>Analítica de Salud Avanzada</li>
+                        <li>Soporte VIP 24/7</li>
+                    </ul>
+                    <a href="#" class="btn btn--outline" style="width:100%; justify-content:center;">Hablar con Ventas</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer style="padding: 60px 0; border-top: 1px solid var(--border); text-align: center; color: var(--text-muted); font-size: 14px;">
+        <div class="container">
+            <div class="logo" style="margin-bottom: 24px;">AFK<span>RRHH</span></div>
+            <p>© 2026 AFK RRHH Platform. Inteligencia Operativa de Alto Riesgo.</p>
+        </div>
+    </footer>
+
+</body>
+</html>

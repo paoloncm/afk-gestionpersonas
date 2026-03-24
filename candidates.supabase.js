@@ -91,6 +91,7 @@
 
           const payload = {
             nombre_completo: formData.get("nombre_completo") || "",
+            rut: formData.get("rut") || "",
             profesion: formData.get("profesion") || "",
             nota: num(formData.get("nota")) || 0,
             correo: formData.get("correo") || "",

@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
+  <title>AFK RRHH — People Analytics</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+
+<body>
+  <div class="dashboard">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo">AFK</div>
+        <span>RRHH</span>
+      </div>
+
+      <nav class="nav">
+        <div class="nav-category">Admisión y selección</div>
+        <a href="index.html"><span class="label">Dashboard</span></a>
+        <a href="vacancies.html"><span class="label">Vacantes</span></a>
+        <a href="interviews.html"><span class="label">Entrevistas</span></a>
+        <a href="pipeline.html"><span class="label">Pipeline</span></a>
+
+        <div class="nav-category">Gestión</div>
+        <a href="workers.html"><span class="label">Trabajadores</span></a>
+        <a href="alerts.html"><span class="label">Alertas</span></a>
+        <a href="documents.html"><span class="label">Documentos</span></a>
+        <a href="reports.html"><span class="label">Reportes</span></a>
+        <a id="openChatbot" href="#chatbot"><span class="label">Chatbot</span></a>
+
+        <div class="nav-category">Analítica e Inteligencia</div>
+        <a class="is-active" href="analytics.html"><span class="label">People Analytics</span></a>
+      </nav>
+    </aside>
+
+    <header class="topbar">
+      <button class="btn-menu" aria-label="Abrir menú">☰</button>
+      <div style="display:flex; gap:10px; margin-left:auto; flex-wrap:wrap;">
+        <button class="btn btn--primary" id="btnExportAnalytics">Exportar Reporte</button>
+        <button class="btn" id="btnChat">Abrir Chatbot</button>
+      </div>
+    </header>
+
+    <main class="main" id="app">
+      <!-- Strategic Header -->
+      <section class="hero-dashboard" style="background: linear-gradient(135deg, rgba(225, 29, 72, 0.15), rgba(0, 0, 0, 0.4)); border-color: rgba(225, 29, 72, 0.3);">
+        <div class="hero-dashboard__text">
+          <h2 style="font-size: 34px; letter-spacing: -1px;">People Analytics</h2>
+          <p style="color: #fff; font-weight: 600; font-size: 18px; margin-top: 5px;">Inteligencia de dotación para decisiones estratégicas.</p>
+          <div id="dynamicInsight" class="card" style="margin-top:20px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 12px 20px; border-radius: 12px;">
+             <div style="display:flex; align-items:center; gap:12px;">
+                <span style="font-size:24px;">💡</span>
+                <span id="headerInsightText" style="font-size:14px; color:rgba(255,255,255,0.9); font-style:italic;">
+                   Analizando tendencias de la dotación actual...
+                </span>
+             </div>
+          </div>
+        </div>
+        <div class="hero-dashboard__visual">
+           <div class="badge badge--success" style="font-size:14px; padding:6px 16px;">✨ Datos en Tiempo Real</div>
+        </div>
+      </section>
+
+      <!-- KPI Grid -->
+      <section class="decision-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+        <div class="card card--success-alt">
+          <div class="card__body kpi">
+            <span class="label">Total Personal</span>
+            <span id="kpi_total_workers" class="value">0</span>
+            <div style="font-size:11px; color:var(--ok); margin-top:5px;">Dotación total vigente</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card__body kpi">
+            <span class="label">Edad Promedio</span>
+            <span id="kpi_avg_age" class="value">--</span>
+            <div style="font-size:11px; color:var(--muted); margin-top:5px;">Años</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card__body kpi">
+            <span class="label">Antigüedad Promedio</span>
+            <span id="kpi_avg_seniority" class="value">--</span>
+            <div style="font-size:11px; color:var(--muted); margin-top:5px;">Meses en la empresa</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card__body kpi">
+            <span class="label">Certificación Crítica</span>
+            <span id="kpi_critical_cert_pct" class="value">0%</span>
+            <div style="font-size:11px; color:var(--ok); margin-top:5px;">Personal habilitado</div>
+          </div>
+        </div>
+        <div class="card card--warning-alt">
+          <div class="card__body kpi">
+            <span class="label">Riesgo de Vacancia</span>
+            <span id="kpi_vacancy_risk" class="value">0</span>
+            <div style="font-size:11px; color:rgba(255,255,255,0.6); margin-top:5px;">Perfiles críticos por vencer</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Block 1: Composición Demográfica -->
+      <h3 class="h1" style="margin-top:40px;">1. Composición Demográfica</h3>
+      <section class="section grid-3">
+        <div class="card">
+          <div class="card__body">
+            <h4 style="margin:0 0 15px; font-size:14px; font-weight:900; color:var(--muted); text-transform:uppercase;">Rango Etario</h4>
+            <div style="height:220px;"><canvas id="chart_age_dist"></canvas></div>
+            <p id="insight_age" class="text-muted" style="font-size:11px; margin-top:12px; font-style:italic;"></p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card__body">
+            <h4 style="margin:0 0 15px; font-size:14px; font-weight:900; color:var(--muted); text-transform:uppercase;">Distribución Geográfica</h4>
+            <div style="height:220px;"><canvas id="chart_geo_dist"></canvas></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card__body">
+            <h4 style="margin:0 0 15px; font-size:14px; font-weight:900; color:var(--muted); text-transform:uppercase;">Antigüedad</h4>
+            <div style="height:220px;"><canvas id="chart_seniority_dist"></canvas></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Block 2: Inteligencia de Perfiles -->
+      <h3 class="h1" style="margin-top:40px;">2. Inteligencia de Perfiles</h3>
+      <section class="section grid-2">
+        <div class="card">
+          <div class="card__body">
+            <h4 style="margin:0 0 15px; font-size:14px; font-weight:900; color:var(--muted); text-transform:uppercase;">Top Profesiones y Oficios</h4>
+            <div style="height:250px;"><canvas id="chart_professions"></canvas></div>
+            <p id="insight_professions" class="text-muted" style="font-size:11px; margin-top:12px; font-style:italic;"></p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card__body">
+            <h4 style="margin:0 0 15px; font-size:14px; font-weight:900; color:var(--muted); text-transform:uppercase;">Perfiles Críticos vs Escasos</h4>
+            <div id="criticalProfilesList" class="toplist" style="margin-top:10px;">
+               <!-- Lista dinámica -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Block 3: Riesgos y Brechas -->
+      <h3 class="h1" style="margin-top:40px;">3. Riesgos y Brechas</h3>
+      <section class="section grid-2">
+        <div class="card card--critical">
+          <div class="card__body">
+            <h4 style="margin:0 0 15px; font-size:14px; font-weight:900; color:#fca5a5; text-transform:uppercase;">Concentración de Riesgo por Faena</h4>
+            <div style="height:250px;"><canvas id="chart_risk_locations"></canvas></div>
+          </div>
+        </div>
+        <div class="card card--warning-alt">
+          <div class="card__body">
+            <h4 style="margin:0 0 15px; font-size:14px; font-weight:900; color:#fbbf24; text-transform:uppercase;">Brechas de Licitación</h4>
+            <div id="licitationGaps" style="font-size:13px; margin-top:10px;">
+               <!-- Texto dinámico -->
+               <div class="loading-state">Calculando capacidad operativa...</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Block 4: Recomendaciones AFK Inteligencia Artificial -->
+      <h3 class="h1" style="margin-top:40px;">4. Recomendaciones AFK (Copilot)</h3>
+      <section class="card card--success-alt" style="margin-bottom:60px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(0,0,0,0.6)); border: 1px solid rgba(16, 185, 129, 0.3);">
+          <div class="card__body">
+              <div style="display:flex; gap:25px; align-items:flex-start;">
+                  <div style="font-size:48px; filter: drop-shadow(0 0 10px var(--ok));">🧠</div>
+                  <div style="flex:1;">
+                     <h4 style="margin:0; font-size:18px; font-weight:900; color:var(--ok); text-transform:uppercase; letter-spacing:1px;">Acciones Recomendadas para Gerencia</h4>
+                     <ul id="aiRecommendationsList" style="margin:15px 0 0; padding-left:20px; color:rgba(255,255,255,0.9); font-size:15px; line-height:1.8;">
+                        <li>Analizando datos estratégicos para generar recomendaciones...</li>
+                     </ul>
+                  </div>
+                  <button id="btnTriggerRecs" class="btn btn--primary" style="border-radius:12px; padding:12px 24px; font-weight:800;">Ejecutar Plan de Acción</button>
+              </div>
+          </div>
+      </section>
+
+    </main>
+
+    <aside id="chatbot" class="chatbot">
+      <div class="chatbot__head">
+        <strong>AFK Chatbot</strong>
+        <button id="closeChat" class="btn">Cerrar</button>
+      </div>
+      <div id="chatBody" class="chatbot__body"></div>
+      <div class="chatbot__input">
+        <input id="chatInput" placeholder="Escribe y presiona Enter…" />
+        <button class="btn btn--primary" id="chatSend">Enviar</button>
+      </div>
+    </aside>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase.js"></script>
+  <script src="auth.js"></script>
+  <script defer src="analytics.supabase.js"></script>
+  <script defer src="chat.js"></script>
+  <script defer src="responsive.js"></script>
+</body>
+</html>

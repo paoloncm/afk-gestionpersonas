@@ -1316,3 +1316,79 @@ input[type="checkbox"] {
   --card-2: rgba(30, 30, 35, 0.8);
   --border: rgba(255, 255, 255, 0.08);
 }
+
+/* =========================
+   People Analytics (Inteligencia de Dotación)
+   ========================= */
+
+#aiRecommendationsList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+#aiRecommendationsList li {
+  position: relative;
+  margin-bottom: 16px;
+  background: rgba(255, 255, 255, 0.02);
+  padding: 12px 12px 12px 42px;
+  border-radius: 12px;
+  border-left: 4px solid var(--ok);
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+#aiRecommendationsList li:hover {
+  transform: translateX(5px);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+#aiRecommendationsList li::before {
+  content: "✦";
+  position: absolute;
+  left: 14px;
+  top: 12px;
+  color: var(--ok);
+  font-weight: 900;
+  font-size: 18px;
+}
+
+.toplist-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  transition: background 0.2s ease;
+}
+
+.toplist-item:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.toplist-item:last-child {
+  border-bottom: none;
+}
+
+/* Glassmorphism for Analytics Header */
+.hero-dashboard {
+  backdrop-filter: blur(15px);
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-dashboard::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(225, 29, 72, 0.05) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+@keyframes pulse-ok {
+  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
