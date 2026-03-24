@@ -41,10 +41,11 @@
             const threshold = new Date();
             threshold.setDate(now.getDate() + 300); // Tensión Operativa: 300 días (Level God)
 
-            let risks = 0;
+            let risks = 0;       // Solo para VENCIDOS (Bloqueo Real)
+            let warnings = 0;    // Para FALTANTES o PRÓXIMOS (Tensión Operativa)
             let expiring = 0;
             let validExams = 0;
-            const riskDetails = [];
+            const currentRisks = [];
 
             workers.forEach(w => {
                 const creds = w.credentials || [];
@@ -52,8 +53,7 @@
                 let problem = "";
                 
                 if (creds.length === 0) {
-                    risks++;
-                    riskDetails.push(`${w.full_name} (Documentación faltante)`);
+                    warnings++;
                 } else {
                     creds.forEach(ex => {
                         const expiry = ex.expiry_date ? new Date(ex.expiry_date) : null;
@@ -69,7 +69,7 @@
                     });
                     if (hasExpired) {
                         risks++;
-                        riskDetails.push(`${w.full_name} (${problem} vencido)`);
+                        currentRisks.push(`${w.full_name} (${problem} vencido)`);
                     }
                 }
             });
@@ -93,9 +93,9 @@
             // Lógica de Impacto Emocional (Emergency Strip)
             if (risks > 0 && emergencyStrip) {
                 emergencyStrip.style.display = 'block';
-                if (emergencyMsg) emergencyMsg.textContent = `${risks} trabajador${risks > 1 ? 'es' : ''} BLOQUEADO${risks > 1 ? 'S' : ''} (Acción inmediata)`;
+                if (emergencyMsg) emergencyMsg.textContent = `${risks} trabajador${risks > 1 ? 'es' : ''} BLOQUEADO${risks > 1 ? 'S' : ''} (Detención inmediata)`;
                 if (emergencyList) {
-                    emergencyList.innerHTML = riskDetails.map(d => `<div style="font-size:12px; margin-top:2px; opacity:0.9;">⚠️ ${d}</div>`).join('');
+                    emergencyList.innerHTML = currentRisks.map(d => `<div style="font-size:12px; margin-top:2px; opacity:0.9;">🚫 ${d}</div>`).join('');
                 }
             } else if (emergencyStrip) {
                 emergencyStrip.style.display = 'none';

@@ -95,15 +95,15 @@ console.log("[workers.supabase.js] archivo cargado");
     if (!docs.length) {
       return {
         total: 0,
-        expired: 1, // Treat missing as expired for risk counting
+        expired: 0,
         upcoming: 0,
         noExpiry: 0,
         healthy: 0,
-        badgeClass: "badge--danger",
+        badgeClass: "badge--warning",
         badgeText: "Sin documentos",
-        dotClass: "dot dot--red",
-        faenaClass: "badge--danger",
-        faenaText: "No habilitado",
+        dotClass: "dot dot--yellow",
+        faenaClass: "badge--warning",
+        faenaText: "En riesgo",
       };
     }
 
