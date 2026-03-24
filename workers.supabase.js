@@ -662,7 +662,7 @@ console.log("[workers.supabase.js] archivo cargado");
       return;
     }
 
-    const templateUrl = "/templates/planilla_examenes_preocupacionales.xlsx";
+    const templateUrl = "./templates/planilla_examenes_preocupacionales.xlsx";
     const response = await fetch(templateUrl);
 
     if (!response.ok) {

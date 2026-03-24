@@ -369,7 +369,7 @@
       throw new Error("No está cargada la librería ExcelJS.");
     }
 
-    const templateUrl = "/templates/tec02_template.xlsx";
+    const templateUrl = "./templates/tec02_template.xlsx";
     const response = await fetch(templateUrl);
 
     if (!response.ok) {
@@ -440,7 +440,7 @@
       const legalName = prompt("Razón Social del Proponente:") || "";
       const legalRepresentative = prompt("Representante Legal:") || "";
 
-      const { data, error } = await supabase
+      const { data, error } = await window.supabase
         .from("candidates")
         .select("*")
         .in("id", selectedIds)
@@ -466,7 +466,9 @@
       const selectedIds = getSelectedCandidateIds();
 
       if (!selectedIds.length) {
-        window.notificar?.('Selecciona al menos un candidato.', 'warning');
+        const msg = 'Selecciona al menos un candidato en la tabla de abajo.';
+        if (window.notificar) window.notificar(msg, 'warning');
+        else alert(msg);
         return;
       }
 
@@ -474,7 +476,7 @@
       const legalName = prompt("Razón Social del Proponente:") || "";
       const legalRepresentative = prompt("Representante Legal:") || "";
 
-      const { data, error } = await supabase
+      const { data, error } = await window.supabase
         .from("candidates")
         .select("*")
         .in("id", selectedIds)
@@ -489,16 +491,23 @@
       });
     } catch (err) {
       console.error('Error generando TEC-02-A:', err);
-      window.notificar?.('No se pudo generar el TEC-02-A: ' + err.message, 'error');
+      const msg = 'No se pudo generar el TEC-02-A: ' + err.message;
+      if (window.notificar) window.notificar(msg, 'error');
+      else alert(msg);
     }
   }
 
   async function exportTec02AFromTemplate(candidates, headerData) {
     if (!window.ExcelJS) throw new Error("No está cargada la librería ExcelJS.");
 
-    const templateUrl = "/templates/tec02-A_template.xlsx";
+    const templateUrl = "./templates/tec02-A_template.xlsx";
     const response = await fetch(templateUrl);
-    if (!response.ok) throw new Error(`No se encontró ${templateUrl}`);
+    if (!response.ok) {
+        const altUrl = "templates/tec02-A_template.xlsx";
+        const altResp = await fetch(altUrl);
+        if (!altResp.ok) throw new Error(`No se encontró el archivo ${templateUrl}`);
+        response = altResp;
+    }
 
     const arrayBuffer = await response.arrayBuffer();
     const mainWorkbook = new ExcelJS.Workbook();
