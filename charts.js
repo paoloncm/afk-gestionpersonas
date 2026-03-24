@@ -687,58 +687,35 @@
   };
 
   /**
-   * Nuevo: Distribución de Profesiones con agrupación inteligente
+   * Nuevo: Distribución por Tipo de Examen (altfis, ruido, silice, etc.)
    */
-  window.renderProfessionDistribution = function(workers, candidates) {
-    const ctx = document.getElementById("chart_professions");
+  window.renderExamTypeDistribution = function(exams) {
+    const ctx = document.getElementById("chart_exam_types");
     if (!ctx) return;
-    destroyIfExists(window.chartProfessions);
-
-    const allPeople = [
-      ...(workers || []).map(w => ({ profession: w.job_title || w.profession || "" })),
-      ...(candidates || []).map(c => ({ profession: c.profesion || c.profession || "" }))
-    ];
+    destroyIfExists(window.chartExamTypes);
 
     const counts = {};
-    allPeople.forEach(p => {
-      let raw = String(p.profession || "Sin definir").trim();
-      let normalized = "Otros";
-
-      if (raw === "Sin definir") {
-          normalized = "Sin definir";
-      } else if (raw.toLowerCase().includes("técnico") || raw.toLowerCase().includes("tecnico")) {
-          normalized = "Técnico";
-      } else if (raw.toLowerCase().includes("ingeniero")) {
-          normalized = "Ingeniero";
-      } else if (raw.toLowerCase().includes("operador")) {
-          normalized = "Operador";
-      } else if (raw.toLowerCase().includes("supervisor")) {
-          normalized = "Supervisor";
-      } else if (raw.toLowerCase().includes("admin") || raw.toLowerCase().includes("gestión") || raw.toLowerCase().includes("gestion")) {
-          normalized = "Administrativo";
-      } else {
-          normalized = raw; // O podrías usar "Especialista" o similar
-      }
-
-      counts[normalized] = (counts[normalized] || 0) + 1;
+    (exams || []).forEach(e => {
+      let type = String(e.exam_type || "").trim();
+      if (!type || type.toLowerCase() === "null") return; // Ignoramos nulos
+      
+      counts[type] = (counts[type] || 0) + 1;
     });
 
-    const sortedEntries = Object.entries(counts).sort((a,b) => b[1] - a[1]).slice(0, 7);
-    const labels = sortedEntries.map(e => e[0]);
+    const sortedEntries = Object.entries(counts).sort((a,b) => b[1] - a[1]).slice(0, 8);
+    const labels = sortedEntries.map(e => e[0].toUpperCase());
     const values = sortedEntries.map(e => e[1]);
 
-    window.chartProfessions = new Chart(ctx, {
+    window.chartExamTypes = new Chart(ctx, {
       type: 'bar',
       data: {
         labels: labels,
         datasets: [{
           label: 'Cantidad',
           data: values,
-          backgroundColor: [
-            '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#6b7280'
-          ],
+          backgroundColor: '#3b82f6',
           borderRadius: 8,
-          barThickness: 20
+          barThickness: 24
         }]
       },
       options: {
@@ -749,7 +726,7 @@
           legend: { display: false },
           tooltip: {
             callbacks: {
-              label: (ctx) => ` ${ctx.raw} personas`
+              label: (ctx) => ` ${ctx.raw} exámenes`
             }
           }
         },

@@ -180,10 +180,10 @@
             
             // Renderizar Gráficos de Análisis con todos los datos
             if (window.renderAfkCharts) {
-                window.renderAfkCharts(allCandidates, allWorkers, allExams);
+                window.renderAfkCharts(candidates, workers, exams);
             }
-            if (window.renderProfessionDistribution) {
-                window.renderProfessionDistribution(allWorkers, allCandidates);
+            if (window.renderExamTypeDistribution) {
+                window.renderExamTypeDistribution(exams);
             }
 
         } catch (err) {
