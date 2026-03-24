@@ -92,6 +92,7 @@ console.log("[workers.supabase.js] archivo cargado");
     const now = new Date();
     const docs = getWorkerDocs(workerId);
 
+    // 1. SIN DOCUMENTOS -> BLOQUEADO (ROJO)
     if (!docs.length) {
       return {
         total: 0,
@@ -137,7 +138,12 @@ console.log("[workers.supabase.js] archivo cargado");
       else healthy += 1;
     });
 
-    if (expired > 0) {
+    // 2. CON VENCIDOS O PRÓXIMOS (Tensión Operativa 300 días) -> EN RIESGO (AMARILLO)
+    if (expired > 0 || upcoming > 0) {
+      const text = expired > 0 
+        ? `${expired} vencido${expired > 1 ? "s" : ""}`
+        : `${upcoming} por vencer`;
+        
       return {
         total: docs.length,
         expired,
@@ -145,26 +151,14 @@ console.log("[workers.supabase.js] archivo cargado");
         noExpiry,
         healthy,
         badgeClass: "badge--warning",
-        badgeText: `${expired} vencido${expired > 1 ? "s" : ""}`,
+        badgeText: text,
         dotClass: "dot dot--yellow",
         faenaClass: "badge--warning",
         faenaText: "En riesgo",
       };
     }
 
-    return {
-      total: docs.length,
-      expired,
-      upcoming,
-      noExpiry,
-      healthy,
-      badgeClass: "badge--success",
-      badgeText: "Al día",
-      dotClass: "dot dot--green",
-      faenaClass: "badge--success",
-      faenaText: "Habilitado",
-    };
-
+    // 3. TODO AL DÍA -> HABILITADO (VERDE)
     return {
       total: docs.length,
       expired,
@@ -395,7 +389,7 @@ console.log("[workers.supabase.js] archivo cargado");
         const s = getComplianceSummary(w.id);
         acc.total += 1;
 
-        if (s.faenaText === "No habilitado") acc.notEnabled += 1;
+        if (s.faenaText === "Bloqueado") acc.notEnabled += 1;
         else if (s.faenaText === "En riesgo") acc.atRisk += 1;
         else if (s.faenaText === "Habilitado") acc.enabled += 1;
         else acc.noInfo += 1;
@@ -891,7 +885,7 @@ console.log("[workers.supabase.js] archivo cargado");
         const exams = allExamRecords.filter(e => sameRut(e.rut, w.rut));
         const last = exams.sort((a,b) => new Date(b.exam_date) - new Date(a.exam_date))[0];
         if (!last) return false;
-        const imcNum = num(last.imc);
+        const imcNum = Number(last.imc);
         if (value === "Bajo") return imcNum < 18.5;
         if (value === "Normal") return imcNum >= 18.5 && imcNum < 25;
         if (value === "Sobrepeso") return imcNum >= 25 && imcNum < 30;
@@ -963,7 +957,7 @@ console.log("[workers.supabase.js] archivo cargado");
         if (workerModal) workerModal.classList.remove("is-open");
         
         // Recargar el listado
-        await loadWorkers();
+        await loadAllData();
       } catch (err) {
         console.error("Error al registrar trabajador:", err);
         window.notificar("No se pudo registrar: " + err.message, "error");
@@ -1057,6 +1051,7 @@ console.log("[workers.supabase.js] archivo cargado");
       a.setAttribute('download', `Reporte_Cumplimiento_${new Date().toISOString().slice(0,10)}.csv`);
       document.body.appendChild(a);
       a.click();
+      window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
       
       window.notificar("Reporte de cumplimiento generado.", "success");

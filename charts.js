@@ -184,6 +184,7 @@
   }
 
   window.renderWorkerAnalytics = function (workers, exams) {
+    renderWorkerStatus(workers, exams); // Sincronizado con Dashboard (Level God)
     renderWorkerExpirations(exams);
     renderWorkerIMC(exams);
     renderWorkerPressure(exams);
@@ -472,8 +473,9 @@
       // Logic synchronized with workers.supabase.js & getComplianceSummary
       const wExams = exams.filter(e => e.worker_id === w.id || (e.rut && w.rut && e.rut.replace(/\./g,'').split('-')[0] === w.rut.replace(/\./g,'').split('-')[0]));
       
+      // 1. SIN DOCUMENTOS -> NO HABILITADO (ROJO/BLOQUEADO)
       if (wExams.length === 0) {
-        counts["No habilitado"]++; // Missing docs = Bloqueado/Red
+        counts["No habilitado"]++;
         return;
       }
 
@@ -484,9 +486,13 @@
         if (diff < minDiff) minDiff = diff;
       });
 
-      if (w.status === 'Blocked' || minDiff <= 0) counts["En riesgo"]++; // Expired = En riesgo/Yellow
-      else if (minDiff <= 300) counts["En riesgo"]++;
-      else counts["Habilitado"]++;
+      // 2. VENCIDOS O PRÓXIMOS (Tensión Operativa 300 días) -> EN RIESGO (AMARILLO)
+      if (minDiff <= 300) {
+        counts["En riesgo"]++;
+      } else {
+        // 3. TODO AL DÍA -> HABILITADO (VERDE)
+        counts["Habilitado"]++;
+      }
     });
 
     chartWorkerStatus = new Chart(ctx, {
@@ -673,9 +679,85 @@
         renderPipeline(items);
     }
     if (workers || exams) {
-        renderWorkerStatus(workers || [], exams || []);
+        // renderWorkerStatus ya no se usa en Dashboard, pero se mantiene para Workers.html
+        // renderWorkerStatus(workers || [], exams || []); 
         renderCredentialsPct(workers || [], exams || []);
         renderExamsDistribution(exams || []);
     }
+  };
+
+  /**
+   * Nuevo: Distribución de Profesiones con agrupación inteligente
+   */
+  window.renderProfessionDistribution = function(workers, candidates) {
+    const ctx = document.getElementById("chart_professions");
+    if (!ctx) return;
+    destroyIfExists(window.chartProfessions);
+
+    const allPeople = [
+      ...(workers || []).map(w => ({ profession: w.job_title || w.profession || "" })),
+      ...(candidates || []).map(c => ({ profession: c.profesion || c.profession || "" }))
+    ];
+
+    const counts = {};
+    allPeople.forEach(p => {
+      let raw = String(p.profession || "Sin definir").trim();
+      let normalized = "Otros";
+
+      if (raw === "Sin definir") {
+          normalized = "Sin definir";
+      } else if (raw.toLowerCase().includes("técnico") || raw.toLowerCase().includes("tecnico")) {
+          normalized = "Técnico";
+      } else if (raw.toLowerCase().includes("ingeniero")) {
+          normalized = "Ingeniero";
+      } else if (raw.toLowerCase().includes("operador")) {
+          normalized = "Operador";
+      } else if (raw.toLowerCase().includes("supervisor")) {
+          normalized = "Supervisor";
+      } else if (raw.toLowerCase().includes("admin") || raw.toLowerCase().includes("gestión") || raw.toLowerCase().includes("gestion")) {
+          normalized = "Administrativo";
+      } else {
+          normalized = raw; // O podrías usar "Especialista" o similar
+      }
+
+      counts[normalized] = (counts[normalized] || 0) + 1;
+    });
+
+    const sortedEntries = Object.entries(counts).sort((a,b) => b[1] - a[1]).slice(0, 7);
+    const labels = sortedEntries.map(e => e[0]);
+    const values = sortedEntries.map(e => e[1]);
+
+    window.chartProfessions = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Cantidad',
+          data: values,
+          backgroundColor: [
+            '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#6b7280'
+          ],
+          borderRadius: 8,
+          barThickness: 20
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => ` ${ctx.raw} personas`
+            }
+          }
+        },
+        scales: {
+          x: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#6b7280', stepSize: 1 } },
+          y: { grid: { display: false }, ticks: { color: '#b3b7bd', font: { size: 10, weight: 'bold' } } }
+        }
+      }
+    });
   };
 })();

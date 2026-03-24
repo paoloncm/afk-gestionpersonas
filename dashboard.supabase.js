@@ -54,36 +54,32 @@
                     risks++;
                     currentRisks.push(`${w.full_name} (SIN DOCUMENTOS)`);
                 } else {
-                    let hasExpired = false;
-                    let problem = "";
-                    creds.forEach(ex => {
-                        const expiry = ex.expiry_date ? new Date(ex.expiry_date) : null;
-                        if (expiry && expiry < now) {
-                            hasExpired = true;
-                            problem = ex.credential_name || "Examen vencido";
-                        } else if (expiry && expiry <= threshold) {
-                            expiring++;
-                            validExams++;
-                        } else {
-                            validExams++;
-                        }
+                    const now = new Date();
+                    const hasExpired = creds.some(c => c.expiry_date && new Date(c.expiry_date) <= now);
+                    const hasUpcoming = creds.some(c => {
+                        if (!c.expiry_date) return false;
+                        const diff = (new Date(c.expiry_date) - now) / (1000 * 60 * 60 * 24);
+                        return diff > 0 && diff <= 300;
                     });
-                    if (hasExpired) {
+
+                    if (hasExpired || hasUpcoming) {
                         warnings++;
+                    } else {
+                        validExams++;
                     }
                 }
             });
 
             // Actualizar KPIs en el DOM
             const risksEl = $('#kpi_risks');
-            const expiringEl = $('#kpi_expiring');
+            const expiringEl = $('#kpi_expiring'); // Warnings/Upcoming
             const complianceEl = $('#kpi_compliance_pct');
             const emergencyStrip = $('#emergencyStrip');
             const emergencyMsg = $('#emergencyMsg');
             const emergencyList = $('#emergencyList');
 
             if (risksEl) risksEl.textContent = risks;
-            if (expiringEl) expiringEl.textContent = expiring;
+            if (expiringEl) expiringEl.textContent = warnings;
             
             const kpiTotalEl = $('#kpi_total_workers');
             const kpiCandEl = $('#kpi_total_candidates');
@@ -182,9 +178,12 @@
                 }
             }
             
-            // Renderizar Gráficos Operacionales
+            // Renderizar Gráficos de Análisis con todos los datos
             if (window.renderAfkCharts) {
-                window.renderAfkCharts(null, workers, exams);
+                window.renderAfkCharts(allCandidates, allWorkers, allExams);
+            }
+            if (window.renderProfessionDistribution) {
+                window.renderProfessionDistribution(allWorkers, allCandidates);
             }
 
         } catch (err) {
