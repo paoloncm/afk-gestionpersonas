@@ -114,6 +114,21 @@
                 }
             });
 
+            // 3. Identificar trabajadores sin NINGUNA documentación
+            (workers || []).forEach(w => {
+                const hasAny = alerts.some(a => a.worker_id === w.id || (a.workers && a.workers.id === w.id));
+                if (!hasAny) {
+                    alerts.push({
+                        id: `missing-${w.id}`,
+                        worker_id: w.id,
+                        workers: w,
+                        credential_name: 'DOCUMENTACIÓN FALTANTE',
+                        is_missing: true,
+                        expiry_date: null
+                    });
+                }
+            });
+
             allAlerts = alerts.sort((a,b) => {
                 const da = a.expiry_date ? new Date(a.expiry_date).getTime() : 0;
                 const db = b.expiry_date ? new Date(b.expiry_date).getTime() : 0;
@@ -132,6 +147,17 @@
         const thirtyDays = 30 * 24 * 60 * 60 * 1000;
         const expiry = item.expiry_date ? new Date(item.expiry_date) : null;
         
+        // Caso especial: Documentación faltante
+        if (item.is_missing) {
+            return { 
+                badgeClass: 'badge--danger', 
+                statusLabel: 'No Iniciado', 
+                sevClass: 'sev--high', 
+                sevLabel: 'Crítica', 
+                dateStr: 'SIN FECHA' 
+            };
+        }
+
         let badgeClass = 'badge--active';
         let statusLabel = 'Vigente';
         let sevClass = 'sev--low';

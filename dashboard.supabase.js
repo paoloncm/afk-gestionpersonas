@@ -43,24 +43,36 @@
 
             let risks = 0;
             let expiring = 0;
-            const totalExams = exams?.length || 0;
             let validExams = 0;
+            const riskDetails = [];
 
-            if (exams) {
-                exams.forEach(ex => {
-                    if (!ex.expiry_date) return;
-                    const expiry = new Date(ex.expiry_date);
-                    
-                    if (expiry < now) {
+            workers.forEach(w => {
+                const creds = w.credentials || [];
+                let hasExpired = false;
+                let problem = "";
+                
+                if (creds.length === 0) {
+                    risks++;
+                    riskDetails.push(`${w.full_name} (Documentación faltante)`);
+                } else {
+                    creds.forEach(ex => {
+                        const expiry = ex.expiry_date ? new Date(ex.expiry_date) : null;
+                        if (expiry && expiry < now) {
+                            hasExpired = true;
+                            problem = ex.credential_name || "Examen vencido";
+                        } else if (expiry && expiry <= threshold) {
+                            expiring++;
+                            validExams++;
+                        } else {
+                            validExams++;
+                        }
+                    });
+                    if (hasExpired) {
                         risks++;
-                    } else if (expiry <= threshold) {
-                        expiring++;
-                        validExams++;
-                    } else {
-                        validExams++;
+                        riskDetails.push(`${w.full_name} (${problem} vencido)`);
                     }
-                });
-            }
+                }
+            });
 
             // Actualizar KPIs en el DOM
             const risksEl = $('#kpi_risks');
@@ -68,6 +80,7 @@
             const complianceEl = $('#kpi_compliance_pct');
             const emergencyStrip = $('#emergencyStrip');
             const emergencyMsg = $('#emergencyMsg');
+            const emergencyList = $('#emergencyList');
 
             if (risksEl) risksEl.textContent = risks;
             if (expiringEl) expiringEl.textContent = expiring;
@@ -81,6 +94,9 @@
             if (risks > 0 && emergencyStrip) {
                 emergencyStrip.style.display = 'block';
                 if (emergencyMsg) emergencyMsg.textContent = `${risks} trabajador${risks > 1 ? 'es' : ''} BLOQUEADO${risks > 1 ? 'S' : ''} (Acción inmediata)`;
+                if (emergencyList) {
+                    emergencyList.innerHTML = riskDetails.map(d => `<div style="font-size:12px; margin-top:2px; opacity:0.9;">⚠️ ${d}</div>`).join('');
+                }
             } else if (emergencyStrip) {
                 emergencyStrip.style.display = 'none';
             }
@@ -100,15 +116,18 @@
             }
 
             if (complianceEl) {
-                const pct = totalExams > 0 ? Math.round((validExams / totalExams) * 100) : 100;
+                // Inconsistencia Lógica: Si hay riesgos, la tasa de cumplimiento DEBE bajar.
+                const pct = workers.length > 0 ? Math.round(((workers.length - risks) / workers.length) * 100) : 100;
                 complianceEl.textContent = `${pct}%`;
                 
-                // Recomendación AFK - Level God
+                // Recomendación AFK - Nivel Dios
                 const recEl = $('#afkRecommendation');
                 if (recEl) {
-                    if (pct >= 95) recEl.textContent = "Inteligencia AFK: Sistema estable. Se detecta cumplimiento proyectado sólido para los próximos 10 meses.";
-                    else if (risks > 0) recEl.textContent = `CRÍTICO: ${risks} trabajadores frenan la operación. Iniciando flujo automático de notificación a supervisores.`;
+                    if (risks > 0) {
+                        recEl.innerHTML = `<span style="color:#ef4444; font-weight:900;">🧠 Alerta operativa detectada:</span> ${risks} trabajador${risks > 1 ? 'es' : ''} bloqueado${risks > 1 ? 's' : ''} por incumplimiento crítico. Se recomienda acción inmediata para evitar detención de faena.`;
+                    }
                     else if (expiring > 0) recEl.textContent = `ALERTA PREVENTIVA: Se detectan ${expiring} vencimientos en ventana de 300 días. Recomiendo agendar exámenes hoy.`;
+                    else recEl.textContent = "Inteligencia AFK: Sistema estable. Se detecta cumplimiento proyectado sólido para los próximos 10 meses.";
                 }
             }
 

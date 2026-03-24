@@ -95,15 +95,15 @@ console.log("[workers.supabase.js] archivo cargado");
     if (!docs.length) {
       return {
         total: 0,
-        expired: 0,
+        expired: 1, // Treat missing as expired for risk counting
         upcoming: 0,
         noExpiry: 0,
         healthy: 0,
-        badgeClass: "badge--inactive",
+        badgeClass: "badge--danger",
         badgeText: "Sin documentos",
-        dotClass: "dot dot--gray",
-        faenaClass: "badge--inactive",
-        faenaText: "Sin información",
+        dotClass: "dot dot--red",
+        faenaClass: "badge--danger",
+        faenaText: "No habilitado",
       };
     }
 
@@ -478,12 +478,12 @@ console.log("[workers.supabase.js] archivo cargado");
           }
       });
 
-      const opStatusLabel = w.status === 'Blocked' ? 'BLOQUEADO' : 'HABILITADO';
-      const opStatusClass = w.status === 'Blocked' ? 'badge--danger' : (minDays <= 300 ? 'badge--warning' : 'badge--success');
+      const opStatusLabel = (w.status === 'Blocked' || examsCount === 0) ? 'BLOQUEADO' : 'HABILITADO';
+      const opStatusClass = (w.status === 'Blocked' || examsCount === 0) ? 'badge--danger' : (minDays <= 300 ? 'badge--warning' : 'badge--success');
 
       let riskText = '🟢 Bajo';
       let riskColor = '#10b981';
-      if (w.status === 'Blocked') { riskText = '🔴 CRÍTICO'; riskColor = '#ef4444'; }
+      if (w.status === 'Blocked' || examsCount === 0) { riskText = '🔴 CRÍTICO'; riskColor = '#ef4444'; }
       else if (minDays <= 300) { riskText = '⚠️ MEDIO'; riskColor = '#f59e0b'; }
 
       const expLabel = minDays <= 0 ? 'Vencido' : (minDays > 365 ? 'Al día' : `En ${minDays} días`);

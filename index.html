@@ -48,11 +48,14 @@
       <!-- Franja de Emergencia (Solo visible si hay riesgos) -->
       <div id="emergencyStrip" class="card card--critical" style="display:none; margin-bottom:20px; border-radius:12px; border:none; background: linear-gradient(90deg, #e6025b, #9d003b); animation: pulse-red 2s infinite;">
          <div class="card__body" style="display:flex; justify-content:space-between; align-items:center; padding:12px 24px;">
-            <div style="display:flex; align-items:center; gap:12px; color:#fff; font-weight:800;">
-               <span style="font-size:20px;">🚨</span>
-               <span id="emergencyMsg">1 trabajador NO puede ingresar a faena HOY</span>
+            <div style="display:flex; flex-direction:column; color:#fff;">
+               <div style="display:flex; align-items:center; gap:12px; font-weight:800;">
+                  <span style="font-size:20px;">🚨</span>
+                  <span id="emergencyMsg">1 trabajador NO puede ingresar a faena HOY</span>
+               </div>
+               <div id="emergencyList" style="padding-left:36px; margin-top:4px;"></div>
             </div>
-            <button class="btn btn--mini" onclick="location.href='workers.html?status=Blocked'" style="background:#fff; color:#e6025b; font-weight:900;">GESTIONAR AHORA</button>
+            <button class="btn btn--mini" onclick="location.href='workers.html?status=Blocked'" style="background:#fff; color:#e6025b; font-weight:900;">RESOLVER BLOQUEO AHORA</button>
          </div>
       </div>
 
