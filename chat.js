@@ -20,6 +20,13 @@
     btnClose = d.getElementById('closeChat'),
     btnSend = d.getElementById('chatSend');
 
+  // Cargar Marked.js dinámicamente si no existe
+  if (typeof marked === 'undefined') {
+    const s = d.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/marked/marked.min.js';
+    d.head.appendChild(s);
+  }
+
   if (!drawer || !body || !input || !btnSend) return;
 
   let history = [];
@@ -37,7 +44,18 @@
   const append = (role, text) => {
     const m = d.createElement('div');
     m.className = 'chat-msg ' + (role === 'user' ? 'user' : 'bot');
-    m.textContent = text;
+    
+    if (role === 'user') {
+      m.textContent = text;
+    } else {
+      // Usar Marked si está disponible, si no, fallback a textContent
+      if (typeof marked !== 'undefined') {
+        m.innerHTML = marked.parse(text);
+      } else {
+        m.textContent = text;
+      }
+    }
+    
     body.appendChild(m);
     body.scrollTop = body.scrollHeight;
   };
