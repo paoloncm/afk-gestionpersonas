@@ -854,6 +854,15 @@ console.log("[workers.supabase.js] archivo cargado");
       };
       aiBtn.onclick = execAi;
       aiInput.onkeydown = (e) => { if (e.key === "Enter") execAi(); };
+
+      // Sugerencias Clickables
+      document.querySelectorAll('.ai-suggest-w').forEach(b => {
+        b.onclick = () => {
+          const q = b.getAttribute('data-query');
+          if (aiInput) aiInput.value = q;
+          execAi();
+        };
+      });
     }
   }
 
