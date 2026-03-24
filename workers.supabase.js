@@ -8,6 +8,21 @@ console.log("[workers.supabase.js] archivo cargado");
   let allExamRecords = [];
   let selectedWorkers = new Set();
 
+  // Sistema de Notificaciones Global (Fallback)
+  window.notificar = function(msg, type = 'success') {
+    let container = document.querySelector('.toast-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.className = 'toast-container';
+      document.body.appendChild(container);
+    }
+    const toast = document.createElement('div');
+    toast.className = `toast toast--${type}`;
+    toast.textContent = msg;
+    container.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+  };
+
   function escapeHtml(value) {
     if (value == null) return "";
     return String(value)
@@ -918,28 +933,98 @@ console.log("[workers.supabase.js] archivo cargado");
       e.preventDefault();
       try {
         const formData = new FormData(workerForm);
+        const { data: { session } } = await window.supabase.auth.getSession();
+        const user_id = session?.user?.id;
+
         const payload = {
           full_name: formData.get("full_name").trim(),
           rut: normalizeRut(formData.get("rut")),
           company_name: formData.get("company_name").trim() || "Sin asignar",
           status: "Activo"
         };
+        
+        if (user_id) payload.user_id = user_id;
 
         const { error } = await window.supabase
           .from("workers")
           .insert([payload]);
 
-        if (error) throw error;
+        if (error) {
+          console.error("Supabase Worker Insert Error:", error);
+          throw new Error(error.message || "Error desconocido en Supabase");
+        }
 
-        window.notificar?.("Trabajador registrado exitosamente.", "success");
+        window.notificar("Trabajador registrado exitosamente.", "success");
         workerForm.reset();
         if (workerModal) workerModal.classList.remove("is-open");
         
         // Recargar el listado
-        if (typeof init === "function") await init();
+        await loadWorkers();
       } catch (err) {
         console.error("Error al registrar trabajador:", err);
-        window.notificar?.("No se pudo registrar al trabajador: " + err.message, "error");
+        window.notificar("No se pudo registrar: " + err.message, "error");
+      }
+    };
+  }
+
+  // Registro de nuevos candidatos (desde Workers)
+  const btnNewCandidate = $("#btnNewCandidate");
+  const candidateModal = $("#candidateModal");
+  const candidateForm = $("#candidateForm");
+  const candCloseBtns = document.querySelectorAll("#candidateModal .close-modal");
+
+  if (btnNewCandidate) {
+    btnNewCandidate.onclick = () => {
+      if (candidateModal) candidateModal.classList.add("is-open");
+    };
+  }
+
+  candCloseBtns.forEach(btn => {
+    btn.onclick = () => {
+      if (candidateModal) candidateModal.classList.remove("is-open");
+    };
+  });
+
+  if (candidateForm) {
+    candidateForm.onsubmit = async (e) => {
+      e.preventDefault();
+      try {
+        const formData = new FormData(candidateForm);
+        const { data: { session } } = await window.supabase.auth.getSession();
+        const user_id = session?.user?.id;
+
+        const payload = {
+          nombre_completo: formData.get("nombre_completo") || "",
+          profesion: formData.get("profesion") || "",
+          nota: safeNum(formData.get("nota")) || 5,
+          correo: formData.get("correo") || "",
+          telefono: formData.get("telefono") || "",
+          cargo_a_desempenar: formData.get("cargo_a_desempenar") || "",
+          experiencia_total: safeNum(formData.get("experiencia_total")) || 0,
+          experiencia_en_empresa_actual: safeNum(formData.get("experiencia_en_empresa_actual")) || 0,
+          exp_cargo_actual: safeNum(formData.get("exp_cargo_actual")) || 0,
+          exp_proy_similares: safeNum(formData.get("exp_proy_similares")) || 0,
+          antecedentes_academicos: formData.get("antecedentes_academicos") || "",
+          status: "Postulado"
+        };
+
+        if (user_id) payload.user_id = user_id;
+
+        const { error } = await window.supabase
+          .from("candidates")
+          .insert([payload]);
+
+        if (error) {
+          console.error("Supabase Candidate Insert Error:", error);
+          throw new Error(error.message || "Error desconocido en Supabase");
+        }
+
+        window.notificar("Candidato registrado exitosamente.", "success");
+        candidateForm.reset();
+        if (candidateModal) candidateModal.classList.remove("is-open");
+      } catch (err) {
+        console.error("Error al registrar candidato:", err);
+        window.notificar("No se pudo registrar: " + err.message, "error");
       }
     };
   }
