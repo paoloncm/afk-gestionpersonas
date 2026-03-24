@@ -25,9 +25,9 @@
                 { data: exams, error: eErr },
                 { data: candidates, error: cErr }
             ] = await Promise.all([
-                db.from('workers').select('id, status'),
-                db.from('medical_exam_records').select('worker_id, expiry_date, credential_name, exam_type'),
-                db.from('candidates').select('id, nombre_completo, nota, cv_url, status')
+                db.from('workers').select('id, status, full_name'),
+                db.from('worker_credentials').select('worker_id, expiry_date, credential_name'),
+                db.from('candidates').select('id, nombre_completo, nota, status')
             ]);
 
             if (wErr) console.error("Error workers:", wErr);
