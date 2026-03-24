@@ -21,18 +21,21 @@
             const db = window.db;
 
             const [
-                { data: workers, error: wErr },
-                { data: exams, error: eErr },
+                { data: workerProfiles, error: wErr },
                 { data: candidates, error: cErr }
             ] = await Promise.all([
-                db.from('workers').select('id, status, full_name'),
-                db.from('worker_credentials').select('worker_id, expiry_date, credential_name'),
+                db.from('v_worker_profile').select('*'),
                 db.from('candidates').select('id, nombre_completo, nota, status')
             ]);
 
-            if (wErr) console.error("Error workers:", wErr);
-            if (eErr) console.error("Error exams:", eErr);
+            if (wErr) console.error("Error workerProfiles:", wErr);
             if (cErr) console.error("Error candidates:", cErr);
+
+            // Preparar datos para gráficos
+            // workerProfiles ya contiene 'credentials' como JSONB
+            const workers = workerProfiles || [];
+            // Aplanamos los exámenes de todos los perfiles para mantener compatibilidad con renderAfkCharts
+            const exams = (workerProfiles || []).flatMap(w => w.credentials || []);
 
             const now = new Date();
             const threshold = new Date();
@@ -68,6 +71,11 @@
 
             if (risksEl) risksEl.textContent = risks;
             if (expiringEl) expiringEl.textContent = expiring;
+            
+            const kpiTotalEl = $('#kpi_total_workers');
+            const kpiCandEl = $('#kpi_total_candidates');
+            if (kpiTotalEl) kpiTotalEl.textContent = workers.length;
+            if (kpiCandEl) kpiCandEl.textContent = (candidates || []).length;
             
             // Lógica de Impacto Emocional (Emergency Strip)
             if (risks > 0 && emergencyStrip) {

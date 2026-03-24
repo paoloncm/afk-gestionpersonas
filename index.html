@@ -79,6 +79,21 @@
       </section>
 
       <section class="decision-grid" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));">
+        <div class="card card--success-alt">
+          <div class="card__body kpi">
+            <span class="label">👥 Total Personal</span>
+            <span id="kpi_total_workers" class="value">0</span>
+            <div style="font-size:11px; color:var(--ok); margin-top:5px;">Dotación vigente</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card__body kpi">
+            <span class="label">🎯 Postulaciones</span>
+            <span id="kpi_total_candidates" class="value">0</span>
+            <div style="font-size:11px; color:var(--muted); margin-top:5px;">Candidatos activos</div>
+          </div>
+        </div>
         <div class="card card--critical" id="card_risks">
           <div class="card__body kpi">
             <span class="label">🚨 Riesgos Críticos</span>

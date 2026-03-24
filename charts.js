@@ -591,15 +591,9 @@
 
     if (!workers.length) return;
 
-    // Get unique worker IDs that have at least one exam record
-    const workerIdsWithExams = new Set();
-    exams.forEach(e => {
-      if (e.worker_id) workerIdsWithExams.add(String(e.worker_id));
-      // Fallback to RUT matching if needed, but in this schema worker_id is preferred
-    });
-
+    // Con v_worker_profile, cada worker tiene un array 'credentials'
+    const withDocs = workers.filter(w => w.credentials && w.credentials.length > 0).length;
     const total = workers.length;
-    const withDocs = workers.filter(w => workerIdsWithExams.has(String(w.id))).length;
     const withoutDocs = total - withDocs;
 
     chartCredentialsPct = new Chart(ctx, {
