@@ -49,12 +49,13 @@
 
             workers.forEach(w => {
                 const creds = w.credentials || [];
-                let hasExpired = false;
-                let problem = "";
                 
                 if (creds.length === 0) {
-                    warnings++;
+                    risks++;
+                    currentRisks.push(`${w.full_name} (SIN DOCUMENTOS)`);
                 } else {
+                    let hasExpired = false;
+                    let problem = "";
                     creds.forEach(ex => {
                         const expiry = ex.expiry_date ? new Date(ex.expiry_date) : null;
                         if (expiry && expiry < now) {
@@ -68,8 +69,7 @@
                         }
                     });
                     if (hasExpired) {
-                        risks++;
-                        currentRisks.push(`${w.full_name} (${problem} vencido)`);
+                        warnings++;
                     }
                 }
             });

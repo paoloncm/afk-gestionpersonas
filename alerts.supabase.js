@@ -148,12 +148,13 @@
         const expiry = item.expiry_date ? new Date(item.expiry_date) : null;
         
         // Caso especial: Documentación faltante
+        // Caso especial: Documentación faltante -> BLOQUEADO (Rojo)
         if (item.is_missing) {
             return { 
-                badgeClass: 'badge--warning', 
+                badgeClass: 'badge--danger', 
                 statusLabel: 'No Iniciado', 
-                sevClass: 'sev--med', 
-                sevLabel: 'Media', 
+                sevClass: 'sev--high', 
+                sevLabel: 'Crítica', 
                 dateStr: 'SIN FECHA' 
             };
         }
@@ -166,10 +167,11 @@
         if (expiry) {
             const diff = expiry.getTime() - now.getTime();
             if (diff < 0) {
-                badgeClass = 'badge--inactive';
+                // VENCIDO -> EN RIESGO (Amarillo)
+                badgeClass = 'badge--warning';
                 statusLabel = 'Vencido';
-                sevClass = 'sev--high';
-                sevLabel = 'Crítica';
+                sevClass = 'sev--med';
+                sevLabel = 'Media';
             } else if (diff < thirtyDays) {
                 badgeClass = 'badge--warn';
                 statusLabel = 'Próximo a Vencer';

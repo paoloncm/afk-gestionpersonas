@@ -473,7 +473,7 @@
       const wExams = exams.filter(e => e.worker_id === w.id || (e.rut && w.rut && e.rut.replace(/\./g,'').split('-')[0] === w.rut.replace(/\./g,'').split('-')[0]));
       
       if (wExams.length === 0) {
-        counts["En riesgo"]++; // Missing docs = Warning/Yellow
+        counts["No habilitado"]++; // Missing docs = Bloqueado/Red
         return;
       }
 
@@ -484,7 +484,7 @@
         if (diff < minDiff) minDiff = diff;
       });
 
-      if (w.status === 'Blocked' || minDiff <= 0) counts["No habilitado"]++;
+      if (w.status === 'Blocked' || minDiff <= 0) counts["En riesgo"]++; // Expired = En riesgo/Yellow
       else if (minDiff <= 300) counts["En riesgo"]++;
       else counts["Habilitado"]++;
     });

@@ -99,11 +99,11 @@ console.log("[workers.supabase.js] archivo cargado");
         upcoming: 0,
         noExpiry: 0,
         healthy: 0,
-        badgeClass: "badge--warning",
+        badgeClass: "badge--danger",
         badgeText: "Sin documentos",
-        dotClass: "dot dot--yellow",
-        faenaClass: "badge--warning",
-        faenaText: "En riesgo",
+        dotClass: "dot dot--red",
+        faenaClass: "badge--danger",
+        faenaText: "Bloqueado",
       };
     }
 
@@ -144,28 +144,26 @@ console.log("[workers.supabase.js] archivo cargado");
         upcoming,
         noExpiry,
         healthy,
-        badgeClass: "badge--danger",
-        badgeText: `${expired} vencido${expired > 1 ? "s" : ""}`,
-        dotClass: "dot dot--red",
-        faenaClass: "badge--danger",
-        faenaText: "No habilitado",
-      };
-    }
-
-    if (upcoming > 0) {
-      return {
-        total: docs.length,
-        expired,
-        upcoming,
-        noExpiry,
-        healthy,
         badgeClass: "badge--warning",
-        badgeText: `${upcoming} por vencer`,
+        badgeText: `${expired} vencido${expired > 1 ? "s" : ""}`,
         dotClass: "dot dot--yellow",
         faenaClass: "badge--warning",
         faenaText: "En riesgo",
       };
     }
+
+    return {
+      total: docs.length,
+      expired,
+      upcoming,
+      noExpiry,
+      healthy,
+      badgeClass: "badge--success",
+      badgeText: "Al día",
+      dotClass: "dot dot--green",
+      faenaClass: "badge--success",
+      faenaText: "Habilitado",
+    };
 
     return {
       total: docs.length,
@@ -475,10 +473,10 @@ console.log("[workers.supabase.js] archivo cargado");
 
       let riskText = '🟢 Bajo';
       let riskColor = '#10b981';
-      if (cs.expired > 0) { 
+      if (cs.total === 0) { 
           riskText = '🔴 CRÍTICO'; 
           riskColor = '#ef4444'; 
-      } else if (cs.total === 0 || cs.upcoming > 0) { 
+      } else if (cs.expired > 0 || cs.upcoming > 0) { 
           riskText = '⚠️ MEDIO'; 
           riskColor = '#f59e0b'; 
       }
