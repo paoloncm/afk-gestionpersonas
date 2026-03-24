@@ -195,11 +195,11 @@
 
     const now = new Date();
     const buckets = {
-      "Vencidos":   { count: 0, color: "#e74c3c" },
-      "0–30 días":  { count: 0, color: "#e67e22" },
-      "31–60 días": { count: 0, color: "#f1c40f" },
-      "61–90 días": { count: 0, color: "#3498db" },
-      "+90 días":   { count: 0, color: "#2ecc71" }
+      "Vencidos":    { count: 0, color: "#e74c3c" },
+      "0–100 días":  { count: 0, color: "#e67e22" },
+      "101–200 días":{ count: 0, color: "#f1c40f" },
+      "201–300 días":{ count: 0, color: "#3498db" },
+      "+300 días":   { count: 0, color: "#2ecc71" }
     };
 
     exams.forEach(e => {
@@ -207,11 +207,11 @@
       const exp = new Date(e.expiry_date);
       if (isNaN(exp.getTime())) return;
       const diffDays = Math.ceil((exp - now) / (1000 * 60 * 60 * 24));
-      if      (diffDays <= 0)   buckets["Vencidos"].count++;
-      else if (diffDays <= 30)  buckets["0–30 días"].count++;
-      else if (diffDays <= 60)  buckets["31–60 días"].count++;
-      else if (diffDays <= 90)  buckets["61–90 días"].count++;
-      else                      buckets["+90 días"].count++;
+      if      (diffDays <= 0)    buckets["Vencidos"].count++;
+      else if (diffDays <= 100)  buckets["0–100 días"].count++;
+      else if (diffDays <= 200)  buckets["101–200 días"].count++;
+      else if (diffDays <= 300)  buckets["201–300 días"].count++;
+      else                       buckets["+300 días"].count++;
     });
 
     const labels  = Object.keys(buckets);

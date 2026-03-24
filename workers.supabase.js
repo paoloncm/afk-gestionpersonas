@@ -118,7 +118,7 @@ console.log("[workers.supabase.js] archivo cargado");
       const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 
       if (diffDays <= 0) expired += 1;
-      else if (diffDays <= 30) upcoming += 1;
+      else if (diffDays <= 300) upcoming += 1;
       else healthy += 1;
     });
 
@@ -464,15 +464,15 @@ console.log("[workers.supabase.js] archivo cargado");
       });
 
       const opStatusLabel = w.status === 'Blocked' ? 'BLOQUEADO' : 'HABILITADO';
-      const opStatusClass = w.status === 'Blocked' ? 'badge--danger' : (minDays <= 15 ? 'badge--warning' : 'badge--success');
+      const opStatusClass = w.status === 'Blocked' ? 'badge--danger' : (minDays <= 300 ? 'badge--warning' : 'badge--success');
 
       let riskText = '🟢 Bajo';
       let riskColor = '#10b981';
       if (w.status === 'Blocked') { riskText = '🔴 CRÍTICO'; riskColor = '#ef4444'; }
-      else if (minDays <= 15) { riskText = '⚠️ MEDIO'; riskColor = '#f59e0b'; }
+      else if (minDays <= 300) { riskText = '⚠️ MEDIO'; riskColor = '#f59e0b'; }
 
       const expLabel = minDays <= 0 ? 'Vencido' : (minDays > 365 ? 'Al día' : `En ${minDays} días`);
-      const expColor = w.status === 'Blocked' ? 'badge--danger' : (minDays <= 30 ? 'badge--warning' : 'badge--success');
+      const expColor = w.status === 'Blocked' ? 'badge--danger' : (minDays <= 300 ? 'badge--warning' : 'badge--success');
 
       html += `
         <div class="t-row worker-row-pro" data-id="${id}">
