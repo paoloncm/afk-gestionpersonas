@@ -517,8 +517,19 @@
     const masterSheet = mainWorkbook.getWorksheet("FORMULARIO TEC-02A CV PERSONAL") || mainWorkbook.getWorksheet(1);
     const dateStr = new Date().toLocaleDateString("es-ES");
 
+    const usedSheetNames = new Set();
     for (const c of candidates) {
-      const sheetName = (c.nombre_completo || "Candidato").substring(0, 31).replace(/[\\\/\?\*\[\]]/g, "_");
+      let baseName = (c.nombre_completo || "Candidato").substring(0, 31).replace(/[\\\/\?\*\[\]]/g, "_");
+      let sheetName = baseName;
+      let counter = 1;
+      
+      while (usedSheetNames.has(sheetName)) {
+        const suffix = ` (${counter})`;
+        sheetName = baseName.substring(0, 31 - suffix.length) + suffix;
+        counter++;
+      }
+      usedSheetNames.add(sheetName);
+
       const newSheet = mainWorkbook.addWorksheet(sheetName);
 
       // CLONACIÓN PROFUNDA (Celdas, Estilos, Mezclas y Columnas)
