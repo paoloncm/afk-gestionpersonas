@@ -895,5 +895,54 @@ console.log("[workers.supabase.js] archivo cargado");
     }
   };
 
+  // Registro de nuevos trabajadores
+  const btnNewWorker = $("#btnNewWorker");
+  const workerModal = $("#workerModal");
+  const workerForm = $("#workerForm");
+  const closeBtns = document.querySelectorAll("#workerModal .close-modal");
+
+  if (btnNewWorker) {
+    btnNewWorker.onclick = () => {
+      if (workerModal) workerModal.classList.add("is-open");
+    };
+  }
+
+  closeBtns.forEach(btn => {
+    btn.onclick = () => {
+      if (workerModal) workerModal.classList.remove("is-open");
+    };
+  });
+
+  if (workerForm) {
+    workerForm.onsubmit = async (e) => {
+      e.preventDefault();
+      try {
+        const formData = new FormData(workerForm);
+        const payload = {
+          full_name: formData.get("full_name").trim(),
+          rut: normalizeRut(formData.get("rut")),
+          company_name: formData.get("company_name").trim() || "Sin asignar",
+          status: "Activo"
+        };
+
+        const { error } = await window.supabase
+          .from("workers")
+          .insert([payload]);
+
+        if (error) throw error;
+
+        window.notificar?.("Trabajador registrado exitosamente.", "success");
+        workerForm.reset();
+        if (workerModal) workerModal.classList.remove("is-open");
+        
+        // Recargar el listado
+        if (typeof init === "function") await init();
+      } catch (err) {
+        console.error("Error al registrar trabajador:", err);
+        window.notificar?.("No se pudo registrar al trabajador: " + err.message, "error");
+      }
+    };
+  }
+
   init();
 })();

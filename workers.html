@@ -131,6 +131,7 @@
           </select>
 
           <button id="btnResetFilters" class="btn" type="button">Reset</button>
+          <button id="btnNewWorker" class="btn btn--primary">Nuevo Trabajador</button>
           <button id="toggleAnalytics" class="btn" style="margin-left:auto;">📊 Analítica Avanzada</button>
         </div>
       </div>
@@ -196,6 +197,34 @@
   <script defer src="workers.supabase.js?v=6.2"></script>
   <script defer src="chat.js?v=4.0"></script>
   <script defer src="responsive.js?v=2.0"></script>
-</body>
-
+    <!-- Modal para nuevo trabajador -->
+    <div id="workerModal" class="modal">
+      <div class="modal__content" style="max-width:400px">
+        <div class="modal__header">
+          <h2 class="h1" style="font-size:1.5rem">Registrar Trabajador</h2>
+          <button class="close-modal">&times;</button>
+        </div>
+        <div class="modal__body">
+          <form id="workerForm">
+            <div class="form-group">
+              <label>Nombre Completo</label>
+              <input name="full_name" required class="input" placeholder="Ej: Juan Pérez">
+            </div>
+            <div class="form-group">
+              <label>RUT</label>
+              <input name="rut" required class="input" placeholder="Ej: 12.345.678-9">
+            </div>
+            <div class="form-group">
+              <label>Empresa / Faena</label>
+              <input name="company_name" class="input" placeholder="Ej: AFK / Faena Minera">
+            </div>
+            <div style="display:flex; gap:10px; margin-top:20px;">
+              <button type="submit" class="btn btn--primary" style="flex:1">Guardar</button>
+              <button type="button" class="btn close-modal" style="flex:1">Cancelar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </body>
 </html>
