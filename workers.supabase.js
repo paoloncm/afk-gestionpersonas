@@ -467,27 +467,24 @@ console.log("[workers.supabase.js] archivo cargado");
         .map((x) => x[0]?.toUpperCase() || "")
         .join("");
 
-      // Lógica de Cumplimiento - Level God
-      const workerExams = allExamRecords.filter(e => e.worker_id === id || e.rut === w.rut);
-      const examsCount = workerExams.length;
-      let minDays = 999;
-      workerExams.forEach(e => {
-          if (e.expiry_date) {
-              const diff = Math.ceil((new Date(e.expiry_date) - new Date()) / (1000 * 60 * 60 * 24));
-              if (diff < minDays) minDays = diff;
-          }
-      });
-
-      const opStatusLabel = (w.status === 'Blocked' || examsCount === 0) ? 'BLOQUEADO' : 'HABILITADO';
-      const opStatusClass = (w.status === 'Blocked' || examsCount === 0) ? 'badge--danger' : (minDays <= 300 ? 'badge--warning' : 'badge--success');
+      // Lógica de Cumplimiento - Level God Integration
+      const cs = getComplianceSummary(w.id);
+      
+      const opStatusLabel = cs.faenaText.toUpperCase();
+      const opStatusClass = cs.faenaClass;
 
       let riskText = '🟢 Bajo';
       let riskColor = '#10b981';
-      if (w.status === 'Blocked' || examsCount === 0) { riskText = '🔴 CRÍTICO'; riskColor = '#ef4444'; }
-      else if (minDays <= 300) { riskText = '⚠️ MEDIO'; riskColor = '#f59e0b'; }
+      if (cs.expired > 0) { 
+          riskText = '🔴 CRÍTICO'; 
+          riskColor = '#ef4444'; 
+      } else if (cs.total === 0 || cs.upcoming > 0) { 
+          riskText = '⚠️ MEDIO'; 
+          riskColor = '#f59e0b'; 
+      }
 
-      const expLabel = minDays <= 0 ? 'Vencido' : (minDays > 365 ? 'Al día' : `En ${minDays} días`);
-      const expColor = w.status === 'Blocked' ? 'badge--danger' : (minDays <= 300 ? 'badge--warning' : 'badge--success');
+      const expLabel = cs.badgeText;
+      const expColor = cs.badgeClass;
 
       html += `
         <div class="t-row" data-id="${id}">

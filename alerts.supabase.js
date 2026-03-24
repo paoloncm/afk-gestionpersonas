@@ -150,10 +150,10 @@
         // Caso especial: Documentación faltante
         if (item.is_missing) {
             return { 
-                badgeClass: 'badge--danger', 
+                badgeClass: 'badge--warning', 
                 statusLabel: 'No Iniciado', 
-                sevClass: 'sev--high', 
-                sevLabel: 'Crítica', 
+                sevClass: 'sev--med', 
+                sevLabel: 'Media', 
                 dateStr: 'SIN FECHA' 
             };
         }
