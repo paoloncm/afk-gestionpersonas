@@ -121,7 +121,7 @@
             </div>
 
             <div style="text-align:right; display:flex; flex-direction:column; align-items:flex-end; gap:10px;">
-               <div class="card" style="background:rgba(255,255,255,0.03); border:1px solid var(--accent); padding:16px; border-radius:20px; min-width:180px;">
+               <div id="aiMatchContainer" class="card" style="background:rgba(255,255,255,0.03); border:1px solid var(--accent); padding:16px; border-radius:20px; min-width:180px;">
                   <div style="font-size:12px; text-transform:uppercase; color:var(--text-muted); margin-bottom:4px; font-weight:700;">Match de Perfil IA</div>
                   <div style="display:flex; align-items:baseline; gap:4px;">
                     <span id="matchScoreVal" style="font-size:48px; font-weight:900; color:var(--accent); text-shadow:0 0 20px var(--accent-glow);">--</span>
@@ -210,13 +210,13 @@
               
               <div class="form-group" style="margin-top:12px">
                 <label style="display:block; margin-bottom:8px; color:var(--text-muted); font-size:14px;">Vincular a Vacante</label>
-                <select id="selectVacancy" class="select" style="width:100%"></select>
+                <select id="selectVacancy" class="select" style="width:100%; background:#1a1b1f; color:#fff; border:1px solid var(--border);"></select>
                 <button id="btnLinkVacancy" class="btn btn--primary" style="width:100%; margin-top:12px">Vincular</button>
               </div>
 
               <div style="margin-top:24px; border-top:1px solid var(--border); padding-top:16px">
                 <label style="display:block; margin-bottom:8px; color:var(--text-muted); font-size:14px;">Programar Entrevista</label>
-                <input type="datetime-local" id="interviewDate" class="input" style="width:100%; margin-top:8px; padding:10px; background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:8px; color:#fff;">
+                <input type="datetime-local" id="interviewDate" class="input" style="width:100%; margin-top:8px; padding:10px; background:#1a1b1f; border:1px solid var(--border); border-radius:8px; color:#fff;">
                 <button id="btnScheduleInterview" class="btn btn--primary" style="width:100%; margin-top:12px">Programar</button>
               </div>
             </div>

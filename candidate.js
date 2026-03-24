@@ -138,9 +138,10 @@
     const matchVal = $('#matchScoreVal');
     const btnGuide = $('#btnAiGuide');
     if (matchCont && matchVal) {
-        if (r.match_score) {
+        const score = r.match_score || (num(r.nota) > 0 ? (num(r.nota) * 10).toFixed(0) : null);
+        if (score) {
             matchCont.style.display = 'block';
-            matchVal.textContent = r.match_score;
+            matchVal.textContent = score;
             if (btnGuide) btnGuide.style.display = 'block';
         } else {
             matchCont.style.display = 'none';
