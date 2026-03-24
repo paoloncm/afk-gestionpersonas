@@ -521,7 +521,7 @@ console.log("[workers.supabase.js] archivo cargado");
 
           <div class="t-col-exp" data-label="Próximos Vencimientos">
             <div class="badge ${expColor}" style="font-size:10px; margin-bottom:4px;">${expLabel}</div>
-            <div style="font-size:9px; color:var(--muted)">${examsCount} docs totales</div>
+            <div style="font-size:9px; color:var(--muted)">${cs.total} docs totales</div>
           </div>
 
           <div class="t-col-actions" data-label="Acciones">
