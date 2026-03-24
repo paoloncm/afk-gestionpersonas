@@ -129,6 +129,28 @@
                     else if (expiring > 0) recEl.textContent = `ALERTA PREVENTIVA: Se detectan ${expiring} vencimientos en ventana de 300 días. Recomiendo agendar exámenes hoy.`;
                     else recEl.textContent = "Inteligencia AFK: Sistema estable. Se detecta cumplimiento proyectado sólido para los próximos 10 meses.";
                 }
+
+                // Acciones Proactivas del Botón AFK
+                const btnRec = $('#btnRecAction');
+                if (btnRec) {
+                    btnRec.onclick = () => {
+                        let prompt = "";
+                        if (risks > 0) prompt = `¿Cómo puedo resolver de forma urgente los ${risks} bloqueos operacionales detectados hoy?`;
+                        else if (expiring > 0) prompt = `¿Cuál es el mejor plan de acción para gestionar los ${expiring} vencimientos próximos?`;
+                        else prompt = "¿Cómo puedo optimizar la gestión de mi personal para el próximo mes?";
+
+                        // Abrir chatbot y enviar
+                        const openBtn = $('#btnChat');
+                        if (openBtn) openBtn.click();
+                        
+                        const chatInput = $('#chatInput');
+                        if (chatInput) {
+                            chatInput.value = prompt;
+                            const sendBtn = $('#chatSend');
+                            if (sendBtn) sendBtn.click();
+                        }
+                    };
+                }
             }
 
             // Alertas de Selección & Conectividad (Level God)

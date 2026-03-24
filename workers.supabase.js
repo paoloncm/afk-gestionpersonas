@@ -1029,5 +1029,35 @@ console.log("[workers.supabase.js] archivo cargado");
     };
   }
 
+  const btnReport = $("#btnGenerateReport");
+  if (btnReport) {
+    btnReport.onclick = () => {
+      if (allWorkers.length === 0) {
+        window.notificar("No hay trabajadores para reportar.", "warning");
+        return;
+      }
+      
+      const csv = [
+        "Nombre,RUT,Empresa,Estado Operativo,Vencimientos",
+        ...allWorkers.map(w => {
+          const s = w._complianceSummary;
+          return `"${w.full_name}","${normalizeRut(w.rut)}","${w.company_name}","${s?.faenaText || 'N/A'}","${s?.badgeText || '0'}"`;
+        })
+      ].join("\n");
+      
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.setAttribute('hidden', '');
+      a.setAttribute('href', url);
+      a.setAttribute('download', `Reporte_Cumplimiento_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      
+      window.notificar("Reporte de cumplimiento generado.", "success");
+    };
+  }
+
   init();
 })();
