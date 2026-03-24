@@ -5,12 +5,14 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 async function run() {
-    const { data, error } = await supabase.from('candidates').select('*').limit(1);
-    if (data && data[0]) {
-        console.log("COLUMNS:");
-        Object.keys(data[0]).forEach(k => console.log("- " + k));
-    } else {
-        console.log("EMPTY OR ERROR:", error?.message);
-    }
+    console.log("--- CANDIDATES ---");
+    const { data: c, error: ce } = await supabase.from('candidates').select('*').limit(1);
+    if (c && c[0]) Object.keys(c[0]).forEach(k => console.log("- " + k));
+    else console.log("EMPTY OR ERROR:", ce?.message);
+
+    console.log("\n--- WORKERS ---");
+    const { data: w, error: we } = await supabase.from('workers').select('*').limit(1);
+    if (w && w[0]) Object.keys(w[0]).forEach(k => console.log("- " + k));
+    else console.log("EMPTY OR ERROR:", we?.message);
 }
 run();
