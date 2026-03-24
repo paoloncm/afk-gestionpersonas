@@ -459,6 +459,129 @@
     });
   }
 
+  function renderWorkerStatus(workers, exams) {
+    const ctx = document.getElementById("chart_worker_status");
+    if (!ctx) return;
+    destroyIfExists(chartWorkerStatus);
+
+    const counts = { "Habilitado": 0, "No habilitado": 0, "En riesgo": 0, "Sin info": 0 };
+    
+    workers.forEach(w => {
+      // Logic similar to workers.supabase.js
+      const wExams = exams.filter(e => e.worker_id === w.id || (e.rut && w.rut && e.rut.replace(/\./g,'').split('-')[0] === w.rut.replace(/\./g,'').split('-')[0]));
+      let minDiff = 9999;
+      wExams.forEach(e => {
+        if (!e.expiry_date) return;
+        const diff = Math.ceil((new Date(e.expiry_date) - new Date()) / (1000 * 60 * 60 * 24));
+        if (diff < minDiff) minDiff = diff;
+      });
+
+      if (w.status === 'Blocked' || minDiff <= 0) counts["No habilitado"]++;
+      else if (minDiff <= 300) counts["En riesgo"]++; // Using 300 day tension
+      else if (minDiff < 9999) counts["Habilitado"]++;
+      else counts["Sin info"]++;
+    });
+
+    chartWorkerStatus = new Chart(ctx, {
+      type: "doughnut",
+      data: {
+        labels: Object.keys(counts),
+        datasets: [{
+          data: Object.values(counts),
+          backgroundColor: ["#10b981", "#ef4444", "#f59e0b", "#6b7280"],
+          borderWidth: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: "bottom", labels: { color: "#b3b7bd", boxWidth: 12 } }
+        }
+      }
+    });
+  }
+
+  function renderExpMonthly(exams) {
+    const ctx = document.getElementById("chart_exp_monthly");
+    if (!ctx) return;
+    destroyIfExists(chartExpMonthly);
+
+    const now = new Date();
+    const buckets = { "Semana 1": 0, "Semana 2": 0, "Semana 3": 0, "Semana 4": 0 };
+    
+    exams.forEach(e => {
+      if (!e.expiry_date) return;
+      const exp = new Date(e.expiry_date);
+      const diff = Math.ceil((exp - now) / (1000 * 60 * 60 * 24));
+      if (diff > 0 && diff <= 7) buckets["Semana 1"]++;
+      else if (diff > 7 && diff <= 14) buckets["Semana 2"]++;
+      else if (diff > 14 && diff <= 21) buckets["Semana 3"]++;
+      else if (diff > 21 && diff <= 30) buckets["Semana 4"]++;
+    });
+
+    chartExpMonthly = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: Object.keys(buckets),
+        datasets: [{
+          label: "Vencimientos",
+          data: Object.values(buckets),
+          backgroundColor: "#3498db"
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: "#b3b7bd" }, grid: { display: false } },
+          y: { beginAtZero: true, ticks: { color: "#b3b7bd", stepSize: 1 }, grid: { color: "rgba(255,255,255,.05)" } }
+        }
+      }
+    });
+  }
+
+  function renderRiskTypes(exams) {
+    const ctx = document.getElementById("chart_risk_types");
+    if (!ctx) return;
+    destroyIfExists(chartRiskTypes);
+
+    const latestExams = getLatestExamsPerWorker(exams);
+    const counts = { "Normal": 0, "Elevada": 0, "Hipertensión I": 0, "Hipertensión II": 0 };
+    
+    latestExams.forEach(e => {
+      const p = String(e.presion || "").split("/");
+      if (p.length !== 2) return;
+      const sys_val = num(p[0]);
+      const dia_val = num(p[1]);
+      if (!Number.isFinite(sys_val) || !Number.isFinite(dia_val)) return;
+      const cat = classifyPressure(sys_val, dia_val);
+      counts[cat.label]++;
+    });
+
+    chartRiskTypes = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: Object.keys(counts),
+        datasets: [{
+          data: Object.values(counts),
+          backgroundColor: ["#10b981", "#f1c40f", "#e67e22", "#e74c3c"]
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { beginAtZero: true, ticks: { color: "#b3b7bd", stepSize: 1 }, grid: { color: "rgba(255,255,255,.05)" } },
+          y: { ticks: { color: "#b3b7bd" }, grid: { display: false } }
+        }
+      }
+    });
+  }
+
   window.renderAfkCharts = function (items, workers, exams) {
     if (items) {
         renderNotas(items);
