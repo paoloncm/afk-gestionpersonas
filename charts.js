@@ -469,8 +469,14 @@
     const counts = { "Habilitado": 0, "No habilitado": 0, "En riesgo": 0, "Sin info": 0 };
     
     workers.forEach(w => {
-      // Logic similar to workers.supabase.js
+      // Logic synchronized with workers.supabase.js & getComplianceSummary
       const wExams = exams.filter(e => e.worker_id === w.id || (e.rut && w.rut && e.rut.replace(/\./g,'').split('-')[0] === w.rut.replace(/\./g,'').split('-')[0]));
+      
+      if (wExams.length === 0) {
+        counts["En riesgo"]++; // Missing docs = Warning/Yellow
+        return;
+      }
+
       let minDiff = 9999;
       wExams.forEach(e => {
         if (!e.expiry_date) return;
@@ -479,9 +485,8 @@
       });
 
       if (w.status === 'Blocked' || minDiff <= 0) counts["No habilitado"]++;
-      else if (minDiff <= 300) counts["En riesgo"]++; // Using 300 day tension
-      else if (minDiff < 9999) counts["Habilitado"]++;
-      else counts["Sin info"]++;
+      else if (minDiff <= 300) counts["En riesgo"]++;
+      else counts["Habilitado"]++;
     });
 
     chartWorkerStatus = new Chart(ctx, {
