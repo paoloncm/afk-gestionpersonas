@@ -177,18 +177,29 @@
           `).join('');
       }
 
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from("v_candidate_summary")
         .select("*")
         .order("nombre_completo", { ascending: true });
+
+      if (error || !data) {
+          console.warn("[candidates] v_candidate_summary falló, intentando tabla candidates...");
+          const fallback = await supabase.from("candidates").select("*").order("nombre_completo", { ascending: true });
+          data = fallback.data;
+          error = fallback.error;
+      }
 
       if (error) throw error;
 
       // Deduplicate by Name or RUT (keep newest)
       const candidateMap = new Map();
       (data || []).forEach(c => {
-          const key = (c.rut && c.rut !== "NULL" && c.rut.toUpperCase() !== "NULL" ? c.rut : c.nombre_completo).toLowerCase().trim();
-          if (!candidateMap.has(key) || new Date(c.created_at) > new Date(candidateMap.get(key).created_at)) {
+          const rawRut = String(c.rut || "").toUpperCase();
+          const cleanRut = (rawRut === "NULL" || rawRut === "" || rawRut === "UNDEFINED") ? null : rawRut;
+          const nameKey = String(c.nombre_completo || "").toLowerCase().trim();
+          const key = cleanRut || nameKey;
+          
+          if (key && (!candidateMap.has(key) || (c.created_at && new Date(c.created_at) > new Date(candidateMap.get(key).created_at)))) {
               candidateMap.set(key, c);
           }
       });

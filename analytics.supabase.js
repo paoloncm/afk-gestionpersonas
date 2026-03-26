@@ -28,17 +28,68 @@
     renderAll();
   }
 
+  // --- Functions to be used in events (must be defined or hoisted) ---
+  function runSimulation() {
+    const cargo = $("#sim_cargo")?.value;
+    const qty = parseInt($("#sim_quantity")?.value || 0);
+    const resultBox = $("#simulationResult");
+    const resultCard = $("#simResultCard");
+
+    if (!cargo || !qty) {
+        window.notificar?.("Por favor seleccione cargo y cantidad.", "warning");
+        return;
+    }
+
+    if (resultCard) resultCard.style.opacity = "1";
+
+    const workers = allWorkers.filter(w => (w.profesion || w.cargo_a_desempenar) === cargo);
+    const candidates = allCandidates.filter(c => (c.profesion || c.cargo_a_desempenar) === cargo);
+    
+    const totalAvailable = workers.length + candidates.length;
+    let html = "";
+    
+    if (totalAvailable >= qty) {
+        const fromWorkers = Math.min(workers.length, qty);
+        const fromCandidates = Math.max(0, qty - workers.length);
+        
+        html = `
+            <div style="font-size:32px; margin-bottom:10px;">✅</div>
+            <h5 style="margin:0; color:var(--ok);">FACTIBILIDAD ALTA</h5>
+            <p style="font-size:12px; margin:10px 0;">
+                Se requieren ${qty} personas. <br>
+                Disponibles: <strong>${workers.length} activos</strong> ${fromCandidates > 0 ? `+ <strong>${fromCandidates} candidates</strong> en proceso.` : ''}
+            </p>
+            <button class="btn btn--mini" onclick="location.href='pipeline.html'" style="margin-top:10px;">Gestionar Contratación</button>
+        `;
+    } else {
+        html = `
+            <div style="font-size:32px; margin-bottom:10px;">⚠️</div>
+            <h5 style="margin:0; color:var(--warning);">BRECHA DETECTADA</h5>
+            <p style="font-size:12px; margin:10px 0;">
+                Faltan <strong>${qty - totalAvailable}</strong> personas para este cargo.<br>
+                Total disponible (Activos + Pipeline): ${totalAvailable}
+            </p>
+            <button class="btn btn--mini btn--primary" onclick="location.href='pipeline.html?action=new&cargo=${encodeURIComponent(cargo)}'">Iniciar Reclutamiento Urgente</button>
+        `;
+    }
+
+    if (resultBox) resultBox.innerHTML = html;
+  }
+
   async function loadData() {
     try {
       const [
         { data: workers, error: workersError },
         { data: exams, error: examsError },
-        { data: candidates, error: candidatesError }
-      ] = await Promise.all([
-        window.db.from("workers").select("*"),
-        window.db.from("medical_exam_records").select("*"),
-        window.db.from("v_candidate_summary").select("*")
-      ]);
+      let { data: candidates, error: candidatesError } = await window.db.from("v_candidate_summary").select("*");
+      
+      // Fallback if view fails
+      if (candidatesError || !candidates) {
+          console.warn("[analytics] v_candidate_summary falló, intentando tabla candidates...");
+          const fallback = await window.db.from("candidates").select("*");
+          candidates = fallback.data;
+          candidatesError = fallback.error;
+      }
 
       if (workersError) throw workersError;
       if (examsError) throw examsError;
@@ -50,8 +101,12 @@
       // Deduplicate candidates by Name or RUT
       const candidateMap = new Map();
       (candidates || []).forEach(c => {
-          const key = (c.rut && c.rut !== "NULL" ? c.rut : c.nombre_completo).toLowerCase().trim();
-          if (!candidateMap.has(key) || new Date(c.created_at) > new Date(candidateMap.get(key).created_at)) {
+          const rawRut = String(c.rut || "").toUpperCase();
+          const cleanRut = (rawRut === "NULL" || rawRut === "" || rawRut === "UNDEFINED") ? null : rawRut;
+          const nameKey = String(c.nombre_completo || "").toLowerCase().trim();
+          const key = cleanRut || nameKey;
+          
+          if (key && (!candidateMap.has(key) || (c.created_at && new Date(c.created_at) > new Date(candidateMap.get(key).created_at)))) {
               candidateMap.set(key, c);
           }
       });
