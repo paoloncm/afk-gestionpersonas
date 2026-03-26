@@ -763,8 +763,8 @@
         fillOpacity: 1
       });
 
-      const nameLinks = p.names.slice(0, 15).map(name => {
-         return `<a href="#" onclick="window.setAnalyticsSearch('${escapeHtml(name)}'); return false;" style="color:#67e8f9; text-decoration:none; border-bottom:1px solid rgba(103,232,249,0.2); font-size:11px; display:inline-block; margin-right:6px; margin-bottom:4px;">${escapeHtml(name)}</a>`;
+      const nameLinks = p.candidates.slice(0, 15).map(c => {
+         return `<a href="candidate.html?id=${encodeURIComponent(c.id)}" style="color:#67e8f9; text-decoration:none; border-bottom:1px solid rgba(103,232,249,0.2); font-size:11px; display:inline-block; margin-right:6px; margin-bottom:4px;" title="Ver perfil de ${escapeHtml(c.name)}">${escapeHtml(c.name)}</a>`;
       }).join("");
 
       const html = `
@@ -776,7 +776,7 @@
             Candidatos: <strong>${p.count}</strong>
           </div>
           <div style="display:flex; flex-wrap:wrap; gap:2px; max-height:150px; overflow-y:auto; margin-top:8px;">
-            ${nameLinks}${p.names.length > 15 ? "<span style='color:#94a3b8;'>...</span>" : ""}
+            ${nameLinks}${p.candidates.length > 15 ? "<span style='color:#94a3b8;'>...</span>" : ""}
           </div>
         </div>
       `;
@@ -826,14 +826,19 @@
       if (!grouped[key]) {
         grouped[key] = {
           count: 0,
-          names: [],
+          candidates: [],
           label: coords.label || region,
           ...coords
         };
       }
 
       grouped[key].count += 1;
-      if (c.nombre_completo) grouped[key].names.push(c.nombre_completo);
+      if (c.nombre_completo) {
+        grouped[key].candidates.push({
+          id: c.id,
+          name: c.nombre_completo
+        });
+      }
     });
 
     return Object.values(grouped);
