@@ -33,21 +33,15 @@
     };
   });
 
-  const btnNewTender = $('#btnNewTender');
-  if (btnNewTender) {
-    btnNewTender.onclick = () => {
-      tenderIdInput.value = '';
-      tenderForm.reset();
-      reqContainer.innerHTML = '';
-      addReqInput();
-      openModal(tenderModal);
-    };
-  }
+  $('#btnNewTender').onclick = () => {
+    tenderIdInput.value = '';
+    tenderForm.reset();
+    reqContainer.innerHTML = '';
+    addReqInput();
+    openModal(tenderModal);
+  };
 
-  const btnAddReq = $('#btnAddReq');
-  if (btnAddReq) {
-    btnAddReq.onclick = () => addReqInput();
-  }
+  $('#btnAddReq').onclick = () => addReqInput();
 
   function addReqInput(val = '') {
     const div = document.createElement('div');
@@ -83,64 +77,42 @@
 
   if (uploadZone) {
     uploadZone.onclick = () => pdfInput.click();
-
-    // Drag & Drop JARVIS (Igual que en documentos.html)
-    ['dragenter', 'dragover'].forEach(ev => uploadZone.addEventListener(ev, e => {
-      e.preventDefault();
-      uploadZone.style.border = '2px dashed var(--accent)';
-      uploadZone.style.background = 'rgba(34,211,238,0.1)';
-    }));
-    ['dragleave', 'drop'].forEach(ev => uploadZone.addEventListener(ev, e => {
-      e.preventDefault();
-      uploadZone.style.border = '1px dashed rgba(34,211,238,0.3)';
-      uploadZone.style.background = 'rgba(255,255,255,0.02)';
-    }));
-    uploadZone.addEventListener('drop', e => {
-       const file = e.dataTransfer.files[0];
-       if (file) handleJarvisFile(file);
-    });
   }
 
   if (pdfInput) {
-    pdfInput.onchange = (e) => {
+    pdfInput.onchange = async (e) => {
       const file = e.target.files[0];
-      if (file) handleJarvisFile(file);
+      if (!file) return;
+
+      uploadZone.style.display = 'none';
+      scanningState.style.display = 'block';
+      intelPreview.style.display = 'none';
+
+      try {
+        updateScanLog("JARVIS Core v7.5: Iniciando Protocolo de Análisis...");
+        await new Promise(r => setTimeout(r, 600));
+        
+        const text = await extractTextFromPDF(file);
+        extractedText = text;
+        
+        updateScanLog("[Protocolo Stark] Fase 1: Escaneo Estructural...");
+        await new Promise(r => setTimeout(r, 1000));
+        
+        updateScanLog("[Protocolo Stark] Fase 2: Análisis Semántico...");
+        const aiReqs = await analyzeTenderDeepAI(text);
+        
+        renderDetectedReqs(aiReqs);
+        
+        scanningState.style.display = 'none';
+        intelPreview.style.display = 'block';
+        updateScanLog("Análisis Estratégico Completado.");
+      } catch (err) {
+        console.error(err);
+        window.notificar?.("Error en JARVIS Engine: " + err.message, "error");
+        uploadZone.style.display = 'block';
+        scanningState.style.display = 'none';
+      }
     };
-  }
-
-  async function handleJarvisFile(file) {
-    if (!file || !file.name.toLowerCase().endsWith('.pdf')) {
-       return window.notificar?.("Por favor, sube un archivo PDF para análisis JARVIS", "warning");
-    }
-
-    uploadZone.style.display = 'none';
-    scanningState.style.display = 'block';
-    intelPreview.style.display = 'none';
-
-    try {
-      updateScanLog("JARVIS Core v7.5: Iniciando Protocolo de Análisis...");
-      await new Promise(r => setTimeout(r, 600));
-      
-      const text = await extractTextFromPDF(file);
-      extractedText = text;
-      
-      updateScanLog("[Protocolo Stark] Fase 1: Escaneo Estructural...");
-      await new Promise(r => setTimeout(r, 1000));
-      
-      updateScanLog("[Protocolo Stark] Fase 2: Análisis Semántico...");
-      const aiReqs = await analyzeTenderDeepAI(text);
-      
-      renderDetectedReqs(aiReqs);
-      
-      scanningState.style.display = 'none';
-      intelPreview.style.display = 'block';
-      updateScanLog("Análisis Estratégico Completado.");
-    } catch (err) {
-      console.error(err);
-      window.notificar?.("Error en JARVIS Engine: " + err.message, "error");
-      uploadZone.style.display = 'block';
-      scanningState.style.display = 'none';
-    }
   }
 
   async function analyzeTenderDeepAI(text) {
@@ -166,13 +138,7 @@
   }
 
   async function extractTextFromPDF(file) {
-    const reader = new FileReader();
-    const arrayBuffer = await new Promise((resolve, reject) => {
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = reject;
-      reader.readAsArrayBuffer(file);
-    });
-
+    const arrayBuffer = await file.arrayBuffer();
     const pdfjsLib = window['pdfjs-dist/build/pdf'];
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
@@ -198,7 +164,7 @@
       { id: 'lic_a2', label: 'Licencia Profesional A2', keywords: ['clase a2', 'ambulancia', 'transporte'] },
       { id: 'confinado', label: 'Espacios Confinados', keywords: ['confinado', 'silice', 'tunel'] },
       { id: 'ruido', label: 'Protocolo Prexor (Ruido)', keywords: ['ruido', 'auditivo', 'prexor'] },
-      { id: 'fuego', label: 'Combate Incendios (OS10)', keywords: ['fuego', 'incendio', 'extintor', 'os10'] },
+      { id: 'fuego', label: 'Combate Incendios (OS10)', keywords: ['fuego', 'incendio', 'os10'] },
       { id: 'primeros_aux', label: 'Primeros Auxilios', keywords: ['auxilios', 'reanimacion', 'rcp'] }
     ];
     return catalog.filter(c => c.keywords.some(k => clean.includes(k)));
@@ -213,9 +179,8 @@
     `).join('');
   }
 
-  const btnImportIntel = $('#btnImportIntel');
-  if (btnImportIntel) {
-    btnImportIntel.onclick = () => {
+  if ($('#btnImportIntel')) {
+    $('#btnImportIntel').onclick = () => {
       const selected = Array.from(document.querySelectorAll('.intel-check:checked')).map(i => i.dataset.label);
       tenderIdInput.value = '';
       tenderForm.reset();
@@ -249,30 +214,28 @@
     const filtered = allTenders.filter(t => (t.name+t.description+(t.requirements||[]).join(" ")).toLowerCase().includes(searchTerm));
 
     if (!filtered.length) {
-      if (tendersBody) tendersBody.innerHTML = '<div style="padding: 40px; text-align: center;">No hay registros.</div>';
+      tendersBody.innerHTML = '<div style="padding: 40px; text-align: center;">No hay registros.</div>';
       return;
     }
 
-    if (tendersBody) {
-      tendersBody.innerHTML = filtered.map(t => `
-        <div class="t-row" style="padding: 14px 18px; border-bottom: 1px solid rgba(255,255,255,0.05); align-items: start;">
-          <div class="t-col-name" style="font-weight: 600;">${escapeHtml(t.name)}</div>
-          <div class="t-col-desc" style="color: var(--muted); font-size: 13px; max-width: 300px;">${escapeHtml(t.description)}</div>
-          <div class="t-col-reqs" style="display: flex; gap: 4px; flex-wrap: wrap;">
-            ${(t.requirements || []).slice(0, 3).map(r => `<span class="badge" style="background:rgba(255,255,255,0.1)">${escapeHtml(r)}</span>`).join('')}
-          </div>
-          <div class="t-col-actions" style="text-align: right; display: flex; gap: 6px; justify-content: flex-end;">
-            <button class="btn btn--mini btn--primary btn-match" data-id="${t.id}">Evaluar</button>
-            <button class="btn btn--mini btn-edit" data-id="${t.id}">✏️</button>
-            <button class="btn btn--mini btn-delete" data-id="${t.id}" style="color:#f87171">🗑️</button>
-          </div>
+    tendersBody.innerHTML = filtered.map(t => `
+      <div class="t-row" style="padding: 14px 18px; border-bottom: 1px solid rgba(255,255,255,0.05); align-items: start;">
+        <div class="t-col-name" style="font-weight: 600;">${escapeHtml(t.name)}</div>
+        <div class="t-col-desc" style="color: var(--muted); font-size: 13px; max-width: 300px;">${escapeHtml(t.description)}</div>
+        <div class="t-col-reqs" style="display: flex; gap: 4px; flex-wrap: wrap;">
+          ${(t.requirements || []).slice(0, 3).map(r => `<span class="badge" style="background:rgba(255,255,255,0.1)">${escapeHtml(r)}</span>`).join('')}
         </div>
-      `).join('');
+        <div class="t-col-actions" style="text-align: right; display: flex; gap: 6px; justify-content: flex-end;">
+          <button class="btn btn--mini btn--primary btn-match" data-id="${t.id}">Evaluar</button>
+          <button class="btn btn--mini btn-edit" data-id="${t.id}">✏️</button>
+          <button class="btn btn--mini btn-delete" data-id="${t.id}" style="color:#f87171">🗑️</button>
+        </div>
+      </div>
+    `).join('');
 
-      document.querySelectorAll('.btn-match').forEach(btn => btn.onclick = () => runMatchmaking(filtered.find(x => x.id === btn.dataset.id)));
-      document.querySelectorAll('.btn-edit').forEach(btn => btn.onclick = () => editTender(filtered.find(x => x.id === btn.dataset.id)));
-      document.querySelectorAll('.btn-delete').forEach(btn => btn.onclick = () => deleteTender(btn.dataset.id));
-    }
+    document.querySelectorAll('.btn-match').forEach(btn => btn.onclick = () => runMatchmaking(filtered.find(x => x.id === btn.dataset.id)));
+    document.querySelectorAll('.btn-edit').forEach(btn => btn.onclick = () => editTender(filtered.find(x => x.id === btn.dataset.id)));
+    document.querySelectorAll('.btn-delete').forEach(btn => btn.onclick = () => deleteTender(btn.dataset.id));
   }
 
   function escapeHtml(u) { return (u||"").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#039;"}[m])); }
@@ -294,46 +257,33 @@
     openModal(tenderModal);
   }
 
-  if (tenderForm) {
-    tenderForm.onsubmit = async (e) => {
-      e.preventDefault();
-      const id = tenderIdInput.value;
-      const name = tenderNameInput.value;
-      const description = tenderDescInput.value;
-      const reqs = Array.from(document.querySelectorAll('.req-input')).map(i => i.value.trim()).filter(v => v);
-      let res = id ? await window.supabase.from('tenders').update({ name, description, requirements: reqs }).eq('id', id)
-                    : await window.supabase.from('tenders').insert({ name, description, requirements: reqs });
-      if (res.error) window.notificar?.(res.error.message, 'error');
-      else { window.notificar?.('Éxito', 'success'); closeModal(tenderModal); loadTenders(); }
-    };
-  }
-
-  if (searchInput) {
-    searchInput.oninput = () => renderTenders();
-  }
+  tenderForm.onsubmit = async (e) => {
+    e.preventDefault();
+    const id = tenderIdInput.value;
+    const name = tenderNameInput.value;
+    const description = tenderDescInput.value;
+    const reqs = Array.from(document.querySelectorAll('.req-input')).map(i => i.value.trim()).filter(v => v);
+    let res = id ? await window.supabase.from('tenders').update({ name, description, requirements: reqs }).eq('id', id)
+                  : await window.supabase.from('tenders').insert({ name, description, requirements: reqs });
+    if (res.error) window.notificar?.(res.error.message, 'error');
+    else { window.notificar?.('Éxito', 'success'); closeModal(tenderModal); loadTenders(); }
+  };
 
   // --- LÓGICA DE MATCHMAKING (RESTORED & ENHANCED) ---
   let currentSource = 'workers';
-  const btnMatchWorkers = $('#btnMatchWorkers');
-  const btnMatchCandidates = $('#btnMatchCandidates');
-
-  if (btnMatchWorkers) {
-    btnMatchWorkers.onclick = () => { currentSource = 'workers'; btnMatchWorkers.classList.add('is-active'); btnMatchCandidates.classList.remove('is-active'); runMatchmaking(window.lastTender); };
-  }
-  if (btnMatchCandidates) {
-    btnMatchCandidates.onclick = () => { currentSource = 'candidates'; btnMatchCandidates.classList.add('is-active'); btnMatchWorkers.classList.remove('is-active'); runMatchmaking(window.lastTender); };
-  }
+  $('#btnMatchWorkers').onclick = () => { currentSource = 'workers'; $('#btnMatchWorkers').classList.add('is-active'); $('#btnMatchCandidates').classList.remove('is-active'); runMatchmaking(window.lastTender); };
+  $('#btnMatchCandidates').onclick = () => { currentSource = 'candidates'; $('#btnMatchCandidates').classList.add('is-active'); $('#btnMatchWorkers').classList.remove('is-active'); runMatchmaking(window.lastTender); };
 
   async function runMatchmaking(tender) {
     if (!tender) return;
     window.lastTender = tender;
-    if ($('#matchTitle')) $('#matchTitle').textContent = `Matchmaking JARVIS: ${tender.name}`;
-    if (matchBody) matchBody.innerHTML = '<div style="padding:20px">Iniciando escaneo...</div>';
+    $('#matchTitle').textContent = `Matchmaking JARVIS: ${tender.name}`;
+    matchBody.innerHTML = '<div style="padding:20px">Iniciando escaneo...</div>';
     openModal(matchModal);
     try {
       if (currentSource === 'workers') await matchWorkers(tender);
       else await matchCandidates(tender);
-    } catch (e) { if (matchBody) matchBody.innerHTML = `<p class="error">${e.message}</p>`; }
+    } catch (e) { matchBody.innerHTML = `<p class="error">${e.message}</p>`; }
   }
 
   async function matchWorkers(tender) {
@@ -362,16 +312,14 @@
   }
 
   function renderMatchResults(res) {
-    if (matchBody) {
-      matchBody.innerHTML = res.slice(0, 15).map(r => `
-        <div class="t-row" style="align-items: center;">
-          <div class="t-col-name"><strong>${escapeHtml(r.name)}</strong><br><small>${escapeHtml(r.id)}</small></div>
-          <div class="t-col-prof">${r.missing.length === 0 ? '🟢 CALCE ALTO' : '🔴 NO APTO'}</div>
-          <div class="t-col-status">${r.missing.length ? 'Falta: '+r.missing.join(', ') : '✓ Perfil Compatible'}</div>
-          <div class="t-col-actions">${r.isCandidate ? `<a href="candidate.html?id=${r.id}" class="btn btn--mini">Ver CV</a>` : ''}</div>
-        </div>
-      `).join('');
-    }
+    matchBody.innerHTML = res.slice(0, 15).map(r => `
+      <div class="t-row">
+        <div class="t-col-name"><strong>${escapeHtml(r.name)}</strong><br><small>${escapeHtml(r.id)}</small></div>
+        <div class="t-col-prof">${r.missing.length === 0 ? '🟢 CALCE ALTO' : '🔴 NO APTO'}</div>
+        <div class="t-col-status">${r.missing.length ? 'Falta: '+r.missing.join(', ') : '✓ Perfil Compatible'}</div>
+        <div class="t-col-actions">${r.isCandidate ? '<button class="btn btn--mini">Ver CV</button>' : ''}</div>
+      </div>
+    `).join('');
   }
 
   document.addEventListener('DOMContentLoaded', loadTenders);
