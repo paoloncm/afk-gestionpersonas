@@ -1666,3 +1666,121 @@ input[type="checkbox"] {
     margin-bottom: 6px !important;
   }
 }
+
+/* =========================
+   Premium Matchmaking & Comparison (Level Stark)
+========================= */
+
+.match-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 20px;
+  padding: 10px;
+}
+
+.match-card {
+  background: rgba(15, 23, 42, 0.4);
+  border: 1px solid rgba(103, 232, 249, 0.1);
+  border-radius: 16px;
+  padding: 20px;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  position: relative;
+  overflow: hidden;
+}
+
+.match-card:hover {
+  transform: translateY(-5px);
+  border-color: var(--accent);
+  box-shadow: 0 10px 30px rgba(103, 232, 249, 0.1);
+}
+
+.match-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.match-card__meta h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.match-card__meta span {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.match-score-badge {
+  background: rgba(103, 232, 249, 0.1);
+  color: var(--accent);
+  padding: 6px 10px;
+  border-radius: 10px;
+  font-weight: 900;
+  font-size: 14px;
+  border: 1px solid rgba(103, 232, 249, 0.2);
+}
+
+.match-card__status {
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 10px;
+  font-size: 12px;
+}
+
+.match-progress-container {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.match-progress-bar {
+  height: 100%;
+  border-radius: 10px;
+  background: linear-gradient(90deg, var(--accent-2), var(--accent));
+  box-shadow: 0 0 10px var(--accent-glow);
+  transition: width 1s ease;
+}
+
+.comparison-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 8px;
+}
+
+.comparison-table th {
+  padding: 12px 15px;
+  text-align: left;
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.comparison-table tr td {
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.02);
+  border-top: 1px solid rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.comparison-table tr td:first-child {
+  border-left: 1px solid rgba(255, 255, 255, 0.03);
+  border-radius: 10px 0 0 10px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.comparison-table tr td:last-child {
+  border-right: 1px solid rgba(255, 255, 255, 0.03);
+  border-radius: 0 10px 10px 0;
+}

@@ -116,6 +116,7 @@
     uploadZone.style.display = 'none';
     scanningState.style.display = 'block';
     intelPreview.style.display = 'none';
+    const intelDesc = $('#intelDesc');
 
     try {
       updateScanLog("JARVIS Core v7.5: Iniciando Protocolo de Análisis...");
@@ -125,12 +126,16 @@
       extractedText = text;
       
       updateScanLog("[Protocolo Stark] Fase 1: Escaneo Estructural...");
-      await new Promise(r => setTimeout(r, 1000));
+      await new Promise(r => setTimeout(r, 800));
       
-      updateScanLog("[Protocolo Stark] Fase 2: Análisis Semántico...");
-      const aiReqs = await analyzeTenderDeepAI(text);
+      updateScanLog("[Protocolo Stark] Fase 2: Análisis Semántico Deep-IA...");
+      const aiData = await analyzeTenderDeepAI(text);
       
-      renderDetectedReqs(aiReqs);
+      if (intelDesc && aiData.description) {
+         intelDesc.value = aiData.description;
+      }
+      
+      renderDetectedReqs(aiData.requirements || []);
       
       scanningState.style.display = 'none';
       intelPreview.style.display = 'block';
@@ -150,19 +155,43 @@
            method: 'POST',
            headers: { 'Content-Type': 'application/json' },
            body: JSON.stringify({
-              message: `Analiza esta licitación y extrae requisitos de personal. Responde solo con nombres separados por comas. Texto: ${text.substring(0, 3000)}`,
-              meta: { task: "tender_extraction", context: "Industrias Stark" }
+              message: `Analiza esta licitación y extrae: 1) Un resumen técnico/estratégico del proyecto (max 300 caracteres). 2) Lista de requisitos técnicos de personal. Responde estrictamente en formato JSON: {"description": "...", "requirements": ["req1", "req2"]}. Texto: ${text.substring(0, 4000)}`,
+              meta: { task: "tender_deep_extraction", context: "Industrias Stark" }
            })
         });
         const data = await res.json();
-        let raw = Array.isArray(data) ? (data[0]?.output || data[0]?.text || "") : (data.output || data.text || data.reply || "");
-        if (raw && raw.length > 5) {
-           return raw.split(',').map(s => ({ label: s.trim().replace(/^[^a-zA-ZáéíóúÁÉÍÓÚ]+/, ''), id: s.trim().toLowerCase() }));
+        let payload = Array.isArray(data) ? data[0] : data;
+        let finalData = { description: "", requirements: [] };
+
+        // Intentar parsear si viene como string
+        const textResp = payload.output || payload.text || payload.reply || "";
+        if (typeof textResp === 'string' && textResp.includes('{')) {
+           try {
+              const start = textResp.indexOf('{');
+              const end = textResp.lastIndexOf('}') + 1;
+              finalData = JSON.parse(textResp.substring(start, end));
+           } catch(e) { console.warn("JSON Parse err", e); }
         }
+
+        // Si falló el parse o no tiene la estructura, usamos lo que haya
+        if (!finalData.requirements?.length) {
+           const reqs = await detectRequirementsHeuristic(text);
+           finalData.requirements = reqs.map(r => r.label);
+           if (!finalData.description) finalData.description = "Licitación analizada mediante motor heurístico Stark. Revise los requisitos detectados.";
+        }
+
+        return {
+           description: finalData.description || "",
+           requirements: (finalData.requirements || []).map(s => ({ label: s, id: s.toLowerCase().replace(/\s+/g, '_') }))
+        };
      } catch (e) {
-        updateScanLog("Enlace n8n offline. Activando Algoritmos Heurísticos Stark...");
+        updateScanLog("Enlace n8n offline o error de red. Activando Respaldo Heurístico...");
+        const reqs = detectRequirementsHeuristic(text);
+        return {
+           description: "Error de conexión con el núcleo JARVIS. Se activó el respaldo local para detección de requisitos básicos.",
+           requirements: reqs
+        };
      }
-     return detectRequirementsHeuristic(text);
   }
 
   async function extractTextFromPDF(file) {
@@ -217,14 +246,19 @@
   if (btnImportIntel) {
     btnImportIntel.onclick = () => {
       const selected = Array.from(document.querySelectorAll('.intel-check:checked')).map(i => i.dataset.label);
+      const description = $('#intelDesc')?.value || "";
+      
       tenderIdInput.value = '';
       tenderForm.reset();
       tenderNameInput.value = "Licitación Detectada " + new Date().toLocaleDateString();
+      tenderDescInput.value = description;
+      
       reqContainer.innerHTML = '';
       selected.forEach(r => addReqInput(r));
+      
       closeModal(smartModal);
       openModal(tenderModal);
-      window.notificar?.(`Importados ${selected.length} requisitos de IA`, "success");
+      window.notificar?.(`Importados ${selected.length} requisitos y descripción de IA`, "success");
     };
   }
 
@@ -352,25 +386,85 @@
 
   async function matchCandidates(tender) {
     const { data: cand } = await window.supabase.from('candidates').select('*');
-    const results = (cand||[]).map(c => {
-       const skills = normalizeText((c.profesion || "") + " " + (c.experiencia_especifica || ""));
-       const missing = tender.requirements.filter(req => !skills.includes(normalizeText(req)));
+    if (!cand) return;
+
+    const results = cand.map(c => {
+       // Deep Semantic Scan Stark (Combinamos todos los campos de experiencia)
+       const profileText = normalizeText(`
+          ${c.profesion || ''} 
+          ${c.cargo_a_desempenar || ''} 
+          ${c.experiencia_general || ''} 
+          ${c.experiencia_especifica || ''} 
+          ${c.otras_experiencias || ''} 
+          ${c.antecedentes_academicos || ''}
+       `);
+       
+       const missing = tender.requirements.filter(req => {
+          const reqNorm = normalizeText(req);
+          return !profileText.includes(reqNorm);
+       });
+
        const score = Math.round(100 - (missing.length * (100 / (tender.requirements.length || 1))));
-       return { name: c.nombre_completo, id: c.profesion || 'Candidato', detail: `Calce IA: ${score}%`, missing, isCandidate:true, score };
+
+       return { 
+         name: c.nombre_completo, 
+         id: c.profesion || 'Candidato', 
+         detail: `Calce IA: ${score}%`, 
+         missing, 
+         isCandidate: true, 
+         score 
+       };
     }).sort((a,b) => b.score - a.score);
+
     renderMatchResults(results);
   }
 
   function renderMatchResults(res) {
     if (matchBody) {
-      matchBody.innerHTML = res.slice(0, 15).map(r => `
-        <div class="t-row" style="align-items: center;">
-          <div class="t-col-name"><strong>${escapeHtml(r.name)}</strong><br><small>${escapeHtml(r.id)}</small></div>
-          <div class="t-col-prof">${r.missing.length === 0 ? '🟢 CALCE ALTO' : '🔴 NO APTO'}</div>
-          <div class="t-col-status">${r.missing.length ? 'Falta: '+r.missing.join(', ') : '✓ Perfil Compatible'}</div>
-          <div class="t-col-actions">${r.isCandidate ? `<a href="candidate.html?id=${r.id}" class="btn btn--mini">Ver CV</a>` : ''}</div>
+      if (res.length === 0) {
+        matchBody.innerHTML = '<div style="padding:40px; text-align:center; color:var(--muted);">No se encontraron perfiles con calce mínimo.</div>';
+        return;
+      }
+
+      matchBody.innerHTML = `
+        <div class="match-grid">
+          ${res.slice(0, 12).map(r => {
+            const score = r.score || 0;
+            const color = score > 80 ? 'var(--ok)' : score > 50 ? 'var(--warning)' : 'var(--danger)';
+            return `
+              <div class="match-card">
+                <div class="match-card__header">
+                  <div class="match-card__meta">
+                    <h4>${escapeHtml(r.name)}</h4>
+                    <span>${escapeHtml(r.id)}</span>
+                  </div>
+                  <div class="match-score-badge" style="color:${color}; border-color:${color}44; background:${color}11">
+                    ${score}%
+                  </div>
+                </div>
+
+                <div class="match-progress-container">
+                  <div class="match-progress-bar" style="width: ${score}%; background: ${color};"></div>
+                </div>
+
+                <div class="match-card__status">
+                  <div style="font-weight:700; margin-bottom:4px; display:flex; align-items:center; gap:5px;">
+                    ${score > 70 ? '🟢 Perfil Compatible' : '🔴 Brechas Detectadas'}
+                  </div>
+                  <div style="color:var(--muted); font-size:11px; line-height:1.4;">
+                    ${r.missing.length ? 'Faltan: ' + r.missing.join(', ') : 'Cumple con todos los requisitos técnicos.'}
+                  </div>
+                </div>
+
+                <div style="display:flex; gap:8px; margin-top:auto;">
+                  ${r.isCandidate ? `<a href="candidate.html?id=${encodeURIComponent(r.idx || r.id)}" class="btn btn--mini btn--primary" style="flex:1">Ver Perfil</a>` : ''}
+                  <button class="btn btn--mini" style="flex:1">Detalles</button>
+                </div>
+              </div>
+            `;
+          }).join('')}
         </div>
-      `).join('');
+      `;
     }
   }
 
