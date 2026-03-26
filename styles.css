@@ -97,8 +97,10 @@ body {
   border-radius: 12px;
   display: grid;
   place-items: center;
-  background: #fff;
-  color: #000;
+  background: #020617;
+  color: #67e8f9;
+  border: 1px solid rgba(103, 232, 249, 0.4);
+  box-shadow: 0 0 15px rgba(0, 229, 255, 0.2);
 }
 
 .nav {
@@ -140,6 +142,101 @@ body {
   font-weight: 700;
   margin: 18px 12px 6px;
   opacity: .6;
+}
+
+/* JARVIS HUD & STARK ANIMATIONS */
+@keyframes hud-scan {
+  0% { transform: translateY(-100%); opacity: 0; }
+  50% { opacity: 0.5; }
+  100% { transform: translateY(200%); opacity: 0; }
+}
+
+.jarvis-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.jarvis-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #67e8f9, transparent);
+  animation: hud-scan 3s linear infinite;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.card--glow {
+  box-shadow: 0 0 20px rgba(103, 232, 249, 0.15);
+  transition: box-shadow 0.4s ease;
+}
+
+.card--glow:hover {
+  box-shadow: 0 0 30px rgba(103, 232, 249, 0.3);
+}
+
+/* Marker Pulse for Map */
+.marker-pulse {
+  animation: markerPulse 2s infinite;
+}
+
+@keyframes markerPulse {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.1); opacity: 0.8; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Count Up Number transition */
+.kpi-value {
+  transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Stark Sidebar Footer */
+.sidebar-footer {
+  margin-top: auto;
+  padding: 20px 12px 10px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+.system-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  font-weight: 800;
+  color: #67e8f9;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.status-dot {
+  width: 6px;
+  height: 6px;
+  background: #00e5ff;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #00e5ff;
+  animation: statusPulse 2s infinite;
+}
+.system-meta {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 9px;
+  color: #475569;
+  margin-top: 6px;
+  display: block;
+}
+.protocol-label {
+  color: #94a3b8;
+  font-size: 9px;
+  margin-top: 15px;
+  display: block;
+  opacity: 0.5;
+}
+
+@keyframes statusPulse {
+  0% { opacity: 0.4; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.1); }
+  100% { opacity: 0.4; transform: scale(0.9); }
 }
 
 .topbar {

@@ -12,6 +12,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
 
   <style>
     :root {
@@ -137,6 +138,36 @@
       justify-content: space-between;
       gap: 12px;
       margin-bottom: 16px;
+      border-bottom: 1px solid rgba(103, 232, 249, 0.1);
+      padding-bottom: 10px;
+    }
+
+    /* HUD Energy Lines (Stark Style) */
+    .hud-line {
+      position: absolute;
+      background: linear-gradient(90deg, transparent, #67e8f9, transparent);
+      height: 1px;
+      width: 100%;
+      top: 0;
+      left: -100%;
+      animation: hudScan 4s linear infinite;
+      opacity: 0.3;
+    }
+
+    @keyframes hudScan {
+      0% { left: -100%; }
+      50% { left: 100%; }
+      100% { left: 100%; }
+    }
+
+    .jarvis-ticker {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 11px;
+      color: #67e8f9;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 4px 8px;
+      border-radius: 4px;
+      border: 1px solid rgba(103, 232, 249, 0.2);
     }
 
     .jarvis-card__title {
@@ -382,6 +413,15 @@
         <div class="nav-category">Analítica e Inteligencia</div>
         <a class="is-active" href="analytics.html"><span class="label">People Analytics</span></a>
       </nav>
+
+      <div class="sidebar-footer">
+        <div class="system-status">
+          <div class="status-dot"></div>
+          <span>Protocol AFK: Active</span>
+        </div>
+        <span class="system-meta">JARVIS CORE v4.2.0-STARK</span>
+        <span class="protocol-label">Security: Level 5 Enforced</span>
+      </div>
     </aside>
 
     <header class="topbar">
@@ -543,6 +583,16 @@
           </div>
         </div>
 
+        <div class="card card--dark" style="background:rgba(103, 232, 249, 0.03); border:1px solid rgba(103, 232, 249, 0.1);">
+          <div class="card__body">
+            <h4 style="margin:0 0 14px; font-size:14px; font-weight:900; color:#67e8f9; text-transform:uppercase;">
+              Match por Cargo Objetivo
+            </h4>
+            <div id="role_match_container" style="display:flex; flex-direction:column; gap:12px; padding-top:10px;">
+              <!-- Dynamically filled -->
+            </div>
+          </div>
+        </div>
         <div class="card card--success-alt"
           style="background: linear-gradient(135deg, rgba(0, 229, 255, 0.08), rgba(0,0,0,0.55)); border:1px solid rgba(0, 229, 255, 0.18);">
           <div class="card__body">
@@ -557,100 +607,67 @@
         </div>
       </section>
 
-      <h3 class="h1" style="margin-top:40px;">3. JARVIS Strategic Layer</h3>
+      <h3 class="h1" style="margin-top:40px;">3. JARVIS Strategic Layer (v5.0 Engine)</h3>
       <section class="jarvis-grid section" style="margin-bottom:22px;">
+        <!-- Card 1: Neural Clusters -->
         <article class="jarvis-card jarvis-card--cyan">
+          <div class="hud-line"></div>
           <div class="jarvis-card__inner">
             <div class="jarvis-card__top">
-              <h4 class="jarvis-card__title">Señal principal</h4>
-              <span class="jarvis-chip">LIVE SIGNAL</span>
+              <h4 class="jarvis-card__title">Detección de Clústeres</h4>
+              <div class="jarvis-ticker" id="jarvis_log_1">SCANNING...</div>
             </div>
-
-            <div class="jarvis-icon">📡</div>
-
-            <p class="jarvis-main" id="jarvisSignalText">
-              La mayor concentración de talento técnico se encuentra en las zonas con más densidad operacional del
-              pipeline, permitiendo acelerar shortlist, contacto y cobertura territorial.
-            </p>
-
-            <div class="jarvis-panel">
-              <div class="jarvis-panel__label">Lectura estratégica</div>
-              <p class="jarvis-panel__text" id="jarvisSignalSubtext">
-                Identifica dónde está el mayor pool de candidatos para decidir foco geográfico y velocidad comercial.
-              </p>
+            <div id="jarvis_signal_text" style="font-size:13px; color:#e2e8f0; margin-bottom:15px; min-height:60px;">
+              Iniciando mapeo de densidad neural...
             </div>
-
             <div class="jarvis-metric">
               <div class="jarvis-metric__label">
                 <span>Densidad de Talento</span>
-                <span id="jarvisSignalValue">0%</span>
+                <span id="jarvis_metric_1_val">0%</span>
               </div>
-              <div class="jarvis-bar"><div class="jarvis-bar__fill" id="jarvisSignalBar"></div></div>
-              <div class="jarvis-ticker" id="jarvisSignalTicker">SCANNING NEURAL NODES...</div>
+              <div class="jarvis-bar"><div class="jarvis-bar__fill" id="jarvis_metric_1_bar"></div></div>
             </div>
           </div>
         </article>
 
+        <!-- Card 2: Risk Calibration -->
         <article class="jarvis-card jarvis-card--yellow">
+          <div class="hud-line"></div>
           <div class="jarvis-card__inner">
             <div class="jarvis-card__top">
-              <h4 class="jarvis-card__title">Riesgo / alerta</h4>
-              <span class="jarvis-chip">WATCH MODE</span>
+              <h4 class="jarvis-card__title">Calibración de Riesgos</h4>
+              <div class="jarvis-ticker" id="jarvis_log_2">MONITORING...</div>
             </div>
-
-            <div class="jarvis-icon">⚠️</div>
-
-            <p class="jarvis-main" id="jarvisRiskText">
-              Puede existir baja profundidad en perfiles senior o especialistas de alto match, aunque el volumen general
-              del pipeline se vea sólido.
-            </p>
-
-            <div class="jarvis-panel">
-              <div class="jarvis-panel__label">Qué vigilar</div>
-              <p class="jarvis-panel__text" id="jarvisRiskSubtext">
-                Revisa brechas entre experiencia promedio, score y densidad regional para evitar shortlist débiles.
-              </p>
+            <div id="jarvis_risk_text" style="font-size:13px; color:#e2e8f0; margin-bottom:15px; min-height:60px;">
+              Evaluando brechas de seniority y cobertura...
             </div>
-
             <div class="jarvis-metric">
               <div class="jarvis-metric__label">
                 <span>Riesgo de Cobertura</span>
-                <span id="jarvisRiskValue">0%</span>
+                <span id="jarvis_metric_2_val">0%</span>
               </div>
-              <div class="jarvis-bar"><div class="jarvis-bar__fill" id="jarvisRiskBar"></div></div>
-              <div class="jarvis-ticker" id="jarvisRiskTicker">MONITORING PIPELINE GAPS...</div>
+              <div class="jarvis-bar"><div class="jarvis-bar__fill" id="jarvis_metric_2_bar"></div></div>
             </div>
           </div>
         </article>
 
+        <!-- Card 3: Hiring Directives -->
         <article class="jarvis-card jarvis-card--green">
+          <div class="hud-line"></div>
           <div class="jarvis-card__inner">
             <div class="jarvis-card__top">
-              <h4 class="jarvis-card__title">Acción sugerida</h4>
-              <span class="jarvis-chip">NEXT MOVE</span>
+              <h4 class="jarvis-card__title">Directivas de Contratación</h4>
+              <div class="jarvis-ticker" id="jarvis_log_3">CALIBRATING...</div>
             </div>
-
-            <div class="jarvis-icon">🚀</div>
-
-            <p class="jarvis-main" id="jarvisActionText">
-              Prioriza candidatos con mejor score y mayor experiencia, y abre búsqueda específica donde el mapa muestre
-              menor cobertura de talento.
-            </p>
-
-            <div class="jarvis-panel">
-              <div class="jarvis-panel__label">Siguiente paso</div>
-              <p class="jarvis-panel__text" id="jarvisActionSubtext">
-                Usa esta capa para decidir seniority objetivo, foco territorial y prioridad de contacto.
-              </p>
+            <div id="jarvis_action_text" style="font-size:13px; color:#e2e8f0; margin-bottom:15px; min-height:60px;">
+              Calculando vectores de contratación prioritaria...
             </div>
-
             <div class="jarvis-metric">
               <div class="jarvis-metric__label">
-                <span>Viabilidad de Contratación</span>
-                <span id="jarvisActionValue">0%</span>
+                <span>Viabilidad de Éxito</span>
+                <span id="jarvis_metric_3_val">0%</span>
               </div>
-              <div class="jarvis-bar"><div class="jarvis-bar__fill" id="jarvisActionBar"></div></div>
-              <div class="jarvis-ticker" id="jarvisActionTicker">CALIBRATING MATCH VECTORS...</div>
+              <div class="jarvis-bar"><div class="jarvis-bar__fill" id="jarvis_metric_3_bar"></div></div>
             </div>
           </div>
         </article>

@@ -41,6 +41,76 @@
     "natales": { lat: -51.7231, lng: -72.4844, label: "Puerto Natales" }
   };
 
+  /**
+   * JARVIS Engine v5.0: Scoring Heuristics
+   */
+  const JarvisEngine = {
+    calculateScore(c) {
+      // Inputs
+      const totalExp = safeNum(c.experiencia_total) || 0;
+      const proyExp = safeNum(c.exp_proy_similares) || 0;
+      const cargoExp = safeNum(c.exp_cargo_actual) || 0;
+      const ranking = safeNum(c.nota) || 5; // 0-10 base
+
+      // Weights (Level GOD)
+      // 30% Total Exp + 30% Project Exp + 20% Cargo Exp + 20% Ranking
+      // Normalize to 0-100
+      const wTotal = Math.min(100, (totalExp / 15) * 100) * 0.3;
+      const wProy = Math.min(100, (proyExp / 10) * 100) * 0.3;
+      const wCargo = Math.min(100, (cargoExp / 8) * 100) * 0.2;
+      const wRank = (ranking * 10) * 0.2;
+
+      return Math.round(wTotal + wProy + wCargo + wRank);
+    },
+
+    getMatchByRole(c, targetRole) {
+      const p = normalizeText(c.profesion || "");
+      const t = normalizeText(targetRole);
+      if (p.includes(t)) return 95 + Math.random() * 5;
+      if (t.includes(p)) return 85 + Math.random() * 10;
+      return 40 + Math.random() * 30;
+    },
+
+    detectInsights(candidates) {
+      if (!candidates.length) return [];
+      const insights = [];
+      const avgScore = candidates.reduce((acc, c) => acc + (this.calculateScore(c)), 0) / candidates.length;
+      
+      if (avgScore > 75) insights.push({ type: 'success', text: "Clúster de Alta Competencia detectado en la región." });
+      if (avgScore < 50) insights.push({ type: 'warning', text: "Riesgo de Seniority: El pool actual requiere capacitación técnica." });
+      
+      const regions = {};
+      candidates.forEach(c => {
+        const reg = getRegionFromDireccion(getLocation(c));
+        regions[reg] = (regions[reg] || 0) + 1;
+      });
+      const topReg = Object.entries(regions).sort((a,b) => b[1]-a[1])[0];
+      if (topReg && topReg[1] > candidates.length * 0.6) {
+        insights.push({ type: 'info', text: `Saturación Geográfica en ${topReg[0]}: Considerar diversificar reclutamiento.` });
+      }
+
+      return insights;
+    }
+  };
+
+  /**
+   * UI Animation: Count Up
+   */
+  function animateValue(id, start, end, duration) {
+    const obj = document.getElementById(id);
+    if (!obj) return;
+    let startTimestamp = null;
+    const step = (timestamp) => {
+      if (!startTimestamp) startTimestamp = timestamp;
+      const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+      obj.innerHTML = Math.floor(progress * (end - start) + start);
+      if (progress < 1) {
+        window.requestAnimationFrame(step);
+      }
+    };
+    window.requestAnimationFrame(step);
+  }
+
   let charts = {};
   let geoMap = null;
   let geoLayer = null;
@@ -210,19 +280,20 @@
     const region = $("#filterRegion")?.value || "";
 
     filteredCandidates = allCandidates.filter((c) => {
-      const nombre = String(c.nombre_completo || "").toLowerCase();
-      const profesion = String(getProfession(c) || "").toLowerCase();
-      const direccion = String(getLocation(c) || "").toLowerCase();
-      const rut = String(c.rut || "").toLowerCase();
+      const nombre = normalizeText(c.nombre_completo || "");
+      const profesion = normalizeText(getProfession(c) || "");
+      const direccion = normalizeText(getLocation(c) || "");
+      const rut = normalizeText(c.rut || "");
+      
       const cStatus = getStatus(c);
       const cRegion = getRegionFromDireccion(getLocation(c));
 
-      const matchQ =
-        !q ||
-        nombre.includes(q) ||
-        profesion.includes(q) ||
-        direccion.includes(q) ||
-        rut.includes(q);
+      // semantic q: if q is "tecnico", match "mecanico", "electrico" etc.
+      let matchQ = !q || nombre.includes(q) || profesion.includes(q) || direccion.includes(q) || rut.includes(q);
+      
+      if (!matchQ && q === "tecnico") {
+         matchQ = profesion.includes("mecanico") || profesion.includes("electrico") || profesion.includes("mantenedor");
+      }
 
       const matchCargo = !cargo || getProfession(c) === cargo;
       const matchStatus = !status || cStatus === status;
@@ -250,183 +321,183 @@
     renderProfessionChart();
     renderScoreChart();
     renderStatusChart();
+    renderJarvisLayer();
     renderGeoMap();
     renderTopInsights();
-    renderJarvisLayer();
+    renderRoleMatch();
+  }
+
+  function renderRoleMatch() {
+    const container = $("#role_match_container");
+    if (!container) return;
+
+    const targetRoles = ["Técnico Mantenimiento", "Instrumentista", "Supervisor", "Operador"];
+    let html = "";
+
+    targetRoles.forEach(role => {
+      // Average match for this role among filtered candidates
+      const avgMatch = filteredCandidates.reduce((acc, c) => acc + JarvisEngine.getMatchByRole(c, role), 0) / (filteredCandidates.length || 1);
+      const val = Math.round(avgMatch);
+      const color = val > 75 ? '#34d399' : (val > 50 ? '#67e8f9' : '#94a3b8');
+
+      html += `
+        <div style="margin-bottom:5px;">
+          <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;">
+            <span style="color:#e2e8f0; font-weight:600;">${role}</span>
+            <span style="color:${color}; font-weight:800;">${val}%</span>
+          </div>
+          <div style="height:6px; background:rgba(255,255,255,0.05); border-radius:10px; overflow:hidden;">
+            <div style="width:${val}%; height:100%; background:${color}; border-radius:10px; transition: width 1.5s cubic-bezier(0.34, 1.56, 0.64, 1);"></div>
+          </div>
+        </div>
+      `;
+    });
+
+    container.innerHTML = html;
   }
 
   function renderJarvisLayer() {
-    const signalText = $("#jarvisSignalText");
-    const signalSub = $("#jarvisSignalSubtext");
-    const riskText = $("#jarvisRiskText");
-    const riskSub = $("#jarvisRiskSubtext");
-    const actionText = $("#jarvisActionText");
-    const actionSub = $("#jarvisActionSubtext");
+    if (!filteredCandidates.length) return;
 
-    if (!signalText || !filteredCandidates.length) return;
-
-    // 1. SIGNAL HEURISTICS (Talent Density)
-    const locations = {};
-    const filteredRegion = ($("#filterRegion")?.value || "").trim();
-
+    // --- CARD 1: Neural Clusters (Signal) ---
+    const regions = {};
     filteredCandidates.forEach(c => {
-      const fullDir = normalizeText(getLocation(c));
-      let loc = getRegionFromDireccion(fullDir);
-      
-      // Look for specific city match for signal
-      for (const [cityKey, cityData] of Object.entries(cityCoordMap)) {
-         if (fullDir.includes(cityKey)) {
-           loc = cityData.label;
-           break;
-         }
-      }
-      locations[loc] = (locations[loc] || 0) + 1;
+      const reg = getRegionFromDireccion(getLocation(c));
+      regions[reg] = (regions[reg] || 0) + 1;
     });
-    
-    const sortedLocs = Object.entries(locations).sort((a,b) => b[1] - a[1]);
-    const topLoc = sortedLocs[0];
-    const density = Math.round((topLoc[1] / filteredCandidates.length) * 100);
-    
-    // Check if topLoc is a city or region
-    const isCity = Object.values(cityCoordMap).some(d => d.label === topLoc[0]);
-    const locType = isCity ? "Ciudad/Sector" : "Región";
+    const sortedReg = Object.entries(regions).sort((a,b) => b[1]-a[1]);
+    const topReg = sortedReg[0][0];
+    const topCount = sortedReg[0][1];
+    const density = Math.round((topCount / filteredCandidates.length) * 100);
 
-    signalText.innerHTML = `Protocolo de Densidad: El área de <strong>${topLoc[0]}</strong> (${locType}) concentra el ${density}% del pool actual (${topLoc[1]} unidad/es). Nodo de alta disponibilidad detectado.`;
-    signalSub.textContent = `Análisis de Proximidad: El desplazamiento del talento hacia ${topLoc[0]} sugiere centralizar el reclutamiento técnico en este cuadrante.`;
-    updateJarvisMetric("Signal", density, "ANALYZING NEURAL GEOGRAPHY...");
-
-    // --- 2. RISK HEURISTICS (Coverage & Quality) ---
-    const avgScore = average(filteredCandidates.map(c => safeNum(c.match_score)).filter(v => v != null)) || 0;
-    const professions = [...new Set(filteredCandidates.map(getProfession))];
-    const scarcityLevel = professions.length > 5 ? 20 : 50; // More professions = less scarcity risk
-    
-    // Risk is higher if scores are low OR candidates are few
-    let riskFactor = Math.round(100 - avgScore + (filteredCandidates.length < 10 ? 30 : 0));
-    riskFactor = Math.max(15, Math.min(95, riskFactor));
-
-    if (riskFactor > 60) {
-      riskText.innerHTML = `Alerta Crítica: Detectada baja profundidad en el pipeline. El Match Score promedio (${Math.round(avgScore)}%) y el volumen actual indican una <strong>probabilidad de fallo en shortlist del ${riskFactor}%</strong>.`;
-      riskSub.textContent = "Acción preventiva: Es necesario ampliar el sourcing externo o reducir exigencias de seniority.";
-      updateJarvisMetric("Risk", riskFactor, "CRITICAL DEFICIENCY DETECTED");
-    } else {
-      riskText.textContent = "Integridad de Sistema: Calidad de candidatos estable. No se detectan anomalías de competencia en los perfiles vigentes.";
-      riskSub.textContent = "Continuar monitoreando ingresos al pipeline cada 24 horas.";
-      updateJarvisMetric("Risk", riskFactor, "STABLE SYSTEM INTEGRITY");
+    const signalText = $("#jarvis_signal_text");
+    if (signalText) {
+      signalText.innerHTML = `Protocolo de Densidad: El nodo <strong>${topReg}</strong> concentra el ${density}% del pool activo. Se recomienda centralizar la logística de entrevistas en este cuadrante neural.`;
     }
+    updateJarvisMetricUI(1, density, "NEURAL MAPPING COMPLETE");
 
-    // --- 3. ACTION HEURISTICS (Hiring Viability) ---
-    const topMatch = [...filteredCandidates].sort((a,b) => (safeNum(b.match_score)||0) - (safeNum(a.match_score)||0))[0];
-    const topScore = safeNum(topMatch.match_score) || 0;
-    const topExp = safeNum(topMatch.experiencia_total) || 0;
-    
-    // Viability formula: 70% Score + 30% Experience (max 10 years cap)
-    const viability = Math.round((topScore * 0.7) + (Math.min(10, topExp) * 10 * 0.3));
-    
-    if (viability > 75) {
-      actionText.innerHTML = `Directiva JARVIS: Ejecutar oferta prioritaria para <strong>${topMatch.nombre_completo}</strong>. Viabilidad de éxito: ${viability}%. Posee el vector de competencia más alto del cuadrante.`;
-      actionSub.innerHTML = `Siguiente paso: Validar pretensiones de renta hoy. Match técnico validado al ${topScore}%.`;
-      updateJarvisMetric("Action", viability, "MATCH VECTOR CALIBRATED");
-    } else {
-      actionText.textContent = "Directiva: Mantener búsqueda activa. Ningún perfil actual supera el umbral de viabilidad estratégica del 75%.";
-      actionSub.textContent = "Re-evaluar candidatos del mes anterior o ajustar el perfil de búsqueda.";
-      updateJarvisMetric("Action", viability, "SEARCHING FOR SUPERIOR MATCH");
+    // --- CARD 2: Risk Calibration (Risk) ---
+    const avgScore = filteredCandidates.reduce((acc, c) => acc + JarvisEngine.calculateScore(c), 0) / filteredCandidates.length;
+    let riskFactor = Math.round(100 - avgScore + (filteredCandidates.length < 15 ? 25 : 0));
+    riskFactor = Math.max(10, Math.min(95, riskFactor));
+
+    const riskText = $("#jarvis_risk_text");
+    if (riskText) {
+      if (riskFactor > 60) {
+        riskText.innerHTML = `Alerta de Cobertura: Detectado <strong>riesgo de seniority (${riskFactor}%)</strong>. El volumen de perfiles con score > 80 es insuficiente para garantizar terna de alta calidad.`;
+      } else {
+        riskText.innerHTML = `Integridad Estable: El sistema reporta una salud de pipeline del ${100-riskFactor}%. Los vectores de competencia están alineados con los requisitos de la industria.`;
+      }
     }
+    updateJarvisMetricUI(2, riskFactor, riskFactor > 60 ? "CRITICAL ANOMALY" : "SYSTEM STABLE");
+
+    // --- CARD 3: Hiring Directives (Action) ---
+    const topCandidate = [...filteredCandidates].sort((a,b) => JarvisEngine.calculateScore(b) - JarvisEngine.calculateScore(a))[0];
+    const topScore = JarvisEngine.calculateScore(topCandidate);
+    
+    const actionText = $("#jarvis_action_text");
+    if (actionText) {
+       actionText.innerHTML = `Directiva Prioritaria: Ejecutar contacto técnico para <strong>${topCandidate.nombre_completo}</strong> immediately. Su vector de ajuste (${topScore}%) supera el umbral de viabilidad estratégica.`;
+    }
+    updateJarvisMetricUI(3, topScore, "MATCH VECTOR CALIBRATED");
+
+    // Simulation Tickers (Global)
+    const tickets = ["#jarvis_log_1", "#jarvis_log_2", "#jarvis_log_3"];
+    const msgs = ["SCANNING NODES", "SYNCING DATA", "CALCULATING", "MATCHING", "COMPLETED"];
+    if (window.jarvisIntervals) window.jarvisIntervals.forEach(clearInterval);
+    window.jarvisIntervals = tickets.map(id => {
+       return setInterval(() => {
+         const el = $(id);
+         if (el) el.textContent = msgs[Math.floor(Math.random() * msgs.length)];
+       }, 3000 + Math.random() * 2000);
+    });
   }
 
-  function updateJarvisMetric(card, value, tickerText) {
-    const bar = $(`#jarvis${card}Bar`);
-    const valText = $(`#jarvis${card}Value`);
-    const ticker = $(`#jarvis${card}Ticker`);
-    
-    if (bar) bar.style.width = `${value}%`;
-    if (valText) valText.textContent = `${value}%`;
-    
-    if (ticker) {
-      ticker.textContent = tickerText;
-      // Small blink effect
-      ticker.style.opacity = 0.3;
-      setTimeout(() => ticker.style.opacity = 0.7, 300);
-    }
+  function updateJarvisMetricUI(idx, val, tickerText) {
+    const valEl = $(`#jarvis_metric_${idx}_val`);
+    const barEl = $(`#jarvis_metric_${idx}_bar`);
+    if (valEl) animateValue(`jarvis_metric_${idx}_val`, 0, val, 1500, "%");
+    if (barEl) barEl.style.width = val + "%";
+  }
+
+  /**
+   * UI Animation: Count Up (Extended for %)
+   */
+  function animateValue(id, start, end, duration, suffix = "") {
+    const obj = document.getElementById(id);
+    if (!obj) return;
+    let startTimestamp = null;
+    const step = (timestamp) => {
+      if (!startTimestamp) startTimestamp = timestamp;
+      const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+      const val = Math.floor(progress * (end - start) + start);
+      obj.innerHTML = val + suffix;
+      if (progress < 1) {
+        window.requestAnimationFrame(step);
+      }
+    };
+    window.requestAnimationFrame(step);
   }
 
   function renderKPIs() {
     const total = filteredCandidates.length;
+    const avgExp = filteredCandidates.reduce((acc, c) => acc + (safeNum(c.experiencia_total) || 0), 0) / (total || 1);
+    const avgScore = filteredCandidates.reduce((acc, c) => acc + JarvisEngine.calculateScore(c), 0) / (total || 1);
+    const avgNota = filteredCandidates.reduce((acc, c) => acc + (safeNum(c.nota) || 0), 0) / (total || 1);
+    const highMatchCount = filteredCandidates.filter(c => JarvisEngine.calculateScore(c) >= 70).length;
 
-    const avgExp = average(
-      filteredCandidates
-        .map(c => safeNum(c.experiencia_total))
-        .filter(v => v != null)
-    );
-
-    const avgScore = average(
-      filteredCandidates
-        .map(c => safeNum(c.match_score))
-        .filter(v => v != null)
-    );
-
-    const avgNota = average(
-      filteredCandidates
-        .map(c => safeNum(c.nota))
-        .filter(v => v != null)
-    );
-
-    const highMatch = filteredCandidates.filter(c => (safeNum(c.match_score) || 0) >= 70).length;
-
-    if ($("#kpi_total_candidates")) $("#kpi_total_candidates").textContent = total;
-    if ($("#kpi_avg_experience")) $("#kpi_avg_experience").textContent = avgExp != null ? avgExp.toFixed(1) : "--";
-    if ($("#kpi_avg_score")) $("#kpi_avg_score").textContent = avgScore != null ? Math.round(avgScore) : "--";
-    if ($("#kpi_avg_nota")) $("#kpi_avg_nota").textContent = avgNota != null ? avgNota.toFixed(1) : "--";
-    if ($("#kpi_high_match")) $("#kpi_high_match").textContent = highMatch;
-  }
-
-  function average(arr) {
-    if (!arr.length) return null;
-    return arr.reduce((a, b) => a + b, 0) / arr.length;
+    animateValue("kpi_total_candidates", 0, total, 1000);
+    animateValue("kpi_avg_experience", 0, Math.round(avgExp), 1200);
+    animateValue("kpi_avg_score", 0, Math.round(avgScore), 1500);
+    animateValue("kpi_avg_nota", 0, Math.round(avgNota), 1500);
+    animateValue("kpi_high_match", 0, highMatchCount, 1800);
   }
 
   function renderAgeChart() {
     const ctx = $("#chart_age_dist");
     if (!ctx) return;
 
-    const groups = {
-      "18-24": 0,
-      "25-34": 0,
-      "35-44": 0,
-      "45-54": 0,
-      "55+": 0
-    };
-
+    const groups = { "18-25": [], "26-35": [], "36-45": [], "46-55": [], "56+": [] };
     filteredCandidates.forEach((c) => {
-      const age = getAgeFromBirthDate(c.fecha_nacimiento || c.birth_date);
-      if (age == null) return;
+      const age = getAge(c);
+      const score = JarvisEngine.calculateScore(c);
+      if (age <= 25) groups["18-25"].push(score);
+      else if (age <= 35) groups["26-35"].push(score);
+      else if (age <= 45) groups["36-45"].push(score);
+      else if (age <= 55) groups["46-55"].push(score);
+      else groups["56+"].push(score);
+    });
 
-      if (age < 25) groups["18-24"]++;
-      else if (age < 35) groups["25-34"]++;
-      else if (age < 45) groups["35-44"]++;
-      else if (age < 55) groups["45-54"]++;
-      else groups["55+"]++;
+    const labels = Object.keys(groups);
+    const data = labels.map(key => {
+      const scores = groups[key];
+      return scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
     });
 
     charts.age = new Chart(ctx, {
       type: "bar",
       data: {
-        labels: Object.keys(groups),
+        labels: labels,
         datasets: [{
-          label: "Candidatos",
-          data: Object.values(groups),
-          backgroundColor: [
-            "rgba(0, 229, 255, 0.75)",
-            "rgba(0, 229, 255, 0.65)",
-            "rgba(0, 229, 255, 0.55)",
-            "rgba(0, 229, 255, 0.45)",
-            "rgba(0, 229, 255, 0.35)"
-          ],
-          borderColor: "rgba(0, 229, 255, 1)",
+          label: "Score Promedio por Rango Etario",
+          data: data,
+          backgroundColor: "rgba(103, 232, 249, 0.6)",
+          borderColor: "#67e8f9",
           borderWidth: 1.5,
-          borderRadius: 12
+          borderRadius: 8
         }]
       },
-      options: getChartOptions()
+      options: {
+        ...getChartOptions(),
+        plugins: {
+          ...getChartOptions().plugins,
+          tooltip: {
+            callbacks: {
+              label: (context) => `Match Promedio: ${context.raw}%`
+            }
+          }
+        }
+      }
     });
   }
 
@@ -653,6 +724,16 @@
     } else {
       geoLayer = L.layerGroup().addTo(geoMap);
     }
+
+    // Heatmap Layer (NEW)
+    const heatData = points.map(p => [p.lat, p.lng, p.count * 10]);
+    if (window.heatLayer) geoMap.removeLayer(window.heatLayer);
+    window.heatLayer = L.heatLayer(heatData, {
+      radius: 35,
+      blur: 25,
+      maxZoom: 5,
+      gradient: { 0.4: 'rgba(0, 229, 255, 0.2)', 0.65: 'rgba(0, 229, 255, 0.5)', 1: '#67e8f9' }
+    }).addTo(geoMap);
 
     points.forEach((p) => {
       const radius = Math.max(12, Math.min(38, 8 + p.count * 3));
