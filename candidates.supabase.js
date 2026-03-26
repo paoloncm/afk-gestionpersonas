@@ -11,6 +11,7 @@
   const btnNewCandidate = $("#btnNewCandidate");
   const btnGenerateTec02 = $("#btnGenerateTec02FromCandidates");
   const btnGenerateTec02A = $("#btnGenerateTec02AFromCandidates");
+  const selectAllCandidates = $("#selectAllCandidates");
 
   const kpiTotal = $("#kpi_total");
   const kpiPromNota = $("#kpi_prom_nota");
@@ -134,6 +135,17 @@
         window.location.href = `${base}?ids=${encodeURIComponent(ids.join(','))}`;
       };
     }
+
+    if (selectAllCandidates) {
+      selectAllCandidates.onchange = (e) => {
+        const checked = e.target.checked;
+        filteredCandidates.forEach(c => {
+          if (checked) selectedCandidates.add(String(c.id));
+          else selectedCandidates.delete(String(c.id));
+        });
+        renderCandidates(filteredCandidates);
+      };
+    }
   }
 
   async function loadCandidates() {
@@ -142,11 +154,12 @@
       if (table) {
         table.innerHTML = `
           <div class="t-head">
-            <div class="t-col-cb"></div>
+            <div class="t-col-cb"><input type="checkbox" disabled></div>
             <div class="t-col-name">Nombre</div>
             <div class="t-col-prof">Profesión</div>
             <div class="t-col-vac">Cargo a desempeñar</div>
             <div class="t-col-score">Puntaje</div>
+            <div class="t-col-loc">Ubicación</div>
             <div class="t-col-exp">Años exp.</div>
             <div class="t-col-status">Estado</div>
           </div>
@@ -157,6 +170,7 @@
             <div class="t-col-prof"><div class="skeleton skeleton-text" style="width:60%"></div></div>
             <div class="t-col-vac"><div class="skeleton skeleton-text" style="width:70%"></div></div>
             <div class="t-col-score"><div class="skeleton skeleton-badge"></div></div>
+            <div class="t-col-loc"><div class="skeleton skeleton-text" style="width:60%"></div></div>
             <div class="t-col-exp"><div class="skeleton skeleton-badge"></div></div>
             <div class="t-col-status"><div class="skeleton skeleton-badge"></div></div>
           </div>
@@ -164,13 +178,21 @@
       }
 
       const { data, error } = await supabase
-        .from("candidates")
+        .from("v_candidate_summary")
         .select("*")
         .order("nombre_completo", { ascending: true });
 
       if (error) throw error;
 
-      allCandidates = data || [];
+      // Deduplicate by Name or RUT (keep newest)
+      const candidateMap = new Map();
+      (data || []).forEach(c => {
+          const key = (c.rut && c.rut !== "NULL" && c.rut.toUpperCase() !== "NULL" ? c.rut : c.nombre_completo).toLowerCase().trim();
+          if (!candidateMap.has(key) || new Date(c.created_at) > new Date(candidateMap.get(key).created_at)) {
+              candidateMap.set(key, c);
+          }
+      });
+      allCandidates = Array.from(candidateMap.values());
       populateFilters();
       applyFilters();
     } catch (err) {
@@ -245,13 +267,19 @@
   function renderCandidates(items) {
     if (!table) return;
 
+    const allSelected = items.length > 0 && items.every(c => selectedCandidates.has(String(c.id)));
+    if (selectAllCandidates) selectAllCandidates.checked = allSelected;
+
     const head = `
       <div class="t-head">
-        <div class="t-col-cb"></div>
+        <div class="t-col-cb">
+          <input type="checkbox" id="selectAllCandidatesInner" ${allSelected ? "checked" : ""} title="Seleccionar todos">
+        </div>
         <div class="t-col-name">Nombre</div>
         <div class="t-col-prof">Profesión</div>
         <div class="t-col-vac">Cargo a desempeñar</div>
         <div class="t-col-score">Puntaje</div>
+        <div class="t-col-loc">Ubicación</div>
         <div class="t-col-exp">Años exp.</div>
         <div class="t-col-status">Estado</div>
       </div>
@@ -270,7 +298,9 @@
       const name = escapeHtml(c.nombre_completo || "Sin nombre");
       const profesion = escapeHtml(c.profesion || "-");
       const cargo = escapeHtml(c.cargo_a_desempenar || "Sin asignar");
-      const nota = Number.isFinite(num(c.nota)) ? num(c.nota).toFixed(1) : "-";
+      const nota = Number.isFinite(num(c.score)) ? num(c.score).toFixed(1) : "-";
+      const ubicacion = escapeHtml(c.comuna || "-");
+      const direccion = escapeHtml(c.direccion || "-");
       const exp = Number.isFinite(num(c.experiencia_total)) ? num(c.experiencia_total).toFixed(1) : "-";
       const status = escapeHtml(c.status || "Postulado");
 
@@ -289,6 +319,7 @@
           <div class="t-col-prof" data-label="Profesión">${profesion}</div>
           <div class="t-col-vac" data-label="Cargo">${cargo}</div>
           <div class="t-col-score" data-label="Puntaje">${nota}</div>
+          <div class="t-col-loc" data-label="Ubicación" title="${direccion}">${ubicacion}${direccion !== '-' ? ' (' + direccion + ')' : ''}</div>
           <div class="t-col-exp" data-label="Experiencia">${exp}</div>
           <div class="t-col-status" data-label="Estado">
             <span class="badge">${status}</span>
@@ -304,9 +335,29 @@
         const val = String(e.target.value);
         if (e.target.checked) selectedCandidates.add(val);
         else selectedCandidates.delete(val);
+        
+        // Update header checkbox
+        const allChecked = Array.from(table.querySelectorAll(".candidate-check")).every(c => c.checked);
+        if (selectAllCandidates) selectAllCandidates.checked = allChecked;
+        const innerHeadCb = table.querySelector("#selectAllCandidatesInner");
+        if (innerHeadCb) innerHeadCb.checked = allChecked;
+
         refreshCompareButton();
       };
     });
+
+    const innerHeadCb = table.querySelector("#selectAllCandidatesInner");
+    if (innerHeadCb) {
+      innerHeadCb.onchange = (e) => {
+        const checked = e.target.checked;
+        if (selectAllCandidates) selectAllCandidates.checked = checked;
+        items.forEach(c => {
+          if (checked) selectedCandidates.add(String(c.id));
+          else selectedCandidates.delete(String(c.id));
+        });
+        renderCandidates(items);
+      };
+    }
 
     refreshCompareButton();
   }

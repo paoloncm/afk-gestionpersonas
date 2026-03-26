@@ -9,6 +9,8 @@
   <link rel="stylesheet" href="styles.css">
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/topojson-client@3"></script>
+  <script src="https://unpkg.com/chartjs-chart-geo@4"></script>
 </head>
 
 <body>
@@ -207,11 +209,16 @@
         <h2 class="h1">Candidatos</h2>
 
         <div class="toolbar">
-          <div class="toolbar__left">
-            <div class="input">
+          <div class="toolbar__left" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+            <div class="input" style="min-width:200px;">
               <span class="input__icon">🔎</span>
               <input id="candSearch" type="search" placeholder="Buscar candidato…" />
             </div>
+            
+            <select id="filterEstado" class="select" style="min-width:150px; background:var(--card-bg); color:var(--text); border:1px solid var(--border); border-radius:8px; padding:8px 12px;"></select>
+            <select id="filterCargo" class="select" style="min-width:150px; background:var(--card-bg); color:var(--text); border:1px solid var(--border); border-radius:8px; padding:8px 12px;"></select>
+            
+            <button id="btnResetFilters" class="btn btn--mini" style="background:transparent; color:var(--text-muted); border:1px solid var(--border);">Limpiar Filtros</button>
           </div>
 
           <div class="toolbar__right" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
@@ -225,11 +232,14 @@
         <div class="card">
           <div id="candidatesTable" class="table candidates">
             <div class="t-head">
-              <div class="t-col-cb"></div>
+              <div class="t-col-cb">
+                <input type="checkbox" id="selectAllCandidates" title="Seleccionar todos">
+              </div>
               <div class="t-col-name">Nombre</div>
               <div class="t-col-prof">Profesión</div>
               <div class="t-col-vac">Cargo a desempeñar</div>
               <div class="t-col-score">Puntaje</div>
+              <div class="t-col-loc">Ubicación / Dirección</div>
               <div class="t-col-exp">Años exp.</div>
               <div class="t-col-status">Estado</div>
             </div>

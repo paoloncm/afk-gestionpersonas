@@ -9,6 +9,8 @@
   <link rel="stylesheet" href="styles.css">
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/topojson-client@3"></script>
+  <script src="https://unpkg.com/chartjs-chart-geo@4"></script>
 </head>
 
 <body>
@@ -90,7 +92,7 @@
           <div class="card__body kpi" style="display:flex; justify-content:space-between; align-items:center;">
             <div>
               <span class="label" style="color:rgba(255,255,255,0.8);">AFK Workforce Score</span>
-              <span id="kpi_afk_score" class="value" style="font-size:52px; color:#white; text-shadow:0 0 20px rgba(255,255,255,0.3);">--</span>
+              <span id="kpi_afk_score" class="value" style="font-size:52px; color:white; text-shadow:0 0 20px rgba(255,255,255,0.3);">--</span>
               <div style="font-size:11px; color:rgba(255,255,255,0.9); margin-top:5px; font-weight:700;">Calidad y Cumplimiento Global</div>
             </div>
             <div id="scoreGaugeContainer" style="width:100px; height:100px; background:rgba(255,255,255,0.1); border-radius:50%; display:flex; align-items:center; justify-content:center; border:4px solid rgba(255,255,255,0.2);">
@@ -107,6 +109,13 @@
             <span class="label">Total Personal</span>
             <span id="kpi_total_workers" class="value">0</span>
             <div style="font-size:11px; color:var(--ok); margin-top:5px;">Dotación total vigente</div>
+          </div>
+        </div>
+        <div class="card" style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(0,0,0,0.4)); border-color: rgba(59, 130, 246, 0.3);">
+          <div class="card__body kpi">
+            <span class="label">Candidatos en Pipeline</span>
+            <span id="kpi_total_candidates" class="value">0</span>
+            <div style="font-size:11px; color:var(--muted); margin-top:5px;">Talento por incorporar</div>
           </div>
         </div>
         <div class="card">
