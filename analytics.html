@@ -284,6 +284,46 @@
       font-size: 14px;
     }
 
+    /* JARVIS GOD Mode Enhancements */
+    .jarvis-metric {
+      margin-top: 15px;
+      padding-top: 12px;
+      border-top: 1px dashed rgba(0, 229, 255, 0.15);
+    }
+    .jarvis-metric__label {
+      font-size: 10px;
+      font-weight: 800;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .jarvis-bar {
+      height: 4px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 2px;
+      overflow: hidden;
+      position: relative;
+    }
+    .jarvis-bar__fill {
+      height: 100%;
+      background: #00e5ff;
+      width: 0%;
+      transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 0 10px #00e5ff;
+    }
+    .jarvis-ticker {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 11px;
+      color: #67e8f9;
+      opacity: 0.7;
+      margin-top: 8px;
+    }
+    .jarvis-card--yellow .jarvis-bar__fill { background: #fbbf24; box-shadow: 0 0 10px #fbbf24; }
+    .jarvis-card--green .jarvis-bar__fill { background: #22c55e; box-shadow: 0 0 10px #22c55e; }
+
     @keyframes jarvisScan {
       0% {
         transform: translateX(-100%);
@@ -528,16 +568,25 @@
 
             <div class="jarvis-icon">📡</div>
 
-            <p class="jarvis-main">
+            <p class="jarvis-main" id="jarvisSignalText">
               La mayor concentración de talento técnico se encuentra en las zonas con más densidad operacional del
               pipeline, permitiendo acelerar shortlist, contacto y cobertura territorial.
             </p>
 
             <div class="jarvis-panel">
               <div class="jarvis-panel__label">Lectura estratégica</div>
-              <p class="jarvis-panel__text">
+              <p class="jarvis-panel__text" id="jarvisSignalSubtext">
                 Identifica dónde está el mayor pool de candidatos para decidir foco geográfico y velocidad comercial.
               </p>
+            </div>
+
+            <div class="jarvis-metric">
+              <div class="jarvis-metric__label">
+                <span>Densidad de Talento</span>
+                <span id="jarvisSignalValue">0%</span>
+              </div>
+              <div class="jarvis-bar"><div class="jarvis-bar__fill" id="jarvisSignalBar"></div></div>
+              <div class="jarvis-ticker" id="jarvisSignalTicker">SCANNING NEURAL NODES...</div>
             </div>
           </div>
         </article>
@@ -551,16 +600,25 @@
 
             <div class="jarvis-icon">⚠️</div>
 
-            <p class="jarvis-main">
+            <p class="jarvis-main" id="jarvisRiskText">
               Puede existir baja profundidad en perfiles senior o especialistas de alto match, aunque el volumen general
               del pipeline se vea sólido.
             </p>
 
             <div class="jarvis-panel">
               <div class="jarvis-panel__label">Qué vigilar</div>
-              <p class="jarvis-panel__text">
+              <p class="jarvis-panel__text" id="jarvisRiskSubtext">
                 Revisa brechas entre experiencia promedio, score y densidad regional para evitar shortlist débiles.
               </p>
+            </div>
+
+            <div class="jarvis-metric">
+              <div class="jarvis-metric__label">
+                <span>Riesgo de Cobertura</span>
+                <span id="jarvisRiskValue">0%</span>
+              </div>
+              <div class="jarvis-bar"><div class="jarvis-bar__fill" id="jarvisRiskBar"></div></div>
+              <div class="jarvis-ticker" id="jarvisRiskTicker">MONITORING PIPELINE GAPS...</div>
             </div>
           </div>
         </article>
@@ -574,16 +632,25 @@
 
             <div class="jarvis-icon">🚀</div>
 
-            <p class="jarvis-main">
+            <p class="jarvis-main" id="jarvisActionText">
               Prioriza candidatos con mejor score y mayor experiencia, y abre búsqueda específica donde el mapa muestre
               menor cobertura de talento.
             </p>
 
             <div class="jarvis-panel">
               <div class="jarvis-panel__label">Siguiente paso</div>
-              <p class="jarvis-panel__text">
+              <p class="jarvis-panel__text" id="jarvisActionSubtext">
                 Usa esta capa para decidir seniority objetivo, foco territorial y prioridad de contacto.
               </p>
+            </div>
+
+            <div class="jarvis-metric">
+              <div class="jarvis-metric__label">
+                <span>Viabilidad de Contratación</span>
+                <span id="jarvisActionValue">0%</span>
+              </div>
+              <div class="jarvis-bar"><div class="jarvis-bar__fill" id="jarvisActionBar"></div></div>
+              <div class="jarvis-ticker" id="jarvisActionTicker">CALIBRATING MATCH VECTORS...</div>
             </div>
           </div>
         </article>

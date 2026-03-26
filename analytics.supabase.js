@@ -8,6 +8,39 @@
 
   let allCandidates = [];
   let filteredCandidates = [];
+
+  const cityCoordMap = {
+    // RM
+    "maipu": { lat: -33.5106, lng: -70.7572, label: "Maipú" },
+    "puente alto": { lat: -33.6117, lng: -70.5757, label: "Puente Alto" },
+    "la florida": { lat: -33.5227, lng: -70.5987, label: "La Florida" },
+    "las condes": { lat: -33.4121, lng: -70.5666, label: "Las Condes" },
+    "providencia": { lat: -33.4312, lng: -70.6095, label: "Providencia" },
+    "pudahuel": { lat: -33.4479, lng: -70.8031, label: "Pudahuel" },
+    "quilicura": { lat: -33.3646, lng: -70.7288, label: "Quilicura" },
+    "nunoa": { lat: -33.4542, lng: -70.6001, label: "Ñuñoa" },
+    "san bernardo": { lat: -33.5925, lng: -70.7067, label: "San Bernardo" },
+    "penalolen": { lat: -33.4839, lng: -70.5486, label: "Peñalolén" },
+    // North
+    "calama": { lat: -22.4559, lng: -68.9302, label: "Calama" },
+    "mejillones": { lat: -23.1011, lng: -70.4503, label: "Mejillones" },
+    "vallenar": { lat: -28.5756, lng: -70.7589, label: "Vallenar" },
+    "ovalle": { lat: -30.5983, lng: -71.2003, label: "Ovalle" },
+    "vina": { lat: -33.0245, lng: -71.5518, label: "Viña del Mar" },
+    "quilpue": { lat: -33.0472, lng: -71.4425, label: "Quilpué" },
+    // South
+    "san fernando": { lat: -34.5847, lng: -70.9897, label: "San Fernando" },
+    "curico": { lat: -34.9856, lng: -71.2394, label: "Curicó" },
+    "linares": { lat: -35.8456, lng: -71.5975, label: "Linares" },
+    "talcahuano": { lat: -36.7167, lng: -73.1167, label: "Talcahuano" },
+    "los angeles": { lat: -37.4697, lng: -72.3539, label: "Los Ángeles" },
+    "coronel": { lat: -37.0333, lng: -73.1333, label: "Coronel" },
+    "angol": { lat: -37.7956, lng: -72.7125, label: "Angol" },
+    "osorno": { lat: -40.5739, lng: -73.1331, label: "Osorno" },
+    "castro": { lat: -42.4721, lng: -73.7731, label: "Castro" },
+    "natales": { lat: -51.7231, lng: -72.4844, label: "Puerto Natales" }
+  };
+
   let charts = {};
   let geoMap = null;
   let geoLayer = null;
@@ -118,6 +151,14 @@
     $("#filterCargo")?.addEventListener("change", applyFilters);
     $("#filterStatus")?.addEventListener("change", applyFilters);
     $("#filterRegion")?.addEventListener("change", applyFilters);
+
+    // JARVIS UI Interactions
+    $("#btnExportAnalyticsBottom")?.addEventListener("click", () => {
+      window.notificar?.("Generando reporte ejecutivo JARVIS...", "info");
+      setTimeout(() => {
+        window.print();
+      }, 1000);
+    });
   }
 
   function populateFilters() {
@@ -211,6 +252,101 @@
     renderStatusChart();
     renderGeoMap();
     renderTopInsights();
+    renderJarvisLayer();
+  }
+
+  function renderJarvisLayer() {
+    const signalText = $("#jarvisSignalText");
+    const signalSub = $("#jarvisSignalSubtext");
+    const riskText = $("#jarvisRiskText");
+    const riskSub = $("#jarvisRiskSubtext");
+    const actionText = $("#jarvisActionText");
+    const actionSub = $("#jarvisActionSubtext");
+
+    if (!signalText || !filteredCandidates.length) return;
+
+    // 1. SIGNAL HEURISTICS (Talent Density)
+    const locations = {};
+    const filteredRegion = ($("#filterRegion")?.value || "").trim();
+
+    filteredCandidates.forEach(c => {
+      const fullDir = normalizeText(getLocation(c));
+      let loc = getRegionFromDireccion(fullDir);
+      
+      // Look for specific city match for signal
+      for (const [cityKey, cityData] of Object.entries(cityCoordMap)) {
+         if (fullDir.includes(cityKey)) {
+           loc = cityData.label;
+           break;
+         }
+      }
+      locations[loc] = (locations[loc] || 0) + 1;
+    });
+    
+    const sortedLocs = Object.entries(locations).sort((a,b) => b[1] - a[1]);
+    const topLoc = sortedLocs[0];
+    const density = Math.round((topLoc[1] / filteredCandidates.length) * 100);
+    
+    // Check if topLoc is a city or region
+    const isCity = Object.values(cityCoordMap).some(d => d.label === topLoc[0]);
+    const locType = isCity ? "Ciudad/Sector" : "Región";
+
+    signalText.innerHTML = `Protocolo de Densidad: El área de <strong>${topLoc[0]}</strong> (${locType}) concentra el ${density}% del pool actual (${topLoc[1]} unidad/es). Nodo de alta disponibilidad detectado.`;
+    signalSub.textContent = `Análisis de Proximidad: El desplazamiento del talento hacia ${topLoc[0]} sugiere centralizar el reclutamiento técnico en este cuadrante.`;
+    updateJarvisMetric("Signal", density, "ANALYZING NEURAL GEOGRAPHY...");
+
+    // --- 2. RISK HEURISTICS (Coverage & Quality) ---
+    const avgScore = average(filteredCandidates.map(c => safeNum(c.match_score)).filter(v => v != null)) || 0;
+    const professions = [...new Set(filteredCandidates.map(getProfession))];
+    const scarcityLevel = professions.length > 5 ? 20 : 50; // More professions = less scarcity risk
+    
+    // Risk is higher if scores are low OR candidates are few
+    let riskFactor = Math.round(100 - avgScore + (filteredCandidates.length < 10 ? 30 : 0));
+    riskFactor = Math.max(15, Math.min(95, riskFactor));
+
+    if (riskFactor > 60) {
+      riskText.innerHTML = `Alerta Crítica: Detectada baja profundidad en el pipeline. El Match Score promedio (${Math.round(avgScore)}%) y el volumen actual indican una <strong>probabilidad de fallo en shortlist del ${riskFactor}%</strong>.`;
+      riskSub.textContent = "Acción preventiva: Es necesario ampliar el sourcing externo o reducir exigencias de seniority.";
+      updateJarvisMetric("Risk", riskFactor, "CRITICAL DEFICIENCY DETECTED");
+    } else {
+      riskText.textContent = "Integridad de Sistema: Calidad de candidatos estable. No se detectan anomalías de competencia en los perfiles vigentes.";
+      riskSub.textContent = "Continuar monitoreando ingresos al pipeline cada 24 horas.";
+      updateJarvisMetric("Risk", riskFactor, "STABLE SYSTEM INTEGRITY");
+    }
+
+    // --- 3. ACTION HEURISTICS (Hiring Viability) ---
+    const topMatch = [...filteredCandidates].sort((a,b) => (safeNum(b.match_score)||0) - (safeNum(a.match_score)||0))[0];
+    const topScore = safeNum(topMatch.match_score) || 0;
+    const topExp = safeNum(topMatch.experiencia_total) || 0;
+    
+    // Viability formula: 70% Score + 30% Experience (max 10 years cap)
+    const viability = Math.round((topScore * 0.7) + (Math.min(10, topExp) * 10 * 0.3));
+    
+    if (viability > 75) {
+      actionText.innerHTML = `Directiva JARVIS: Ejecutar oferta prioritaria para <strong>${topMatch.nombre_completo}</strong>. Viabilidad de éxito: ${viability}%. Posee el vector de competencia más alto del cuadrante.`;
+      actionSub.innerHTML = `Siguiente paso: Validar pretensiones de renta hoy. Match técnico validado al ${topScore}%.`;
+      updateJarvisMetric("Action", viability, "MATCH VECTOR CALIBRATED");
+    } else {
+      actionText.textContent = "Directiva: Mantener búsqueda activa. Ningún perfil actual supera el umbral de viabilidad estratégica del 75%.";
+      actionSub.textContent = "Re-evaluar candidatos del mes anterior o ajustar el perfil de búsqueda.";
+      updateJarvisMetric("Action", viability, "SEARCHING FOR SUPERIOR MATCH");
+    }
+  }
+
+  function updateJarvisMetric(card, value, tickerText) {
+    const bar = $(`#jarvis${card}Bar`);
+    const valText = $(`#jarvis${card}Value`);
+    const ticker = $(`#jarvis${card}Ticker`);
+    
+    if (bar) bar.style.width = `${value}%`;
+    if (valText) valText.textContent = `${value}%`;
+    
+    if (ticker) {
+      ticker.textContent = tickerText;
+      // Small blink effect
+      ticker.style.opacity = 0.3;
+      setTimeout(() => ticker.style.opacity = 0.7, 300);
+    }
   }
 
   function renderKPIs() {
@@ -519,79 +655,109 @@
     }
 
     points.forEach((p) => {
-      const radius = Math.max(10, Math.min(34, 8 + p.count * 2));
+      // Color-coding based on match score
+      const score = safeNum(p.matchScore) || 0;
+      let color = "#ef4444"; // Red
+      if (score >= 80) color = "#22c55e"; // Green
+      else if (score >= 60) color = "#0ea5e9"; // Blue
+      else if (score >= 40) color = "#eab308"; // Yellow
+
+      const radius = 6;
 
       const glow = L.circleMarker([p.lat, p.lng], {
-        radius: radius + 10,
+        radius: radius + 4,
         color: "rgba(0,0,0,0)",
-        fillColor: "rgba(0,229,255,0.18)",
-        fillOpacity: 0.35,
+        fillColor: color,
+        fillOpacity: 0.2,
         weight: 0
       });
 
       const core = L.circleMarker([p.lat, p.lng], {
         radius,
-        color: "#67e8f9",
-        weight: 1.5,
-        fillColor: "#00e5ff",
-        fillOpacity: 0.78
+        color: "#ffffff",
+        weight: 1,
+        fillColor: color,
+        fillOpacity: 0.9,
+        className: 'marker-pulse'
       });
 
       const html = `
-        <div style="min-width:220px">
-          <div style="font-weight:800; color:#67e8f9; margin-bottom:6px;">${escapeHtml(p.label)}</div>
-          <div style="color:#e2e8f0;">Candidatos: <strong>${p.count}</strong></div>
-          <div style="color:#94a3b8; margin-top:6px; font-size:12px;">${escapeHtml(p.names.slice(0, 6).join(", "))}</div>
+        <div style="min-width:180px; font-family: 'Inter', sans-serif;">
+          <div style="font-weight:800; color:${color}; margin-bottom:4px; font-size:14px;">
+            ${escapeHtml(p.names[0])}
+          </div>
+          <div style="color:#f1f5f9; font-size:12px; margin-bottom:8px;">
+            Match Score: <strong>${Math.round(score)}%</strong>
+          </div>
+          <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top:6px;">
+            <div style="color:#94a3b8; font-size:10px; text-transform:uppercase; letter-spacing:0.5px;">Ubicación Detectada</div>
+            <div style="color:#e2e8f0; font-size:11px; margin-top:2px;">${escapeHtml(p.direccion)}</div>
+            <div style="color:#64748b; font-size:10px; margin-top:2px;">${escapeHtml(p.region)}</div>
+          </div>
         </div>
       `;
 
-      glow.addTo(geoLayer);
-      core.addTo(geoLayer).bindPopup(html);
+      L.layerGroup([glow, core])
+        .bindPopup(html, { className: "jarvis-popup", closeButton: false })
+        .addTo(geoLayer);
     });
   }
 
   function buildGeoPoints(candidates) {
-    const coordMap = {
+    const regionMap = {
       "arica y parinacota": { lat: -18.4783, lng: -70.3126, label: "Arica" },
       "tarapaca": { lat: -20.2208, lng: -70.1431, label: "Iquique" },
       "antofagasta": { lat: -23.6509, lng: -70.3975, label: "Antofagasta" },
       "atacama": { lat: -27.3668, lng: -70.3322, label: "Copiapó" },
       "coquimbo": { lat: -29.9027, lng: -71.2519, label: "La Serena" },
       "valparaiso": { lat: -33.0472, lng: -71.6127, label: "Valparaíso" },
-      "o'higgins": { lat: -34.1708, lng: -70.7444, label: "Rancagua" },
+      "ohiggins": { lat: -34.1708, lng: -70.7444, label: "Rancagua" },
       "maule": { lat: -35.4264, lng: -71.6554, label: "Talca" },
-      "ñuble": { lat: -36.6066, lng: -72.1034, label: "Chillán" },
-      "biobío": { lat: -36.8201, lng: -73.0444, label: "Concepción" },
-      "araucanía": { lat: -38.7359, lng: -72.5904, label: "Temuco" },
-      "los ríos": { lat: -39.8142, lng: -73.2459, label: "Valdivia" },
+      "nuble": { lat: -36.6066, lng: -72.1034, label: "Chillán" },
+      "biobio": { lat: -36.8201, lng: -73.0444, label: "Concepción" },
+      "araucania": { lat: -38.7359, lng: -72.5904, label: "Temuco" },
+      "los rios": { lat: -39.8142, lng: -73.2459, label: "Valdivia" },
       "los lagos": { lat: -41.4693, lng: -72.9424, label: "Puerto Montt" },
-      "aysén": { lat: -45.5752, lng: -72.0662, label: "Coyhaique" },
+      "aysen": { lat: -45.5752, lng: -72.0662, label: "Coyhaique" },
       "magallanes": { lat: -53.1638, lng: -70.9171, label: "Punta Arenas" },
       "metropolitana": { lat: -33.4489, lng: -70.6693, label: "Santiago" }
     };
 
-    const grouped = {};
+    // Jitter function to avoid overlap
+    const getJitter = (id) => {
+      let hash = 0;
+      for (let i = 0; i < id.length; i++) hash = id.charCodeAt(i) + ((hash << 5) - hash);
+      return (hash % 100) / 4000; // Small offset ~500m
+    };
 
-    candidates.forEach((c) => {
-      const region = getRegionFromDireccion(getLocation(c));
-      const key = normalizeText(region);
+    return candidates.map((c) => {
+      const fullDir = normalizeText(getLocation(c));
+      const region = getRegionFromDireccion(fullDir);
+      
+      let baseCoords = regionMap[normalizeText(region)] || regionMap["metropolitana"];
+      let locLabel = baseCoords.label || region;
 
-      if (!grouped[key]) {
-        grouped[key] = {
-          count: 0,
-          names: [],
-          region,
-          ...(
-            coordMap[key] || coordMap["metropolitana"]
-          )
-        };
+      // Filter against specific city/comuna
+      for (const [cityKey, cityData] of Object.entries(cityCoordMap)) {
+        if (fullDir.includes(cityKey)) {
+          baseCoords = cityData;
+          locLabel = cityData.label;
+          break;
+        }
       }
 
-      grouped[key].count += 1;
-      if (c.nombre_completo) grouped[key].names.push(c.nombre_completo);
+      // Individual Scatter: Apply jitter based on candidate ID/Name
+      const seed = c.id || c.nombre_completo || "def";
+      return {
+        lat: baseCoords.lat + getJitter(seed),
+        lng: baseCoords.lng + getJitter(seed.split('').reverse().join('')),
+        count: 1, // Individual marker
+        region: locLabel,
+        names: [c.nombre_completo],
+        matchScore: c.match_score,
+        direccion: c.direccion || c.comuna || "Santiago, Chile"
+      };
     });
-
-    return Object.values(grouped);
   }
 
   init();
