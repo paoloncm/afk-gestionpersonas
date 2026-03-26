@@ -155,7 +155,13 @@
            method: 'POST',
            headers: { 'Content-Type': 'application/json' },
            body: JSON.stringify({
-              message: `Analiza esta licitación y extrae: 1) Un resumen técnico/estratégico del proyecto (max 300 caracteres). 2) Lista de requisitos técnicos de personal. Responde estrictamente en formato JSON: {"description": "...", "requirements": ["req1", "req2"]}. Texto: ${text.substring(0, 4000)}`,
+              message: `Analiza esta licitación y extrae: 
+              1) Un resumen técnico/estratégico del proyecto (max 300 caracteres). 
+              2) Una lista de vacantes o perfiles de personal requeridos. 
+              IMPORTANTE: Los requisitos deben ser GENERALES y CATEGORIZADOS (labels cortos), no descripciones largas. 
+              Ej: En lugar de "Técnicos certificados para dejar sistemas operativos y emitir informes", usa "Técnicos Certificados".
+              Responde estrictamente en formato JSON: {"description": "...", "requirements": ["Perfil 1", "Perfil 2"]}. 
+              Texto: ${text.substring(0, 4000)}`,
               meta: { task: "tender_deep_extraction", context: "Industrias Stark" }
            })
         });

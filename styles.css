@@ -1795,25 +1795,26 @@ input[type="checkbox"] {
 
 .stark-textarea {
   width: 100%;
-  background: rgba(255, 255, 255, 0.05) !important;
-  border: 1px solid rgba(103, 232, 249, 0.2) !important;
+  background: #ffffff !important;
+  border: 2px solid var(--accent) !important;
   border-radius: 12px !important;
-  color: #ffffff !important;
+  color: #0f172a !important;
   padding: 12px !important;
   font-family: inherit;
-  font-size: 13px;
+  font-size: 14px;
+  font-weight: 500;
   line-height: 1.6;
   outline: none;
   resize: vertical;
-  transition: border-color 0.2s;
+  transition: all 0.2s;
 }
 
 .stark-textarea:focus {
-  border-color: var(--accent) !important;
-  box-shadow: 0 0 15px var(--accent-glow);
+  border-color: var(--accent-2) !important;
+  box-shadow: 0 0 20px var(--accent-glow);
 }
 
 .stark-textarea::placeholder {
-  color: rgba(255, 255, 255, 0.3);
+  color: #94a3b8;
 }
 
