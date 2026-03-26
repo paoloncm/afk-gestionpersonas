@@ -378,9 +378,22 @@
 
     const results = ws.map(w => {
       const docs = [...(cs||[]).filter(c => c.worker_id === w.id || norm(c.rut) === norm(w.rut)), ...(ex||[]).filter(e => norm(e.rut) === norm(w.rut))];
-      const missing = tender.requirements.filter(req => !docs.some(d => (normalizeText(d.credential_name)+normalizeText(d.exam_type)).includes(normalizeText(req))));
-      return { name: w.full_name, id: w.rut, detail: w.company_name, missing };
-    }).sort((a,b) => a.missing.length - b.missing.length);
+      
+      const matched = tender.requirements.filter(req => 
+        docs.some(d => (normalizeText(d.credential_name)+normalizeText(d.exam_type)).includes(normalizeText(req)))
+      );
+
+      const score = matched.length > 0 ? 100 : 0;
+      
+      return { 
+        name: w.full_name, 
+        id: w.rut, 
+        detail: w.company_name, 
+        matched, 
+        score 
+      };
+    }).filter(r => r.score > 0).sort((a,b) => b.matched.length - a.matched.length);
+
     renderMatchResults(results);
   }
 
@@ -389,7 +402,6 @@
     if (!cand) return;
 
     const results = cand.map(c => {
-       // Deep Semantic Scan Stark (Combinamos todos los campos de experiencia)
        const profileText = normalizeText(`
           ${c.profesion || ''} 
           ${c.cargo_a_desempenar || ''} 
@@ -399,22 +411,22 @@
           ${c.antecedentes_academicos || ''}
        `);
        
-       const missing = tender.requirements.filter(req => {
+       const matched = tender.requirements.filter(req => {
           const reqNorm = normalizeText(req);
-          return !profileText.includes(reqNorm);
+          return profileText.includes(reqNorm);
        });
 
-       const score = Math.round(100 - (missing.length * (100 / (tender.requirements.length || 1))));
+       const score = matched.length > 0 ? 100 : 0;
 
        return { 
          name: c.nombre_completo, 
          id: c.profesion || 'Candidato', 
-         detail: `Calce IA: ${score}%`, 
-         missing, 
+         detail: `Compatible con: ${matched.join(', ')}`, 
+         matched, 
          isCandidate: true, 
          score 
        };
-    }).sort((a,b) => b.score - a.score);
+    }).filter(r => r.score > 0).sort((a,b) => b.matched.length - a.matched.length);
 
     renderMatchResults(results);
   }
@@ -422,15 +434,15 @@
   function renderMatchResults(res) {
     if (matchBody) {
       if (res.length === 0) {
-        matchBody.innerHTML = '<div style="padding:40px; text-align:center; color:var(--muted);">No se encontraron perfiles con calce mínimo.</div>';
+        matchBody.innerHTML = '<div style="padding:40px; text-align:center; color:var(--muted);">No se encontraron perfiles con calce para las vacantes detectadas.</div>';
         return;
       }
 
       matchBody.innerHTML = `
         <div class="match-grid">
-          ${res.slice(0, 12).map(r => {
+          ${res.slice(0, 15).map(r => {
             const score = r.score || 0;
-            const color = score > 80 ? 'var(--ok)' : score > 50 ? 'var(--warning)' : 'var(--danger)';
+            const color = 'var(--ok)';
             return `
               <div class="match-card">
                 <div class="match-card__header">
@@ -439,20 +451,20 @@
                     <span>${escapeHtml(r.id)}</span>
                   </div>
                   <div class="match-score-badge" style="color:${color}; border-color:${color}44; background:${color}11">
-                    ${score}%
+                    APTO
                   </div>
                 </div>
 
                 <div class="match-progress-container">
-                  <div class="match-progress-bar" style="width: ${score}%; background: ${color};"></div>
+                  <div class="match-progress-bar" style="width: 100%; background: ${color};"></div>
                 </div>
 
                 <div class="match-card__status">
                   <div style="font-weight:700; margin-bottom:4px; display:flex; align-items:center; gap:5px;">
-                    ${score > 70 ? '🟢 Perfil Compatible' : '🔴 Brechas Detectadas'}
+                    🟢 Perfil para Vacante
                   </div>
                   <div style="color:var(--muted); font-size:11px; line-height:1.4;">
-                    ${r.missing.length ? 'Faltan: ' + r.missing.join(', ') : 'Cumple con todos los requisitos técnicos.'}
+                    <strong>Disponible para:</strong><br>${r.matched.join(', ')}
                   </div>
                 </div>
 
