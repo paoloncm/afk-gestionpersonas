@@ -14,6 +14,19 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <style>
+    :root {
+      --jarvis-cyan: #67e8f9;
+      --jarvis-cyan-2: #00e5ff;
+      --jarvis-green: #34d399;
+      --jarvis-yellow: #facc15;
+      --jarvis-red: #fb7185;
+      --jarvis-text: #e2e8f0;
+      --jarvis-muted: #94a3b8;
+      --jarvis-bg: #020617;
+      --jarvis-card: #0b1120;
+      --jarvis-border: rgba(148, 163, 184, 0.12);
+    }
+
     #geoMap {
       height: 420px;
       border-radius: 22px;
@@ -49,12 +62,14 @@
       display: grid;
       grid-template-columns: 1.25fr 1fr;
       gap: 18px;
+      align-items: stretch;
     }
 
     .analytics-grid-3 {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 18px;
+      align-items: stretch;
     }
 
     .kpi-grid-modern {
@@ -73,11 +88,230 @@
       position: relative;
     }
 
-    @media (max-width: 1100px) {
+    .jarvis-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+      align-items: stretch;
+    }
 
-      .analytics-grid-2,
+    .jarvis-card {
+      position: relative;
+      min-height: 280px;
+      border-radius: 22px;
+      overflow: hidden;
+      border: 1px solid rgba(103, 232, 249, 0.12);
+      background:
+        radial-gradient(circle at top right, rgba(0, 229, 255, 0.08), transparent 28%),
+        linear-gradient(180deg, rgba(8, 15, 29, 0.98) 0%, rgba(5, 10, 20, 0.98) 100%);
+      box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.02) inset,
+        0 20px 60px rgba(0, 0, 0, 0.35),
+        0 0 26px rgba(0, 229, 255, 0.06);
+    }
+
+    .jarvis-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(90deg, transparent 0%, rgba(103, 232, 249, 0.08) 50%, transparent 100%);
+      transform: translateX(-100%);
+      animation: jarvisScan 6s linear infinite;
+      opacity: .45;
+    }
+
+    .jarvis-card__inner {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      padding: 22px;
+    }
+
+    .jarvis-card__top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .jarvis-card__title {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .jarvis-chip {
+      font-size: 11px;
+      font-weight: 800;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid currentColor;
+      white-space: nowrap;
+    }
+
+    .jarvis-icon {
+      width: 58px;
+      height: 58px;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      font-size: 26px;
+      margin-bottom: 14px;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+    }
+
+    .jarvis-main {
+      color: var(--jarvis-text);
+      font-size: 15px;
+      line-height: 1.75;
+      margin: 0 0 18px;
+      flex: 1;
+    }
+
+    .jarvis-panel {
+      padding: 14px 15px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .jarvis-panel__label {
+      font-size: 11px;
+      color: var(--jarvis-muted);
+      text-transform: uppercase;
+      font-weight: 900;
+      letter-spacing: .06em;
+      margin-bottom: 7px;
+    }
+
+    .jarvis-panel__text {
+      font-size: 14px;
+      color: #f8fafc;
+      line-height: 1.65;
+      margin: 0;
+    }
+
+    .jarvis-card--cyan {
+      border-color: rgba(103, 232, 249, 0.16);
+      box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.02) inset,
+        0 20px 60px rgba(0, 0, 0, 0.35),
+        0 0 30px rgba(0, 229, 255, 0.08);
+    }
+
+    .jarvis-card--cyan .jarvis-card__title,
+    .jarvis-card--cyan .jarvis-chip {
+      color: var(--jarvis-cyan);
+    }
+
+    .jarvis-card--cyan .jarvis-icon {
+      background: rgba(0, 229, 255, 0.12);
+      color: var(--jarvis-cyan);
+      border: 1px solid rgba(103, 232, 249, 0.16);
+    }
+
+    .jarvis-card--yellow {
+      border-color: rgba(250, 204, 21, 0.16);
+      box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.02) inset,
+        0 20px 60px rgba(0, 0, 0, 0.35),
+        0 0 28px rgba(250, 204, 21, 0.05);
+    }
+
+    .jarvis-card--yellow .jarvis-card__title,
+    .jarvis-card--yellow .jarvis-chip {
+      color: var(--jarvis-yellow);
+    }
+
+    .jarvis-card--yellow .jarvis-icon {
+      background: rgba(250, 204, 21, 0.12);
+      color: var(--jarvis-yellow);
+      border: 1px solid rgba(250, 204, 21, 0.16);
+    }
+
+    .jarvis-card--green {
+      border-color: rgba(52, 211, 153, 0.16);
+      box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.02) inset,
+        0 20px 60px rgba(0, 0, 0, 0.35),
+        0 0 28px rgba(52, 211, 153, 0.05);
+    }
+
+    .jarvis-card--green .jarvis-card__title,
+    .jarvis-card--green .jarvis-chip {
+      color: var(--jarvis-green);
+    }
+
+    .jarvis-card--green .jarvis-icon {
+      background: rgba(52, 211, 153, 0.12);
+      color: var(--jarvis-green);
+      border: 1px solid rgba(52, 211, 153, 0.16);
+    }
+
+    .jarvis-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 18px 20px;
+      border-radius: 22px;
+      border: 1px solid var(--jarvis-border);
+      background:
+        radial-gradient(circle at left top, rgba(0, 229, 255, 0.06), transparent 18%),
+        linear-gradient(180deg, rgba(11, 17, 32, 0.96) 0%, rgba(7, 12, 24, 0.98) 100%);
+      margin-bottom: 60px;
+    }
+
+    .jarvis-footer__title {
+      margin: 0 0 8px;
+      font-size: 20px;
+      font-weight: 900;
+      color: #f8fafc;
+    }
+
+    .jarvis-footer__desc {
+      margin: 0;
+      color: var(--jarvis-text);
+      line-height: 1.7;
+      max-width: 760px;
+      font-size: 14px;
+    }
+
+    @keyframes jarvisScan {
+      0% {
+        transform: translateX(-100%);
+      }
+
+      100% {
+        transform: translateX(100%);
+      }
+    }
+
+    @media (max-width: 1200px) {
+
+      .jarvis-grid,
       .analytics-grid-3 {
         grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 1100px) {
+      .analytics-grid-2 {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .jarvis-footer {
+        flex-direction: column;
+        align-items: flex-start;
       }
     }
   </style>
@@ -113,8 +347,8 @@
     <header class="topbar">
       <button class="btn-menu" aria-label="Abrir menú">☰</button>
       <div style="display:flex; gap:10px; margin-left:auto; flex-wrap:wrap;">
-        <button class="btn btn--primary" id="btnExportAnalytics">Exportar Reporte</button>
-        <button class="btn" id="btnChat">Abrir Chatbot</button>
+        <button class="btn btn--primary" id="btnExportAnalyticsTop">Exportar Reporte</button>
+        <button class="btn" id="btnChatTop">Abrir Chatbot</button>
       </div>
     </header>
 
@@ -283,23 +517,91 @@
         </div>
       </section>
 
-      <h3 class="h1" style="margin-top:40px;">3. Vista estratégica</h3>
-      <section class="card" style="margin-bottom:60px;">
-        <div class="card__body">
-          <div style="display:flex; justify-content:space-between; gap:20px; flex-wrap:wrap; align-items:flex-start;">
-            <div>
-              <h4 style="margin:0 0 8px; font-size:18px; font-weight:900;">Tony Stark View</h4>
-              <p class="text-muted" style="margin:0; max-width:720px;">
-                Este módulo cruza score, experiencia, profesión y geografía para identificar focos de talento,
-                concentración regional y perfiles prioritarios para reclutamiento.
-              </p>
+      <h3 class="h1" style="margin-top:40px;">3. JARVIS Strategic Layer</h3>
+      <section class="jarvis-grid section" style="margin-bottom:22px;">
+        <article class="jarvis-card jarvis-card--cyan">
+          <div class="jarvis-card__inner">
+            <div class="jarvis-card__top">
+              <h4 class="jarvis-card__title">Señal principal</h4>
+              <span class="jarvis-chip">LIVE SIGNAL</span>
             </div>
 
-            <div style="display:flex; gap:10px; flex-wrap:wrap;">
-              <button class="btn btn--primary" id="btnExportAnalytics">Exportar reporte</button>
-              <button class="btn" id="btnChat">Abrir chatbot</button>
+            <div class="jarvis-icon">📡</div>
+
+            <p class="jarvis-main">
+              La mayor concentración de talento técnico se encuentra en las zonas con más densidad operacional del
+              pipeline, permitiendo acelerar shortlist, contacto y cobertura territorial.
+            </p>
+
+            <div class="jarvis-panel">
+              <div class="jarvis-panel__label">Lectura estratégica</div>
+              <p class="jarvis-panel__text">
+                Identifica dónde está el mayor pool de candidatos para decidir foco geográfico y velocidad comercial.
+              </p>
             </div>
           </div>
+        </article>
+
+        <article class="jarvis-card jarvis-card--yellow">
+          <div class="jarvis-card__inner">
+            <div class="jarvis-card__top">
+              <h4 class="jarvis-card__title">Riesgo / alerta</h4>
+              <span class="jarvis-chip">WATCH MODE</span>
+            </div>
+
+            <div class="jarvis-icon">⚠️</div>
+
+            <p class="jarvis-main">
+              Puede existir baja profundidad en perfiles senior o especialistas de alto match, aunque el volumen general
+              del pipeline se vea sólido.
+            </p>
+
+            <div class="jarvis-panel">
+              <div class="jarvis-panel__label">Qué vigilar</div>
+              <p class="jarvis-panel__text">
+                Revisa brechas entre experiencia promedio, score y densidad regional para evitar shortlist débiles.
+              </p>
+            </div>
+          </div>
+        </article>
+
+        <article class="jarvis-card jarvis-card--green">
+          <div class="jarvis-card__inner">
+            <div class="jarvis-card__top">
+              <h4 class="jarvis-card__title">Acción sugerida</h4>
+              <span class="jarvis-chip">NEXT MOVE</span>
+            </div>
+
+            <div class="jarvis-icon">🚀</div>
+
+            <p class="jarvis-main">
+              Prioriza candidatos con mejor score y mayor experiencia, y abre búsqueda específica donde el mapa muestre
+              menor cobertura de talento.
+            </p>
+
+            <div class="jarvis-panel">
+              <div class="jarvis-panel__label">Siguiente paso</div>
+              <p class="jarvis-panel__text">
+                Usa esta capa para decidir seniority objetivo, foco territorial y prioridad de contacto.
+              </p>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section class="jarvis-footer">
+        <div>
+          <h4 class="jarvis-footer__title">Tony Stark View</h4>
+          <p class="jarvis-footer__desc">
+            Esta capa cruza score, experiencia, profesión y geografía para identificar focos de talento, concentración
+            regional y perfiles prioritarios para reclutamiento. Diseñada para lectura rápida, decisiones comerciales y
+            operación en tiempo real.
+          </p>
+        </div>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn btn--primary" id="btnExportAnalyticsBottom">Exportar reporte</button>
+          <button class="btn" id="btnChatBottom">Abrir chatbot</button>
         </div>
       </section>
     </main>
@@ -323,6 +625,26 @@
   <script defer src="analytics.supabase.js"></script>
   <script defer src="chat.js"></script>
   <script defer src="responsive.js"></script>
+
+  <script>
+    const bindMirrorClick = (sourceId, targetId) => {
+      const source = document.getElementById(sourceId);
+      const target = document.getElementById(targetId);
+      if (!source || !target) return;
+      source.addEventListener('click', () => target.click());
+    };
+
+    bindMirrorClick('btnExportAnalyticsTop', 'btnExportAnalyticsBottom');
+    bindMirrorClick('btnChatTop', 'btnChatBottom');
+
+    document.getElementById('btnChatBottom')?.addEventListener('click', () => {
+      document.getElementById('openChatbot')?.click();
+    });
+
+    document.getElementById('btnChatTop')?.addEventListener('click', () => {
+      document.getElementById('openChatbot')?.click();
+    });
+  </script>
 </body>
 
 </html>
