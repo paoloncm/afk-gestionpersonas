@@ -1,747 +1,598 @@
 /**
  * analytics.supabase.js
- * Lógica de People Analytics para AFK RRHH
+ * Dashboard People Analytics conectado a public.candidates
  */
 
 (async function () {
   const $ = (s) => document.querySelector(s);
-  
-  // Variables de estado
-  let allWorkers = [];
-  let allExams = [];
-  let allCandidates = [];
-  let filteredWorkers = [];
-  let charts = {};
 
-  // Inicialización
+  let allCandidates = [];
+  let filteredCandidates = [];
+  let charts = {};
+  let geoMap = null;
+  let geoLayer = null;
+
   async function init() {
-    console.log("[analytics] Iniciando People Analytics...");
-    
+    console.log("[analytics] Iniciando dashboard candidates...");
+
     if (!window.db) {
-      console.error("[analytics] Supabase (window.db) no está disponible.");
+      console.error("[analytics] window.db no está disponible.");
       return;
     }
 
-    await loadData();
+    await loadCandidates();
     populateFilters();
     bindEvents();
     renderAll();
   }
 
-  // --- Functions to be used in events (must be defined or hoisted) ---
-  function runSimulation() {
-    const cargo = $("#sim_cargo")?.value;
-    const qty = parseInt($("#sim_quantity")?.value || 0);
-    const resultBox = $("#simulationResult");
-    const resultCard = $("#simResultCard");
+  async function loadCandidates() {
+    try {
+      const { data, error } = await window.db
+        .from("candidates")
+        .select("*")
+        .order("created_at", { ascending: false });
 
-    if (!cargo || !qty) {
-        window.notificar?.("Por favor seleccione cargo y cantidad.", "warning");
-        return;
+      if (error) throw error;
+
+      const map = new Map();
+
+      (data || []).forEach((c) => {
+        const rutKey = normalizeRut(c.rut);
+        const nameKey = normalizeText(c.nombre_completo || "");
+        const key = rutKey || nameKey;
+
+        if (!key) return;
+
+        if (!map.has(key)) {
+          map.set(key, c);
+          return;
+        }
+
+        const prev = map.get(key);
+        const prevDate = prev?.updated_at || prev?.created_at || 0;
+        const currDate = c?.updated_at || c?.created_at || 0;
+
+        if (new Date(currDate) > new Date(prevDate)) {
+          map.set(key, c);
+        }
+      });
+
+      allCandidates = Array.from(map.values());
+      filteredCandidates = [...allCandidates];
+
+      console.log(`[analytics] candidates cargados: ${allCandidates.length}`);
+    } catch (err) {
+      console.error("[analytics] Error cargando candidates:", err);
+      window.notificar?.("Error cargando tabla candidates", "danger");
     }
-
-    if (resultCard) resultCard.style.opacity = "1";
-
-    const workers = allWorkers.filter(w => (w.profesion || w.cargo_a_desempenar) === cargo);
-    const candidates = allCandidates.filter(c => (c.profesion || c.cargo_a_desempenar) === cargo);
-    
-    const totalAvailable = workers.length + candidates.length;
-    let html = "";
-    
-    if (totalAvailable >= qty) {
-        const fromWorkers = Math.min(workers.length, qty);
-        const fromCandidates = Math.max(0, qty - workers.length);
-        
-        html = `
-            <div style="font-size:32px; margin-bottom:10px;">✅</div>
-            <h5 style="margin:0; color:var(--ok);">FACTIBILIDAD ALTA</h5>
-            <p style="font-size:12px; margin:10px 0;">
-                Se requieren ${qty} personas. <br>
-                Disponibles: <strong>${workers.length} activos</strong> ${fromCandidates > 0 ? `+ <strong>${fromCandidates} candidates</strong> en proceso.` : ''}
-            </p>
-            <button class="btn btn--mini" onclick="location.href='pipeline.html'" style="margin-top:10px;">Gestionar Contratación</button>
-        `;
-    } else {
-        html = `
-            <div style="font-size:32px; margin-bottom:10px;">⚠️</div>
-            <h5 style="margin:0; color:var(--warning);">BRECHA DETECTADA</h5>
-            <p style="font-size:12px; margin:10px 0;">
-                Faltan <strong>${qty - totalAvailable}</strong> personas para este cargo.<br>
-                Total disponible (Activos + Pipeline): ${totalAvailable}
-            </p>
-            <button class="btn btn--mini btn--primary" onclick="location.href='pipeline.html?action=new&cargo=${encodeURIComponent(cargo)}'">Iniciar Reclutamiento Urgente</button>
-        `;
-    }
-
-    if (resultBox) resultBox.innerHTML = html;
   }
 
-  async function loadData() {
-    try {
-      const { data: workers, error: workersError } = await window.db.from("workers").select("*");
-      const { data: exams, error: examsError } = await window.db.from("medical_exam_records").select("*");
-      let { data: candidates, error: candidatesError } = await window.db.from("v_candidate_summary").select("*");
-      
-      // Fallback if view fails
-      if (candidatesError || !candidates) {
-          console.warn("[analytics] v_candidate_summary falló, intentando tabla candidates...");
-          const fallback = await window.db.from("candidates").select("*");
-          candidates = fallback.data;
-          candidatesError = fallback.error;
-      }
+  function normalizeText(v) {
+    return String(v || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim()
+      .toLowerCase();
+  }
 
-      if (workersError) throw workersError;
-      if (examsError) throw examsError;
-      if (candidatesError) throw candidatesError;
+  function normalizeRut(v) {
+    const s = String(v || "").trim().toUpperCase();
+    if (!s) return "";
+    return s.replace(/\./g, "").replace(/\s+/g, "");
+  }
 
-      allWorkers = workers || [];
-      allExams = exams || [];
-      
-      // Deduplicate candidates by Name or RUT
-      const candidateMap = new Map();
-      (candidates || []).forEach(c => {
-          const rawRut = String(c.rut || "").toUpperCase();
-          const cleanRut = (rawRut === "NULL" || rawRut === "" || rawRut === "UNDEFINED") ? null : rawRut;
-          const nameKey = String(c.nombre_completo || "").toLowerCase().trim();
-          const key = cleanRut || nameKey;
-          
-          if (key && (!candidateMap.has(key) || (c.created_at && new Date(c.created_at) > new Date(candidateMap.get(key).created_at)))) {
-              candidateMap.set(key, c);
-          }
-      });
-      allCandidates = Array.from(candidateMap.values());
-      
-      filteredWorkers = [...allWorkers];
+  function safeNum(v) {
+    if (v == null || v === "") return null;
+    const n = Number(String(v).replace(",", "."));
+    return Number.isFinite(n) ? n : null;
+  }
 
-      console.log(`[analytics] Datos cargados: ${allWorkers.length} trabajadores, ${allCandidates.length} candidatos.`);
-    } catch (err) {
-      console.error("[analytics] Error cargando datos:", err);
-    }
+  function getProfession(c) {
+    return c.profesion || c.cargo_a_desempenar || "Sin cargo";
+  }
+
+  function getLocation(c) {
+    return c.direccion || c.comuna || c.ciudad || "Sin ubicación";
+  }
+
+  function getStatus(c) {
+    return (c.status || "pendiente").toLowerCase();
+  }
+
+  function getAgeFromBirthDate(dateStr) {
+    if (!dateStr) return null;
+    const d = new Date(dateStr);
+    if (Number.isNaN(d.getTime())) return null;
+
+    const now = new Date();
+    let age = now.getFullYear() - d.getFullYear();
+    const m = now.getMonth() - d.getMonth();
+
+    if (m < 0 || (m === 0 && now.getDate() < d.getDate())) age--;
+    return age >= 0 && age <= 100 ? age : null;
   }
 
   function bindEvents() {
     $("#globalAnalyticsSearch")?.addEventListener("input", applyFilters);
-    $("#filterFaena")?.addEventListener("change", applyFilters);
     $("#filterCargo")?.addEventListener("change", applyFilters);
-    $("#btnSimulate")?.addEventListener("click", runSimulation);
-    $("#toggleExecutiveView")?.addEventListener("change", (e) => {
-      const main = $(".main");
-      if (e.target.checked) {
-          main.classList.add("executive-mode");
-          document.querySelectorAll(".section.grid-3, .section.grid-2, h3.h1").forEach(el => el.style.display = 'none');
-      } else {
-          main.classList.remove("executive-mode");
-          document.querySelectorAll(".section.grid-3, .section.grid-2, h3.h1").forEach(el => el.style.display = '');
-      }
-    });
-
-    // Action buttons
-    document.querySelectorAll(".btn-action").forEach(btn => {
-      btn.addEventListener("click", (e) => {
-        const action = e.currentTarget.dataset.action;
-        handleAction(action);
-      });
-    });
+    $("#filterStatus")?.addEventListener("change", applyFilters);
+    $("#filterRegion")?.addEventListener("change", applyFilters);
   }
 
   function populateFilters() {
-    const faenas = [...new Set(allWorkers.map(w => w.company_name).filter(Boolean))].sort();
-    const cargos = [...new Set([...allWorkers, ...allCandidates].map(w => w.profesion || w.cargo_a_desempenar).filter(Boolean))].sort();
+    const cargos = [...new Set(allCandidates.map(getProfession).filter(Boolean))].sort();
+    const statuses = [...new Set(allCandidates.map(getStatus).filter(Boolean))].sort();
+    const regiones = [...new Set(allCandidates.map(c => getRegionFromDireccion(getLocation(c))).filter(Boolean))].sort();
 
-    const fSel = $("#filterFaena");
-    const cSel = $("#filterCargo");
-    const sSel = $("#sim_cargo"); // Simulator dropdown
+    const cargoSel = $("#filterCargo");
+    const statusSel = $("#filterStatus");
+    const regionSel = $("#filterRegion");
 
-    if (fSel) fSel.innerHTML = '<option value="">Todas las Faenas</option>' + faenas.map(f => `<option value="${f}">${f}</option>`).join('');
-    if (cSel) cSel.innerHTML = '<option value="">Todos los Cargos</option>' + cargos.map(c => `<option value="${c}">${c}</option>`).join('');
-    if (sSel) sSel.innerHTML = '<option value="">Elegir cargo...</option>' + cargos.map(c => `<option value="${c}">${c}</option>`).join('');
+    if (cargoSel) {
+      cargoSel.innerHTML =
+        `<option value="">Todos los cargos</option>` +
+        cargos.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join("");
+    }
+
+    if (statusSel) {
+      statusSel.innerHTML =
+        `<option value="">Todos los estados</option>` +
+        statuses.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(capitalize(v))}</option>`).join("");
+    }
+
+    if (regionSel) {
+      regionSel.innerHTML =
+        `<option value="">Todas las regiones</option>` +
+        regiones.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join("");
+    }
+  }
+
+  function escapeHtml(value) {
+    return String(value || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function capitalize(s) {
+    const str = String(s || "");
+    return str.charAt(0).toUpperCase() + str.slice(1);
   }
 
   function applyFilters() {
-    const q = ($("#globalAnalyticsSearch")?.value || "").toLowerCase();
-    const faena = $("#filterFaena")?.value;
-    const cargo = $("#filterCargo")?.value;
+    const q = ($("#globalAnalyticsSearch")?.value || "").toLowerCase().trim();
+    const cargo = $("#filterCargo")?.value || "";
+    const status = ($("#filterStatus")?.value || "").toLowerCase();
+    const region = $("#filterRegion")?.value || "";
 
-    filteredWorkers = allWorkers.filter(w => {
-        const name = (w.full_name || "").toLowerCase();
-        const wFaena = w.company_name || "";
-        const wCargo = w.profesion || w.cargo_a_desempenar || "";
-        
-        const matchQ = !q || name.includes(q) || wFaena.toLowerCase().includes(q) || wCargo.toLowerCase().includes(q);
-        const matchF = !faena || wFaena === faena;
-        const matchC = !cargo || wCargo === cargo;
+    filteredCandidates = allCandidates.filter((c) => {
+      const nombre = String(c.nombre_completo || "").toLowerCase();
+      const profesion = String(getProfession(c) || "").toLowerCase();
+      const direccion = String(getLocation(c) || "").toLowerCase();
+      const rut = String(c.rut || "").toLowerCase();
+      const cStatus = getStatus(c);
+      const cRegion = getRegionFromDireccion(getLocation(c));
 
-        return matchQ && matchF && matchC;
+      const matchQ =
+        !q ||
+        nombre.includes(q) ||
+        profesion.includes(q) ||
+        direccion.includes(q) ||
+        rut.includes(q);
+
+      const matchCargo = !cargo || getProfession(c) === cargo;
+      const matchStatus = !status || cStatus === status;
+      const matchRegion = !region || cRegion === region;
+
+      return matchQ && matchCargo && matchStatus && matchRegion;
     });
 
     renderAll();
   }
 
-  function handleAction(action) {
-    if (action === 'recruit') {
-        window.location.href = "pipeline.html";
-    } else if (action === 'train') {
-        window.notificar?.("Solicitud de capacitación enviada al área de formación.", "success");
-    } else if (action === 'notify') {
-        window.notificar?.("Notificaciones de cumplimiento enviadas a los trabajadores afectados.", "info");
-    }
+  function destroyCharts() {
+    Object.values(charts).forEach((chart) => {
+      try {
+        chart.destroy();
+      } catch (_) { }
+    });
+    charts = {};
   }
 
   function renderAll() {
-    // Reset charts for clean re-render
-    Object.values(charts).forEach(c => c.destroy());
-    charts = {};
-
-    renderScore();
+    destroyCharts();
     renderKPIs();
-    renderDemographics();
-    renderProfiles();
-    renderRisks();
-    renderAIRecommendations();
-    renderStrategicHeader();
-  }
-
-  // --- Simulation Logic ---
-  function runSimulation() {
-    const cargo = $("#sim_cargo")?.value;
-    const qty = parseInt($("#sim_quantity")?.value || 0);
-    const resultBox = $("#simulationResult");
-    const resultCard = $("#simResultCard");
-
-    if (!cargo || !qty) {
-        window.notificar?.("Por favor seleccione cargo y cantidad.", "warning");
-        return;
-    }
-
-    if (resultCard) resultCard.style.opacity = "1";
-
-    const workers = allWorkers.filter(w => (w.profesion || w.cargo_a_desempenar) === cargo);
-    const candidates = allCandidates.filter(c => c.cargo_a_desempenar === cargo);
-    
-    const totalAvailable = workers.length + candidates.length;
-    let html = "";
-    
-    if (totalAvailable >= qty) {
-        const fromWorkers = Math.min(workers.length, qty);
-        const fromCandidates = Math.max(0, qty - workers.length);
-        
-        html = `
-            <div style="font-size:32px; margin-bottom:10px;">✅</div>
-            <h5 style="margin:0; color:var(--ok);">FACTIBILIDAD ALTA</h5>
-            <p style="font-size:12px; margin:10px 0;">
-                Se requieren ${qty} personas. <br>
-                Disponibles: <strong>${workers.length} activos</strong> ${fromCandidates > 0 ? `+ <strong>${fromCandidates} candidates</strong> en proceso.` : ''}
-            </p>
-            <button class="btn btn--mini" onclick="location.href='pipeline.html'" style="margin-top:10px;">Gestionar Contratación</button>
-        `;
-    } else {
-        html = `
-            <div style="font-size:32px; margin-bottom:10px;">⚠️</div>
-            <h5 style="margin:0; color:var(--warning);">BRECHA DETECTADA</h5>
-            <p style="font-size:12px; margin:10px 0;">
-                Faltan <strong>${qty - totalAvailable}</strong> personas para este cargo.<br>
-                Total disponible (Activos + Pipeline): ${totalAvailable}
-            </p>
-            <button class="btn btn--mini btn--primary" onclick="location.href='pipeline.html?action=new&cargo=${encodeURIComponent(cargo)}'">Iniciar Reclutamiento Urgente</button>
-        `;
-    }
-
-    if (resultBox) resultBox.innerHTML = html;
-  }
-
-  // --- 0. AFK Score ---
-  function renderScore() {
-    const scoreVal = $("#kpi_afk_score");
-    const progress = $("#scoreProgressBar");
-    if (!scoreVal) return;
-
-    // Fórmula AFK: Compliance (50%) + Cert Coverage (30%) + Data (20%)
-    const compliancePct = filteredWorkers.length ? (1 - (getBlockedCount() / filteredWorkers.length)) * 100 : 0;
-    
-    // Pipeline Health (Candidates / Workers Ratio - Ideal 15%)
-    const pipelinePct = Math.min((allCandidates.length / (allWorkers.length || 1)) / 0.15, 1) * 100;
-
-    // Critical Cert Coverage
-    const criticalTypes = ["altura", "espacios", "confinados", "silice", "ruido"];
-    const workersWithCritical = new Set();
-    allExams.forEach(e => {
-        const type = String(e.exam_type || "").toLowerCase();
-        if (criticalTypes.some(t => type.includes(t))) {
-            const workerId = e.worker_id || e.rut;
-            if (workerId && filteredWorkers.some(w => w.id == workerId || w.rut == workerId)) {
-                workersWithCritical.add(workerId);
-            }
-        }
-    });
-    const certPct = filteredWorkers.length ? (workersWithCritical.size / filteredWorkers.length) * 100 : 0;
-
-    // Data Completeness (RUT + Name + Email)
-    const completeCount = filteredWorkers.filter(w => w.rut && w.full_name && w.company_name).length;
-    const dataPct = filteredWorkers.length ? (completeCount / filteredWorkers.length) * 100 : 0;
-
-    const finalScore = Math.round((compliancePct * 0.5) + (certPct * 0.3) + (dataPct * 0.2));
-    
-    // Animación
-    scoreVal.textContent = finalScore;
-    if (progress) progress.style.width = `${finalScore}%`;
-  }
-
-  // --- 1. KPIs ---
-  function renderKPIs() {
-    // Total Workers
-    if ($("#kpi_total_workers")) $("#kpi_total_workers").textContent = filteredWorkers.length;
-
-    // Candidates in Pipeline
-    if ($("#kpi_total_candidates")) $("#kpi_total_candidates").textContent = allCandidates.length;
-
-    // Edad Promedio
-    const hasBirthDate = filteredWorkers.some(w => w.birth_date);
-    let avgAge = 0;
-    if (hasBirthDate) {
-      const now = new Date();
-      const ages = filteredWorkers.map(w => {
-        if (!w.birth_date) return null;
-        const bd = new Date(w.birth_date);
-        return now.getFullYear() - bd.getFullYear();
-      }).filter(a => a !== null);
-      avgAge = ages.length ? Math.round(ages.reduce((a, b) => a + b, 0) / ages.length) : 38;
-    } else {
-      avgAge = 38;
-    }
-    if ($("#kpi_avg_age")) $("#kpi_avg_age").textContent = avgAge;
-
-    // Certificación Crítica %
-    const criticalTypes = ["altura", "espacios", "confinados", "silice", "ruido"];
-    const workersWithCritical = new Set();
-    allExams.forEach(e => {
-        const type = String(e.exam_type || "").toLowerCase();
-        if (criticalTypes.some(t => type.includes(t))) {
-            const workerId = e.worker_id || e.rut;
-            if (workerId && filteredWorkers.some(w => w.id == workerId || w.rut == workerId)) {
-                workersWithCritical.add(workerId);
-            }
-        }
-    });
-    const criticalPct = filteredWorkers.length ? Math.round((workersWithCritical.size / filteredWorkers.length) * 100) : 0;
-    if ($("#kpi_critical_cert_pct")) $("#kpi_critical_cert_pct").textContent = `${criticalPct}%`;
-
-    // Riesgo de Vacancia
-    const blockedCount = getBlockedCount();
-    if ($("#kpi_vacancy_risk")) $("#kpi_vacancy_risk").textContent = blockedCount;
-  }
-
-  function getBlockedCount() {
-    const now = new Date();
-    const blockedWorkers = new Set();
-    allExams.forEach(e => {
-        if (!e.expiry_date) return;
-        const exp = new Date(e.expiry_date);
-        const diff = (exp - now) / (1000 * 60 * 60 * 24);
-        if (diff <= 15) {
-            const id = e.worker_id || e.rut;
-            if (id && filteredWorkers.some(w => w.id == id || w.rut == id)) {
-                blockedWorkers.add(id);
-            }
-        }
-    });
-    return blockedWorkers.size;
-  }
-
-  // --- 2. Demografía ---
-  function renderDemographics() {
     renderAgeChart();
-    renderGeoChart();
-    renderSeniorityChart();
+    renderProfessionChart();
+    renderScoreChart();
+    renderStatusChart();
+    renderGeoMap();
+    renderTopInsights();
+  }
+
+  function renderKPIs() {
+    const total = filteredCandidates.length;
+
+    const avgExp = average(
+      filteredCandidates
+        .map(c => safeNum(c.experiencia_total))
+        .filter(v => v != null)
+    );
+
+    const avgScore = average(
+      filteredCandidates
+        .map(c => safeNum(c.match_score))
+        .filter(v => v != null)
+    );
+
+    const avgNota = average(
+      filteredCandidates
+        .map(c => safeNum(c.nota))
+        .filter(v => v != null)
+    );
+
+    const highMatch = filteredCandidates.filter(c => (safeNum(c.match_score) || 0) >= 70).length;
+
+    if ($("#kpi_total_candidates")) $("#kpi_total_candidates").textContent = total;
+    if ($("#kpi_avg_experience")) $("#kpi_avg_experience").textContent = avgExp != null ? avgExp.toFixed(1) : "--";
+    if ($("#kpi_avg_score")) $("#kpi_avg_score").textContent = avgScore != null ? Math.round(avgScore) : "--";
+    if ($("#kpi_avg_nota")) $("#kpi_avg_nota").textContent = avgNota != null ? avgNota.toFixed(1) : "--";
+    if ($("#kpi_high_match")) $("#kpi_high_match").textContent = highMatch;
+  }
+
+  function average(arr) {
+    if (!arr.length) return null;
+    return arr.reduce((a, b) => a + b, 0) / arr.length;
   }
 
   function renderAgeChart() {
     const ctx = $("#chart_age_dist");
     if (!ctx) return;
-    
-    const now = new Date();
-    const ageGroups = { "18-24": 0, "25-34": 0, "35-44": 0, "45-54": 0, "55-64": 0, "65+": 0 };
-    
-    filteredWorkers.forEach(w => {
-        if (!w.birth_date) return;
-        const age = now.getFullYear() - new Date(w.birth_date).getFullYear();
-        if (age < 25) ageGroups["18-24"]++;
-        else if (age < 35) ageGroups["25-34"]++;
-        else if (age < 45) ageGroups["35-44"]++;
-        else if (age < 55) ageGroups["45-54"]++;
-        else if (age < 65) ageGroups["55-64"]++;
-        else ageGroups["65+"]++;
+
+    const groups = {
+      "18-24": 0,
+      "25-34": 0,
+      "35-44": 0,
+      "45-54": 0,
+      "55+": 0
+    };
+
+    filteredCandidates.forEach((c) => {
+      const age = getAgeFromBirthDate(c.fecha_nacimiento || c.birth_date);
+      if (age == null) return;
+
+      if (age < 25) groups["18-24"]++;
+      else if (age < 35) groups["25-34"]++;
+      else if (age < 45) groups["35-44"]++;
+      else if (age < 55) groups["45-54"]++;
+      else groups["55+"]++;
     });
 
-    const labels = Object.keys(ageGroups);
-    const dataset = Object.values(ageGroups);
-    
     charts.age = new Chart(ctx, {
-      type: 'bar',
+      type: "bar",
       data: {
-        labels: labels,
+        labels: Object.keys(groups),
         datasets: [{
-          label: 'Personas',
-          data: dataset,
-          backgroundColor: '#e11d48',
-          borderRadius: 6
+          label: "Candidatos",
+          data: Object.values(groups),
+          backgroundColor: [
+            "rgba(0, 229, 255, 0.75)",
+            "rgba(0, 229, 255, 0.65)",
+            "rgba(0, 229, 255, 0.55)",
+            "rgba(0, 229, 255, 0.45)",
+            "rgba(0, 229, 255, 0.35)"
+          ],
+          borderColor: "rgba(0, 229, 255, 1)",
+          borderWidth: 1.5,
+          borderRadius: 12
         }]
       },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-          y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#8e949e', stepSize: 1 } },
-          x: { grid: { display: false }, ticks: { color: '#8e949e' } }
-        }
-      }
-    });
-
-    if ($("#insight_age")) {
-        $("#insight_age").textContent = "El 63% de la dotación se concentra entre 25 y 44 años. Existe baja presencia de relevo joven en cargos técnicos críticos.";
-    }
-  }
-
-  function renderGeoChart() {
-    const ctx = $("#chart_geo_dist");
-    if (!ctx) return;
-
-    // Use a reliable GeoJSON source for Chile (Comunas)
-    fetch('https://raw.githubusercontent.com/caracena/chile-geojson/master/comunas.json')
-      .then(res => {
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-        return res.json();
-      })
-      .then(geoData => {
-        if (!ctx) return; // Cleanup check
-        
-        // Prepare data by region/comuna
-        const counts = {};
-        allWorkers.forEach(w => {
-          const loc = (w.comuna || w.ciudad || "Santiago").toUpperCase();
-          counts[loc] = (counts[loc] || 0) + 1;
-        });
-        allCandidates.forEach(c => {
-          const loc = (c.comuna || c.ubicacion || c.ciudad || "Santiago").toUpperCase();
-          counts[loc] = (counts[loc] || 0) + 1;
-        });
-
-        // Simplified mapping to regions if comuna data is sparse
-        const features = geoData.features;
-        
-        charts.geo = new Chart(ctx, {
-          type: 'choropleth',
-          data: {
-            labels: features.map(d => d.properties.name),
-            datasets: [{
-              label: 'Distribución AFK',
-              data: features.map(d => ({
-                feature: d,
-                value: counts[d.properties.name.toUpperCase()] || 0
-              })),
-              backgroundColor: (context) => {
-                const value = context.raw ? context.raw.value : 0;
-                if (value === 0) return 'rgba(255,255,255,0.05)';
-                return value > 10 ? '#e11d48' : 'rgba(225, 29, 72, 0.5)';
-              }
-            }]
-          },
-          options: {
-            showOutline: true,
-            showGraticule: false,
-            plugins: {
-              legend: { display: false },
-              tooltip: {
-                 callbacks: {
-                   label: (item) => `${item.element.feature.properties.name}: ${item.raw.value} personas`
-                 }
-              }
-            },
-            scales: {
-              projection: {
-                projection: 'mercator'
-              }
-            }
-          }
-        });
-      })
-      .catch(err => {
-        console.error("Error loading map data:", err);
-        // Fallback to simple chart if map fails
-        const counts = { "Santiago": 45, "Antofagasta": 20, "Concepción": 15 };
-        charts.geo = new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: Object.keys(counts),
-                datasets: [{ data: Object.values(counts), backgroundColor: ['#e11d48', '#f59e0b', '#10b981'] }]
-            }
-        });
-      });
-  }
-
-  function renderSeniorityChart() {
-    const ctx = $("#chart_seniority_dist");
-    if (!ctx) return;
-
-    const now = new Date();
-    const seniority = { "< 6m": 0, "6m - 1a": 0, "1a - 2a": 0, "2a - 5a": 0, "5a+": 0 };
-    
-    filteredWorkers.forEach(w => {
-        const joinDate = w.created_at ? new Date(w.created_at) : now;
-        const months = (now.getFullYear() - joinDate.getFullYear()) * 12 + (now.getMonth() - joinDate.getMonth());
-        
-        if (months < 6) seniority["< 6m"]++;
-        else if (months < 12) seniority["6m - 1a"]++;
-        else if (months < 24) seniority["1a - 2a"]++;
-        else if (months < 60) seniority["2a - 5a"]++;
-        else seniority["5a+"]++;
-    });
-
-    charts.seniority = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: Object.keys(seniority),
-        datasets: [{
-          label: 'Trabajadores',
-          data: Object.values(seniority),
-          borderColor: '#10b981',
-          backgroundColor: 'rgba(16, 185, 129, 0.1)',
-          fill: true,
-          tension: 0.4
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-          y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#8e949e', stepSize: 1 } },
-          x: { grid: { display: false }, ticks: { color: '#8e949e' } }
-        }
-      }
+      options: getChartOptions()
     });
   }
 
-  // --- 3. Perfiles ---
-  function renderProfiles() {
-    renderProfessionsChart();
-    renderCriticalProfiles();
-  }
-
-  function renderProfessionsChart() {
+  function renderProfessionChart() {
     const ctx = $("#chart_professions");
     if (!ctx) return;
 
-    const professions = {};
-    allWorkers.forEach(w => {
-        const prof = (w.profesion || w.cargo_a_desempenar || "Técnico").toUpperCase();
-        professions[prof] = (professions[prof] || 0) + 1;
-    });
-    // Add candidates to professions
-    allCandidates.forEach(c => {
-        const prof = (c.profesion || c.cargo_a_desempenar || "Técnico").toUpperCase();
-        professions[prof] = (professions[prof] || 0) + 1;
+    const counts = {};
+    filteredCandidates.forEach((c) => {
+      const prof = getProfession(c);
+      counts[prof] = (counts[prof] || 0) + 1;
     });
 
-    const entries = Object.entries(professions).sort((a,b) => b[1] - a[1]).slice(0, 8);
+    const entries = Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8);
 
     charts.professions = new Chart(ctx, {
-      type: 'bar',
+      type: "bar",
       data: {
         labels: entries.map(e => e[0]),
         datasets: [{
-          label: 'Cantidad',
+          label: "Candidatos",
           data: entries.map(e => e[1]),
-          backgroundColor: '#3b82f6',
-          borderRadius: 4
+          backgroundColor: "rgba(0, 255, 170, 0.7)",
+          borderColor: "rgba(0, 255, 170, 1)",
+          borderWidth: 1.5,
+          borderRadius: 12
         }]
       },
       options: {
-        indexAxis: 'y',
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#8e949e' } },
-          y: { grid: { display: false }, ticks: { color: '#8e949e', font: { size: 10 } } }
-        }
+        ...getChartOptions(),
+        indexAxis: "y"
       }
     });
-
-    if ($("#insight_professions")) {
-        $("#insight_professions").textContent = "Predominan perfiles eléctricos y mecánicos, pero existe baja disponibilidad de perfiles con certificaciones SAPCI.";
-    }
   }
 
-  function renderCriticalProfiles() {
-    const list = $("#criticalProfilesList");
-    if (!list) return;
-
-    // Get unique professions from all sources
-    const allProfs = [...new Set([
-        ...allWorkers.map(w => (w.profesion || w.cargo_a_desempenar || "Técnico").toUpperCase()),
-        ...allCandidates.map(c => (c.cargo_a_desempenar || "Técnico").toUpperCase())
-    ])];
-
-    const data = allProfs.slice(0, 5).map(prof => {
-        const workers = allWorkers.filter(w => (w.profesion || w.cargo_a_desempenar) === prof).length;
-        const candidates = allCandidates.filter(c => c.cargo_a_desempenar === prof).length;
-        const risk = workers < 5 ? "Alto" : (workers < 10 ? "Medio" : "Bajo");
-        
-        return { name: prof, count: workers, pipeline: candidates, risk: risk };
-    });
-
-    list.innerHTML = data.map(item => `
-        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid rgba(255,255,255,0.05);">
-            <div>
-                <div style="font-weight:700; color:#fff;">${item.name}</div>
-                <div style="font-size:11px; color:var(--muted);">${item.count} activos | ${item.pipeline} en pipeline</div>
-            </div>
-            <div class="badge ${item.risk === 'Alto' ? 'badge--danger' : (item.risk === 'Medio' ? 'badge--warning' : 'badge--success')}" style="font-size:10px;">
-                Riesgo: ${item.risk}
-            </div>
-        </div>
-    `).join('');
-  }
-
-  // --- 4. Riesgos ---
-  function renderRisks() {
-    renderRiskLocationsChart();
-    renderGaps();
-    renderPredictiveAlert();
-  }
-
-  function renderRiskLocationsChart() {
-    const ctx = $("#chart_risk_locations");
+  function renderScoreChart() {
+    const ctx = $("#chart_score_dist");
     if (!ctx) return;
 
-    const locations = {};
-    filteredWorkers.forEach(w => {
-        const isBlocked = w._complianceSummary?.faenaText === "Bloqueado";
-        if (isBlocked) {
-            const loc = w.company_name || "Sin asignar";
-            locations[loc] = (locations[loc] || 0) + 1;
-        }
+    const groups = {
+      "0-39": 0,
+      "40-59": 0,
+      "60-79": 0,
+      "80-100": 0
+    };
+
+    filteredCandidates.forEach((c) => {
+      const score = safeNum(c.match_score) || 0;
+      if (score < 40) groups["0-39"]++;
+      else if (score < 60) groups["40-59"]++;
+      else if (score < 80) groups["60-79"]++;
+      else groups["80-100"]++;
     });
 
-    const entries = Object.entries(locations).sort((a,b) => b[1] - a[1]).slice(0, 5);
-    if (!entries.length) {
-        entries.push(["Faena Chuquicamata", 5], ["Minera Escondida", 3], ["Planta Colina", 2]);
-    }
-
-    charts.risks = new Chart(ctx, {
-      type: 'polarArea',
+    charts.score = new Chart(ctx, {
+      type: "doughnut",
       data: {
-        labels: entries.map(e => e[0]),
+        labels: Object.keys(groups),
         datasets: [{
-          data: entries.map(e => e[1]),
-          backgroundColor: ['rgba(239, 68, 68, 0.6)', 'rgba(239, 68, 68, 0.4)', 'rgba(239, 68, 68, 0.2)'],
-          borderColor: '#ef4444',
-          borderWidth: 1
+          data: Object.values(groups),
+          backgroundColor: [
+            "rgba(255, 82, 82, 0.85)",
+            "rgba(255, 193, 7, 0.85)",
+            "rgba(0, 229, 255, 0.85)",
+            "rgba(0, 255, 170, 0.85)"
+          ],
+          borderColor: "rgba(15, 23, 42, 1)",
+          borderWidth: 3
         }]
       },
       options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-            r: { grid: { color: 'rgba(255,255,255,0.05)' }, angleLines: { color: 'rgba(255,255,255,0.05)' }, ticks: { display: false } }
-        },
+        ...getChartOptions(),
         plugins: {
-          legend: { position: 'bottom', labels: { color: '#8e949e', boxWidth: 12, font: { size: 10 } } }
+          ...getChartOptions().plugins,
+          legend: {
+            position: "bottom",
+            labels: {
+              color: "#dbeafe",
+              boxWidth: 14
+            }
+          }
         }
       }
     });
   }
 
-  function renderGaps() {
-    const container = $("#licitationGaps");
-    if (!container) return;
+  function renderStatusChart() {
+    const ctx = $("#chart_status_dist");
+    if (!ctx) return;
 
-    const blocked = getBlockedCount();
-    const coverage = filteredWorkers.length ? Math.round(((filteredWorkers.length - blocked) / filteredWorkers.length) * 100) : 0;
+    const counts = {};
+    filteredCandidates.forEach((c) => {
+      const status = capitalize(getStatus(c));
+      counts[status] = (counts[status] || 0) + 1;
+    });
 
-    container.innerHTML = `
-        <div style="margin-bottom:15px;">
-            <p style="margin-bottom:8px;">Capacidad de adjudicación actual: <strong style="color:${coverage > 80 ? 'var(--ok)' : 'var(--danger)'};">${coverage}%</strong></p>
-            <div style="height:8px; background:rgba(255,255,255,0.05); border-radius:4px; overflow:hidden;">
-                <div style="width:${coverage}%; height:100%; background:${coverage > 80 ? 'var(--ok)' : 'var(--danger)'};"></div>
-            </div>
-        </div>
-        <p style="margin:0; font-size:12px; color:rgba(255,255,255,0.8);">
-            <strong style="color:#ef4444;">Alerta:</strong> Hoy la faena presenta brechas en perfiles con certificaciones vigentes. Se sugiere iniciar reclutamiento proactivo.
-        </p>
+    const entries = Object.entries(counts);
+
+    charts.status = new Chart(ctx, {
+      type: "polarArea",
+      data: {
+        labels: entries.map(e => e[0]),
+        datasets: [{
+          data: entries.map(e => e[1]),
+          backgroundColor: [
+            "rgba(0, 229, 255, 0.70)",
+            "rgba(0, 255, 170, 0.70)",
+            "rgba(255, 193, 7, 0.70)",
+            "rgba(255, 82, 82, 0.70)",
+            "rgba(168, 85, 247, 0.70)"
+          ],
+          borderColor: "rgba(15, 23, 42, 1)",
+          borderWidth: 2
+        }]
+      },
+      options: getChartOptions()
+    });
+  }
+
+  function getChartOptions() {
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          labels: {
+            color: "#cbd5e1"
+          }
+        },
+        tooltip: {
+          backgroundColor: "rgba(2, 6, 23, 0.95)",
+          titleColor: "#67e8f9",
+          bodyColor: "#e2e8f0",
+          borderColor: "rgba(0, 229, 255, 0.35)",
+          borderWidth: 1
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: "#94a3b8" },
+          grid: { color: "rgba(148, 163, 184, 0.08)" }
+        },
+        y: {
+          beginAtZero: true,
+          ticks: { color: "#94a3b8", stepSize: 1 },
+          grid: { color: "rgba(148, 163, 184, 0.08)" }
+        }
+      }
+    };
+  }
+
+  function renderTopInsights() {
+    const el = $("#aiRecommendationsList");
+    if (!el) return;
+
+    const byHighScore = [...filteredCandidates]
+      .sort((a, b) => (safeNum(b.match_score) || 0) - (safeNum(a.match_score) || 0))
+      .slice(0, 3);
+
+    const byExp = [...filteredCandidates]
+      .sort((a, b) => (safeNum(b.experiencia_total) || 0) - (safeNum(a.experiencia_total) || 0))
+      .slice(0, 3);
+
+    const regions = {};
+    filteredCandidates.forEach((c) => {
+      const r = getRegionFromDireccion(getLocation(c));
+      regions[r] = (regions[r] || 0) + 1;
+    });
+
+    const topRegion = Object.entries(regions).sort((a, b) => b[1] - a[1])[0];
+
+    el.innerHTML = `
+      <li><strong>Total filtrado:</strong> ${filteredCandidates.length} candidatos.</li>
+      <li><strong>Región dominante:</strong> ${topRegion ? `${topRegion[0]} (${topRegion[1]})` : "Sin datos"}.</li>
+      <li><strong>Top match:</strong> ${byHighScore.map(c => escapeHtml(c.nombre_completo || "Sin nombre")).join(", ") || "Sin datos"}.</li>
+      <li><strong>Mayor experiencia:</strong> ${byExp.map(c => escapeHtml(c.nombre_completo || "Sin nombre")).join(", ") || "Sin datos"}.</li>
     `;
   }
 
-  function renderPredictiveAlert() {
-    const container = $("#licitationGaps");
-    if (!container) return;
+  function getRegionFromDireccion(direccion) {
+    const d = normalizeText(direccion);
 
-    // Simulación de predicción: Ver vencimientos en los próximos 30-60 días
-    const now = new Date();
-    const thirtyDays = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000));
-    
-    const upcomingIssues = allExams.filter(e => {
-        const exp = new Date(e.expiry_date);
-        return exp > now && exp <= thirtyDays;
+    if (d.includes("arica")) return "Arica y Parinacota";
+    if (d.includes("iquique") || d.includes("tarapaca")) return "Tarapacá";
+    if (d.includes("antofagasta") || d.includes("calama")) return "Antofagasta";
+    if (d.includes("copiapo") || d.includes("atacama")) return "Atacama";
+    if (d.includes("la serena") || d.includes("coquimbo")) return "Coquimbo";
+    if (d.includes("valparaiso") || d.includes("vina") || d.includes("quilpue")) return "Valparaíso";
+    if (d.includes("rancagua") || d.includes("ohiggins")) return "O'Higgins";
+    if (d.includes("talca") || d.includes("curico") || d.includes("maule")) return "Maule";
+    if (d.includes("chillan") || d.includes("nuble")) return "Ñuble";
+    if (d.includes("concepcion") || d.includes("talcahuano") || d.includes("biobio")) return "Biobío";
+    if (d.includes("temuco") || d.includes("araucania")) return "Araucanía";
+    if (d.includes("valdivia") || d.includes("rios")) return "Los Ríos";
+    if (d.includes("puerto montt") || d.includes("los lagos")) return "Los Lagos";
+    if (d.includes("coihaique") || d.includes("aysen")) return "Aysén";
+    if (d.includes("punta arenas") || d.includes("magallanes")) return "Magallanes";
+    if (d.includes("santiago") || d.includes("maipu") || d.includes("puente alto") || d.includes("metropolitana")) return "Metropolitana";
+    return "Metropolitana";
+  }
+
+  function renderGeoMap() {
+    const container = $("#geoMap");
+    if (!container || typeof L === "undefined") return;
+
+    const points = buildGeoPoints(filteredCandidates);
+
+    if (!geoMap) {
+      geoMap = L.map("geoMap", {
+        zoomControl: false,
+        attributionControl: false
+      }).setView([-33.45, -70.66], 4.2);
+
+      L.tileLayer(
+        "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+        { subdomains: "abcd", maxZoom: 19 }
+      ).addTo(geoMap);
+    }
+
+    if (geoLayer) {
+      geoLayer.clearLayers();
+    } else {
+      geoLayer = L.layerGroup().addTo(geoMap);
+    }
+
+    points.forEach((p) => {
+      const radius = Math.max(10, Math.min(34, 8 + p.count * 2));
+
+      const glow = L.circleMarker([p.lat, p.lng], {
+        radius: radius + 10,
+        color: "rgba(0,0,0,0)",
+        fillColor: "rgba(0,229,255,0.18)",
+        fillOpacity: 0.35,
+        weight: 0
+      });
+
+      const core = L.circleMarker([p.lat, p.lng], {
+        radius,
+        color: "#67e8f9",
+        weight: 1.5,
+        fillColor: "#00e5ff",
+        fillOpacity: 0.78
+      });
+
+      const html = `
+        <div style="min-width:220px">
+          <div style="font-weight:800; color:#67e8f9; margin-bottom:6px;">${escapeHtml(p.label)}</div>
+          <div style="color:#e2e8f0;">Candidatos: <strong>${p.count}</strong></div>
+          <div style="color:#94a3b8; margin-top:6px; font-size:12px;">${escapeHtml(p.names.slice(0, 6).join(", "))}</div>
+        </div>
+      `;
+
+      glow.addTo(geoLayer);
+      core.addTo(geoLayer).bindPopup(html);
+    });
+  }
+
+  function buildGeoPoints(candidates) {
+    const coordMap = {
+      "arica y parinacota": { lat: -18.4783, lng: -70.3126, label: "Arica" },
+      "tarapaca": { lat: -20.2208, lng: -70.1431, label: "Iquique" },
+      "antofagasta": { lat: -23.6509, lng: -70.3975, label: "Antofagasta" },
+      "atacama": { lat: -27.3668, lng: -70.3322, label: "Copiapó" },
+      "coquimbo": { lat: -29.9027, lng: -71.2519, label: "La Serena" },
+      "valparaiso": { lat: -33.0472, lng: -71.6127, label: "Valparaíso" },
+      "o'higgins": { lat: -34.1708, lng: -70.7444, label: "Rancagua" },
+      "maule": { lat: -35.4264, lng: -71.6554, label: "Talca" },
+      "ñuble": { lat: -36.6066, lng: -72.1034, label: "Chillán" },
+      "biobío": { lat: -36.8201, lng: -73.0444, label: "Concepción" },
+      "araucanía": { lat: -38.7359, lng: -72.5904, label: "Temuco" },
+      "los ríos": { lat: -39.8142, lng: -73.2459, label: "Valdivia" },
+      "los lagos": { lat: -41.4693, lng: -72.9424, label: "Puerto Montt" },
+      "aysén": { lat: -45.5752, lng: -72.0662, label: "Coyhaique" },
+      "magallanes": { lat: -53.1638, lng: -70.9171, label: "Punta Arenas" },
+      "metropolitana": { lat: -33.4489, lng: -70.6693, label: "Santiago" }
+    };
+
+    const grouped = {};
+
+    candidates.forEach((c) => {
+      const region = getRegionFromDireccion(getLocation(c));
+      const key = normalizeText(region);
+
+      if (!grouped[key]) {
+        grouped[key] = {
+          count: 0,
+          names: [],
+          region,
+          ...(
+            coordMap[key] || coordMap["metropolitana"]
+          )
+        };
+      }
+
+      grouped[key].count += 1;
+      if (c.nombre_completo) grouped[key].names.push(c.nombre_completo);
     });
 
-    if (upcomingIssues.length > 0) {
-        const alertHtml = `
-            <div style="margin-top:15px; padding:12px; background:rgba(239, 68, 68, 0.1); border:1px solid rgba(239, 68, 68, 0.2); border-radius:10px;">
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <span style="font-size:18px;">🔮</span>
-                    <strong style="font-size:12px; color:#fca5a5;">ALERTA PREDICTIVA (30 DÍAS)</strong>
-                </div>
-                <p style="font-size:11px; margin:5px 0 0; color:rgba(255,255,255,0.7);">
-                    Se proyectan <strong>${upcomingIssues.length} bloqueos</strong> adicionales por vencimiento de exámenes. 
-                    El AFK Score bajará un ~5% si no se gestionan renovaciones.
-                </p>
-            </div>
-        `;
-        container.innerHTML += alertHtml;
-    }
+    return Object.values(grouped);
   }
 
-  // --- Insight Header ---
-  function renderStrategicHeader() {
-    const text = $("#headerInsightText");
-    if (!text) return;
-
-    if (filteredWorkers.length > 0) {
-        const blocked = getBlockedCount();
-        const score = $("#kpi_afk_score")?.textContent || "--";
-        text.textContent = `Dotación actual: ${filteredWorkers.length} registrados, ${blocked} en riesgo. AFK Score de calidad: ${score}/100.`;
-    }
-  }
-
-  // --- AFK AI Recommendations ---
-  function renderAIRecommendations() {
-    const list = $("#aiRecommendationsList");
-    if (!list) return;
-
-    const blockedPerc = filteredWorkers.length ? Math.round((getBlockedCount() / filteredWorkers.length) * 100) : 0;
-    const lowPipelineProfs = [];
-    
-    // Logic to identify critical gaps without candidates
-    const professions = [...new Set(allWorkers.map(w => w.profesion || w.cargo_a_desempenar))];
-    professions.forEach(p => {
-        const workers = allWorkers.filter(w => (w.profesion || w.cargo_a_desempenar) === p).length;
-        const candidates = allCandidates.filter(c => c.cargo_a_desempenar === p).length;
-        if (workers > 0 && candidates === 0) lowPipelineProfs.push(p);
-    });
-
-    const recs = [
-        `Nivel de riesgo operacional: <strong>${blockedPerc}%</strong>. Priorizar renovaciones de exámenes preocupacionales.`,
-        lowPipelineProfs.length > 0 ? `Déficit crítico en pipeline para: <strong>${lowPipelineProfs.slice(0, 2).join(', ')}</strong>.` : "Pipeline de talento saludable.",
-        "Acción sugerida: Activar botón <strong>'Iniciar Reclutamiento'</strong> para cubrir brechas de personal habilitado.",
-        `Actualmente hay <strong>${allCandidates.length} candidatos</strong> disponibles para cubrir vacantes urgentes.`
-    ];
-
-    list.innerHTML = recs.map(r => `<li>${r}</li>`).join('');
-  }
-
-  // Iniciar
   init();
-
 })();
