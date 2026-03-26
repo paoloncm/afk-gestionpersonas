@@ -289,11 +289,12 @@
 
     if (tendersBody) {
       tendersBody.innerHTML = filtered.map(t => `
-        <div class="t-row" style="padding: 14px 18px; border-bottom: 1px solid rgba(255,255,255,0.05); align-items: start;">
-          <div class="t-col-name" style="font-weight: 600;">${escapeHtml(t.name)}</div>
-          <div class="t-col-desc" style="color: var(--muted); font-size: 13px; max-width: 300px;">${escapeHtml(t.description)}</div>
-          <div class="t-col-reqs" style="display: flex; gap: 4px; flex-wrap: wrap;">
-            ${(t.requirements || []).slice(0, 3).map(r => `<span class="badge" style="background:rgba(255,255,255,0.1)">${escapeHtml(r)}</span>`).join('')}
+        <div class="t-row" style="border-bottom: 1px solid rgba(255,255,255,0.05); align-items: start;">
+          <div class="t-col-name" style="font-weight: 700; color: #fff;">${escapeHtml(t.name)}</div>
+          <div class="t-col-desc" style="color: rgba(255,255,255,0.8); font-size: 13.5px;">${escapeHtml(t.description)}</div>
+          <div class="t-col-reqs" style="display: flex; gap: 6px; flex-wrap: wrap;">
+            ${(t.requirements || []).slice(0, 8).map(r => `<span class="badge badge--info" style="font-size:11px;">${escapeHtml(r)}</span>`).join('')}
+            ${(t.requirements || []).length > 8 ? `<span class="badge" style="opacity:0.6">+${t.requirements.length - 8} más</span>` : ''}
           </div>
           <div class="t-col-actions" style="text-align: right; display: flex; gap: 6px; justify-content: flex-end;">
             <button class="btn btn--mini btn--primary btn-match" data-id="${t.id}">Evaluar</button>

@@ -560,21 +560,30 @@ body {
 .table.tenders .t-head,
 .table.tenders .t-row {
   display: grid;
-  grid-template-columns:
-    minmax(250px, 2fr) minmax(250px, 2fr) minmax(200px, 1.5fr) 140px;
+  grid-template-columns: 
+    300px 1fr minmax(250px, 1.2fr) 140px;
   align-items: center;
   gap: 0;
-  min-width: 900px;
+  width: 100%;
   padding: 0;
 }
 
 .table.tenders .t-head>div,
 .table.tenders .t-row>div {
-  padding: 14px 14px;
+  padding: 18px 14px;
   min-width: 0;
+  line-height: 1.5;
+}
+
+.table.tenders .t-row>div {
+  white-space: normal;
+  word-break: break-word;
+}
+
+.table.tenders .t-head>div {
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .table.tenders .t-head {
@@ -1783,7 +1792,28 @@ input[type="checkbox"] {
   color: var(--accent);
 }
 
-.comparison-table tr td:last-child {
-  border-right: 1px solid rgba(255, 255, 255, 0.03);
-  border-radius: 0 10px 10px 0;
+
+.stark-textarea {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(103, 232, 249, 0.2) !important;
+  border-radius: 12px !important;
+  color: #ffffff !important;
+  padding: 12px !important;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.6;
+  outline: none;
+  resize: vertical;
+  transition: border-color 0.2s;
 }
+
+.stark-textarea:focus {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 15px var(--accent-glow);
+}
+
+.stark-textarea::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
