@@ -16,16 +16,16 @@
 
   <style>
     :root {
-      --jarvis-cyan: #67e8f9;
-      --jarvis-cyan-2: #00e5ff;
-      --jarvis-green: #34d399;
-      --jarvis-yellow: #facc15;
-      --jarvis-red: #fb7185;
-      --jarvis-text: #e2e8f0;
-      --jarvis-muted: #94a3b8;
-      --jarvis-bg: #020617;
-      --jarvis-card: #0b1120;
-      --jarvis-border: rgba(148, 163, 184, 0.12);
+      --jarvis-cyan: var(--accent);
+      --jarvis-cyan-2: var(--accent-2);
+      --jarvis-green: var(--ok);
+      --jarvis-yellow: var(--warning);
+      --jarvis-red: var(--danger);
+      --jarvis-text: var(--text);
+      --jarvis-muted: var(--muted);
+      --jarvis-bg: var(--bg);
+      --jarvis-card: var(--surface);
+      --jarvis-border: var(--card-border);
     }
 
     #geoMap {
@@ -521,46 +521,58 @@
         </div>
       </section>
 
-      <h3 class="h1" style="margin-top:36px;">1. Distribución geográfica y composición del pipeline</h3>
-      <section class="analytics-grid-2 section">
+      <h3 class="h1" style="margin-top:36px;">1. Distribución geográfica</h3>
+      <section class="section">
         <div class="card">
           <div class="card__body">
             <h4 style="margin:0 0 16px; font-size:14px; font-weight:900; color:var(--muted); text-transform:uppercase;">
-              Mapa de distribución geográfica
+              Mapa de distribución con Heatmap Dinámico
             </h4>
             <div id="geoMap"></div>
-          </div>
-        </div>
-
-        <div class="analytics-grid-3" style="grid-template-columns:1fr; gap:18px;">
-          <div class="card">
-            <div class="card__body">
-              <h4
-                style="margin:0 0 14px; font-size:14px; font-weight:900; color:var(--muted); text-transform:uppercase;">
-                Distribución etaria
-              </h4>
-              <div class="chart-box--small">
-                <canvas id="chart_age_dist"></canvas>
-              </div>
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="card__body">
-              <h4
-                style="margin:0 0 14px; font-size:14px; font-weight:900; color:var(--muted); text-transform:uppercase;">
-                Distribución por estado
-              </h4>
-              <div class="chart-box--small">
-                <canvas id="chart_status_dist"></canvas>
-              </div>
+            <div id="geoStat" style="margin-top:10px; font-size:12px; color:var(--muted);">
+              Cuadrantes territoriales activos.
             </div>
           </div>
         </div>
       </section>
 
-      <h3 class="h1" style="margin-top:40px;">2. Inteligencia de perfiles y ajuste</h3>
+      <h3 class="h1" style="margin-top:40px;">2. Inteligencia de perfiles y demografía</h3>
       <section class="analytics-grid-3 section">
+        <div class="card">
+          <div class="card__body">
+            <h4 style="margin:0 0 14px; font-size:14px; font-weight:900; color:var(--muted); text-transform:uppercase;">
+              Distribución etaria
+            </h4>
+            <div class="chart-box--small">
+              <canvas id="chart_age_dist"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card__body">
+            <h4 style="margin:0 0 14px; font-size:14px; font-weight:900; color:var(--muted); text-transform:uppercase;">
+              Distribución por estado
+            </h4>
+            <div class="chart-box--small">
+              <canvas id="chart_status_dist"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="card card--dark" style="background:rgba(103, 232, 249, 0.03); border:1px solid rgba(103, 232, 249, 0.1);">
+          <div class="card__body">
+            <h4 style="margin:0 0 14px; font-size:14px; font-weight:900; color:#67e8f9; text-transform:uppercase;">
+              Match por Cargo Objetivo
+            </h4>
+            <div id="role_match_container" style="display:flex; flex-direction:column; gap:12px; padding-top:10px;">
+              <!-- Dynamically filled -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="analytics-grid-2 section" style="margin-top:20px;">
         <div class="card">
           <div class="card__body">
             <h4 style="margin:0 0 14px; font-size:14px; font-weight:900; color:var(--muted); text-transform:uppercase;">
@@ -582,17 +594,9 @@
             </div>
           </div>
         </div>
+      </section>
 
-        <div class="card card--dark" style="background:rgba(103, 232, 249, 0.03); border:1px solid rgba(103, 232, 249, 0.1);">
-          <div class="card__body">
-            <h4 style="margin:0 0 14px; font-size:14px; font-weight:900; color:#67e8f9; text-transform:uppercase;">
-              Match por Cargo Objetivo
-            </h4>
-            <div id="role_match_container" style="display:flex; flex-direction:column; gap:12px; padding-top:10px;">
-              <!-- Dynamically filled -->
-            </div>
-          </div>
-        </div>
+      <section class="section" style="margin-top:20px;">
         <div class="card card--success-alt"
           style="background: linear-gradient(135deg, rgba(0, 229, 255, 0.08), rgba(0,0,0,0.55)); border:1px solid rgba(0, 229, 255, 0.18);">
           <div class="card__body">

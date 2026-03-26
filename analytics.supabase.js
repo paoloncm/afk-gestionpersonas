@@ -216,6 +216,10 @@
     return age >= 0 && age <= 100 ? age : null;
   }
 
+  function getAge(c) {
+    return getAgeFromBirthDate(c.fecha_nacimiento);
+  }
+
   function bindEvents() {
     $("#globalAnalyticsSearch")?.addEventListener("input", applyFilters);
     $("#filterCargo")?.addEventListener("change", applyFilters);
@@ -229,6 +233,15 @@
         window.print();
       }, 1000);
     });
+
+    window.setAnalyticsSearch = (val) => {
+       const search = $("#globalAnalyticsSearch");
+       if (search) {
+         search.value = val;
+         applyFilters();
+         window.scrollTo({ top: 0, behavior: 'smooth' });
+       }
+    };
   }
 
   function populateFilters() {
@@ -461,6 +474,8 @@
     filteredCandidates.forEach((c) => {
       const age = getAge(c);
       const score = JarvisEngine.calculateScore(c);
+      if (age == null) return; 
+
       if (age <= 25) groups["18-25"].push(score);
       else if (age <= 35) groups["26-35"].push(score);
       else if (age <= 45) groups["36-45"].push(score);
@@ -710,7 +725,13 @@
     if (!geoMap) {
       geoMap = L.map("geoMap", {
         zoomControl: false,
-        attributionControl: false
+        attributionControl: false,
+        dragging: true,
+        scrollWheelZoom: true,
+        doubleClickZoom: true,
+        boxZoom: true,
+        touchZoom: true,
+        keyboard: true
       }).setView([-33.45, -70.66], 4.2);
 
       L.tileLayer(
@@ -725,53 +746,43 @@
       geoLayer = L.layerGroup().addTo(geoMap);
     }
 
-    // Heatmap Layer (NEW)
-    const heatData = points.map(p => [p.lat, p.lng, p.count * 10]);
-    if (window.heatLayer) geoMap.removeLayer(window.heatLayer);
-    window.heatLayer = L.heatLayer(heatData, {
-      radius: 35,
-      blur: 25,
-      maxZoom: 5,
-      gradient: { 0.4: 'rgba(0, 229, 255, 0.2)', 0.65: 'rgba(0, 229, 255, 0.5)', 1: '#67e8f9' }
-    }).addTo(geoMap);
+    // Heatmap Layer (REMOVED as per user feedback)
+    if (window.heatLayer) {
+      geoMap.removeLayer(window.heatLayer);
+      window.heatLayer = null;
+    }
 
     points.forEach((p) => {
-      const radius = Math.max(12, Math.min(38, 8 + p.count * 3));
-
-      const glow = L.circleMarker([p.lat, p.lng], {
-        radius: radius + 12,
-        color: "rgba(0,0,0,0)",
-        fillColor: "rgba(0,229,255,0.18)",
-        fillOpacity: 0.35,
-        weight: 0
-      });
+      const radius = 6; // Small, precise solid point
 
       const core = L.circleMarker([p.lat, p.lng], {
         radius,
         color: "#67e8f9",
-        weight: 1.5,
+        weight: 1,
         fillColor: "#00e5ff",
-        fillOpacity: 0.78,
-        className: 'marker-pulse'
+        fillOpacity: 1
       });
+
+      const nameLinks = p.names.slice(0, 15).map(name => {
+         return `<a href="#" onclick="window.setAnalyticsSearch('${escapeHtml(name)}'); return false;" style="color:#67e8f9; text-decoration:none; border-bottom:1px solid rgba(103,232,249,0.2); font-size:11px; display:inline-block; margin-right:6px; margin-bottom:4px;">${escapeHtml(name)}</a>`;
+      }).join("");
 
       const html = `
         <div style="min-width:200px; font-family: 'Inter', sans-serif;">
           <div style="font-weight:800; color:#67e8f9; margin-bottom:6px; font-size:14px; border-bottom:1px solid rgba(103,232,249,0.2); padding-bottom:4px;">
             ${escapeHtml(p.label)}
           </div>
-          <div style="color:#f1f5f9; margin-bottom:4px;">
+          <div style="color:#f1f5f9; margin-bottom:4px; font-size:12px;">
             Candidatos: <strong>${p.count}</strong>
           </div>
-          <div style="color:#94a3b8; font-size:11px; max-height:80px; overflow-y:auto;">
-            ${escapeHtml(p.names.slice(0, 8).join(", "))}${p.names.length > 8 ? "..." : ""}
+          <div style="display:flex; flex-wrap:wrap; gap:2px; max-height:150px; overflow-y:auto; margin-top:8px;">
+            ${nameLinks}${p.names.length > 15 ? "<span style='color:#94a3b8;'>...</span>" : ""}
           </div>
         </div>
       `;
 
-      L.layerGroup([glow, core])
-        .bindPopup(html, { className: "jarvis-popup", closeButton: false })
-        .addTo(geoLayer);
+      core.bindPopup(html, { className: "jarvis-popup", closeButton: false })
+          .addTo(geoLayer);
     });
   }
 

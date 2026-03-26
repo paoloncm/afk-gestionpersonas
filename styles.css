@@ -1,18 +1,20 @@
 :root {
-  --bg: #050505;
-  --surface: #0a0a0a;
-  --card: rgba(23, 23, 26, 0.7);
-  --card-border: rgba(255, 255, 255, 0.08);
-  --glass: rgba(255, 255, 255, 0.03);
-  --text: #fdfdfd;
-  --muted: #8e949e;
-  --accent: #e11d48; /* Red rose / industrial */
-  --accent-glow: rgba(225, 29, 72, 0.3);
-  --ok: #10b981;
-  --warning: #f59e0b;
-  --danger: #ef4444;
+  --bg: #020617; /* Deep space / JARVIS Blue */
+  --surface: #0b1120;
+  --card: rgba(15, 23, 42, 0.8);
+  --card-border: rgba(103, 232, 249, 0.12);
+  --glass: rgba(103, 232, 249, 0.05);
+  --text: #f1f5f9;
+  --muted: #94a3b8;
+  --accent: #67e8f9; /* JARVIS Cyan */
+  --accent-2: #0891b2;
+  --accent-glow: rgba(103, 232, 249, 0.25);
+  --ok: #34d399;
+  --warning: #fbbf24;
+  --danger: #fb7185;
   --radius: 16px;
   --radius-lg: 24px;
+  --border: var(--card-border);
 }
 
 * {
@@ -123,9 +125,10 @@ body {
 }
 
 .nav a.is-active {
-  background: var(--accent);
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
   color: #fff;
   font-weight: 700;
+  box-shadow: 0 4px 15px var(--accent-glow);
 }
 
 .nav .label {
@@ -1539,4 +1542,152 @@ input[type="checkbox"] {
   0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
   70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
   100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+/* ==========================================================================
+   PRINT & PDF EXPORT ENGINE (JARVIS REPORTING)
+   ========================================================================== */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm;
+  }
+
+  body {
+    background: #fff !important;
+    color: #000 !important;
+    font-size: 11pt;
+  }
+
+  /* Hide navigation and UI elements */
+  .sidebar,
+  .topbar,
+  .chatbot,
+  .toolbar,
+  #openChatbot,
+  .btn,
+  .btn-menu,
+  .sidebar-footer,
+  .jarvis-ticker,
+  .hero-dashboard__visual,
+  .btn--primary,
+  #btnExportAnalyticsTop,
+  #btnExportAnalyticsBottom {
+    display: none !important;
+  }
+
+  .dashboard, .main {
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    overflow: visible !important;
+  }
+
+  /* Reset Cards for Print */
+  .card {
+    border: 1px solid #ddd !important;
+    background: #fafafa !important;
+    color: #000 !important;
+    break-inside: avoid;
+    box-shadow: none !important;
+    margin-bottom: 15px !important;
+    border-radius: 8px !important;
+  }
+
+  .card__body {
+    padding: 12px !important;
+  }
+
+  /* KPI Styling */
+  .kpi .value {
+    color: #0891b2 !important;
+    font-size: 28pt !important;
+    font-weight: 800 !important;
+  }
+
+  .kpi .label {
+    color: #475569 !important;
+    font-weight: 700 !important;
+  }
+
+  /* Headings */
+  .h1, h2, h3, h4 {
+    color: #0f172a !important;
+    margin: 10px 0 !important;
+    page-break-after: avoid;
+  }
+
+  /* Map and Visuals */
+  #geoMap {
+    height: 400px !important;
+    border: 1px solid #cbd5e1 !important;
+    background: #fff !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* JARVIS Strategic Modules */
+  .jarvis-card {
+    border: 1px solid #94a3b8 !important;
+    background: #fff !important;
+    color: #000 !important;
+    margin-bottom: 10px !important;
+  }
+
+  .jarvis-card--cyan { border-left: 5px solid #0891b2 !important; }
+  .jarvis-card--yellow { border-left: 5px solid #ca8a04 !important; }
+  .jarvis-card--green { border-left: 5px solid #059669 !important; }
+
+  .jarvis-card__title {
+    color: #0f172a !important;
+    font-weight: 900 !important;
+  }
+
+  .jarvis-bar {
+    background: #f1f5f9 !important;
+    border: 1px solid #e2e8f0 !important;
+  }
+
+  .jarvis-bar__fill {
+    background: #0891b2 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Charts */
+  .chart-box, .chart-box--small {
+    height: 220px !important;
+  }
+
+  canvas {
+    max-width: 100% !important;
+  }
+
+  /* Report Header */
+  .hero-dashboard {
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+    padding: 15px !important;
+    border-radius: 8px !important;
+    margin-bottom: 25px !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .hero-dashboard h2 {
+    color: #0891b2 !important;
+    font-size: 20pt !important;
+  }
+
+  .hero-dashboard p {
+    color: #475569 !important;
+  }
+
+  /* Insights List */
+  #aiRecommendationsList li {
+    color: #1e293b !important;
+    margin-bottom: 6px !important;
+  }
 }
