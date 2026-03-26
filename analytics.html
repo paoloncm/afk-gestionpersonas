@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
@@ -9,8 +10,77 @@
   <link rel="stylesheet" href="styles.css">
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <script src="https://unpkg.com/topojson-client@3"></script>
-  <script src="https://unpkg.com/chartjs-chart-geo@4"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    #geoMap {
+      height: 420px;
+      border-radius: 22px;
+      overflow: hidden;
+      border: 1px solid rgba(103, 232, 249, 0.18);
+      box-shadow:
+        0 0 0 1px rgba(103, 232, 249, 0.08) inset,
+        0 0 30px rgba(0, 229, 255, 0.12),
+        0 0 80px rgba(0, 229, 255, 0.08);
+      background:
+        radial-gradient(circle at top, rgba(0, 229, 255, 0.12), transparent 35%),
+        linear-gradient(180deg, #020617 0%, #07111f 100%);
+    }
+
+    .leaflet-popup-content-wrapper {
+      background: rgba(2, 6, 23, 0.96);
+      color: #e2e8f0;
+      border: 1px solid rgba(103, 232, 249, 0.25);
+      border-radius: 16px;
+      box-shadow: 0 0 30px rgba(0, 229, 255, 0.14);
+    }
+
+    .leaflet-popup-tip {
+      background: rgba(2, 6, 23, 0.96);
+    }
+
+    .leaflet-container {
+      background: #020617;
+      font-family: Inter, system-ui, sans-serif;
+    }
+
+    .analytics-grid-2 {
+      display: grid;
+      grid-template-columns: 1.25fr 1fr;
+      gap: 18px;
+    }
+
+    .analytics-grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+
+    .kpi-grid-modern {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+    }
+
+    .chart-box {
+      height: 300px;
+      position: relative;
+    }
+
+    .chart-box--small {
+      height: 260px;
+      position: relative;
+    }
+
+    @media (max-width: 1100px) {
+
+      .analytics-grid-2,
+      .analytics-grid-3 {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 </head>
 
 <body>
@@ -49,193 +119,189 @@
     </header>
 
     <main class="main" id="app">
-      <!-- Strategic Header -->
-      <section class="hero-dashboard" style="background: linear-gradient(135deg, rgba(225, 29, 72, 0.15), rgba(0, 0, 0, 0.4)); border-color: rgba(225, 29, 72, 0.3);">
+      <section class="hero-dashboard"
+        style="background: linear-gradient(135deg, rgba(0, 229, 255, 0.16), rgba(0, 0, 0, 0.45)); border-color: rgba(0, 229, 255, 0.22);">
         <div class="hero-dashboard__text">
-          <h2 style="font-size: 34px; letter-spacing: -1px;">People Analytics</h2>
-          <p style="color: #fff; font-weight: 600; font-size: 18px; margin-top: 5px;">Inteligencia de dotación para decisiones estratégicas.</p>
-          <div id="dynamicInsight" class="card" style="margin-top:20px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 12px 20px; border-radius: 12px;">
-             <div style="display:flex; align-items:center; gap:12px;">
-                <span style="font-size:24px;">💡</span>
-                <span id="headerInsightText" style="font-size:14px; color:rgba(255,255,255,0.9); font-style:italic;">
-                   Analizando tendencias de la dotación actual...
-                </span>
-             </div>
+          <h2 style="font-size: 34px; letter-spacing: -1px;">People Analytics — Candidates Intelligence</h2>
+          <p style="color: #fff; font-weight: 600; font-size: 18px; margin-top: 5px;">
+            Visualiza talento, distribución geográfica, score y composición del pipeline.
+          </p>
+
+          <div class="card"
+            style="margin-top:20px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); padding: 12px 20px; border-radius: 14px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <span style="font-size:24px;">🧠</span>
+              <span style="font-size:14px; color:rgba(255,255,255,0.92); font-style:italic;">
+                Módulo conectado a <strong>public.candidates</strong> para análisis estratégico de reclutamiento.
+              </span>
+            </div>
           </div>
         </div>
+
         <div class="hero-dashboard__visual">
-           <div class="badge badge--success" style="font-size:14px; padding:6px 16px;">✨ Datos en Tiempo Real</div>
+          <div class="badge badge--success" style="font-size:14px; padding:6px 16px;">LIVE DATA</div>
         </div>
       </section>
 
-      <!-- Strategic Filters & Toggles -->
-      <section class="toolbar" style="margin-bottom: 20px; background: rgba(255,255,255,0.03); border-radius: 15px; padding: 15px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
-        <div style="flex:1; min-width: 250px;">
-          <input type="text" id="globalAnalyticsSearch" placeholder="Filtrar por nombre, cargo o faena..." class="input" style="width:100%;">
+      <section class="toolbar"
+        style="margin-bottom: 20px; background: rgba(255,255,255,0.03); border-radius: 15px; padding: 15px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+        <div style="flex:1; min-width: 260px;">
+          <input type="text" id="globalAnalyticsSearch" placeholder="Filtrar por nombre, rut, ubicación o cargo..."
+            class="input" style="width:100%;">
         </div>
-        <select id="filterFaena" class="select" style="min-width: 150px;">
-          <option value="">Todas las Faenas</option>
+
+        <select id="filterCargo" class="select" style="min-width: 180px;">
+          <option value="">Todos los cargos</option>
         </select>
-        <select id="filterCargo" class="select" style="min-width: 150px;">
-          <option value="">Todos los Cargos</option>
+
+        <select id="filterStatus" class="select" style="min-width: 170px;">
+          <option value="">Todos los estados</option>
         </select>
-        <div style="display:flex; align-items:center; gap:10px; margin-left:auto;">
-          <label style="font-size:12px; font-weight:700; color:var(--muted);">VISTA EJECUTIVA</label>
-          <input type="checkbox" id="toggleExecutiveView" style="width:40px; height:20px; cursor:pointer;">
+
+        <select id="filterRegion" class="select" style="min-width: 190px;">
+          <option value="">Todas las regiones</option>
+        </select>
+      </section>
+
+      <section class="kpi-grid-modern" style="margin-bottom:22px;">
+        <div class="card card--success-alt"
+          style="background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); position:relative; overflow:hidden; min-height: 138px;">
+          <div class="card__body kpi">
+            <span class="label" style="color:rgba(255,255,255,0.78);">Total Candidatos</span>
+            <span id="kpi_total_candidates" class="value" style="font-size:46px; color:white;">0</span>
+            <div style="font-size:11px; color:rgba(255,255,255,0.9); margin-top:5px; font-weight:700;">Base activa
+              analizada</div>
+          </div>
+        </div>
+
+        <div class="card" style="min-height: 138px;">
+          <div class="card__body kpi">
+            <span class="label">Exp. Promedio</span>
+            <span id="kpi_avg_experience" class="value">--</span>
+            <div style="font-size:11px; color:var(--muted); margin-top:5px;">Años de experiencia</div>
+          </div>
+        </div>
+
+        <div class="card" style="min-height: 138px;">
+          <div class="card__body kpi">
+            <span class="label">Match Score Promedio</span>
+            <span id="kpi_avg_score" class="value">--</span>
+            <div style="font-size:11px; color:var(--muted); margin-top:5px;">Ajuste promedio</div>
+          </div>
+        </div>
+
+        <div class="card" style="min-height: 138px;">
+          <div class="card__body kpi">
+            <span class="label">Nota Promedio</span>
+            <span id="kpi_avg_nota" class="value">--</span>
+            <div style="font-size:11px; color:var(--muted); margin-top:5px;">Evaluación global</div>
+          </div>
+        </div>
+
+        <div class="card card--warning-alt" style="min-height: 138px;">
+          <div class="card__body kpi">
+            <span class="label">High Match</span>
+            <span id="kpi_high_match" class="value">0</span>
+            <div style="font-size:11px; color:rgba(255,255,255,0.72); margin-top:5px;">Score ≥ 70</div>
+          </div>
         </div>
       </section>
 
-      <!-- KPI Grid -->
-      <section class="decision-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
-        <!-- AFK SCORE - THE HERO -->
-        <div class="card card--success-alt" style="grid-column: span 2; background: linear-gradient(135deg, #10b981 0%, #059669 100%); position:relative; overflow:hidden;">
-          <div class="card__body kpi" style="display:flex; justify-content:space-between; align-items:center;">
+      <h3 class="h1" style="margin-top:36px;">1. Distribución geográfica y composición del pipeline</h3>
+      <section class="analytics-grid-2 section">
+        <div class="card">
+          <div class="card__body">
+            <h4 style="margin:0 0 16px; font-size:14px; font-weight:900; color:var(--muted); text-transform:uppercase;">
+              Mapa de distribución geográfica
+            </h4>
+            <div id="geoMap"></div>
+          </div>
+        </div>
+
+        <div class="analytics-grid-3" style="grid-template-columns:1fr; gap:18px;">
+          <div class="card">
+            <div class="card__body">
+              <h4
+                style="margin:0 0 14px; font-size:14px; font-weight:900; color:var(--muted); text-transform:uppercase;">
+                Distribución etaria
+              </h4>
+              <div class="chart-box--small">
+                <canvas id="chart_age_dist"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card__body">
+              <h4
+                style="margin:0 0 14px; font-size:14px; font-weight:900; color:var(--muted); text-transform:uppercase;">
+                Distribución por estado
+              </h4>
+              <div class="chart-box--small">
+                <canvas id="chart_status_dist"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <h3 class="h1" style="margin-top:40px;">2. Inteligencia de perfiles y ajuste</h3>
+      <section class="analytics-grid-3 section">
+        <div class="card">
+          <div class="card__body">
+            <h4 style="margin:0 0 14px; font-size:14px; font-weight:900; color:var(--muted); text-transform:uppercase;">
+              Top profesiones / cargos
+            </h4>
+            <div class="chart-box">
+              <canvas id="chart_professions"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card__body">
+            <h4 style="margin:0 0 14px; font-size:14px; font-weight:900; color:var(--muted); text-transform:uppercase;">
+              Distribución de score
+            </h4>
+            <div class="chart-box">
+              <canvas id="chart_score_dist"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="card card--success-alt"
+          style="background: linear-gradient(135deg, rgba(0, 229, 255, 0.08), rgba(0,0,0,0.55)); border:1px solid rgba(0, 229, 255, 0.18);">
+          <div class="card__body">
+            <h4 style="margin:0 0 14px; font-size:14px; font-weight:900; color:#67e8f9; text-transform:uppercase;">
+              Insights ejecutivos
+            </h4>
+            <ul id="aiRecommendationsList"
+              style="margin:0; padding-left:20px; color:rgba(255,255,255,0.9); font-size:14px; line-height:1.8;">
+              <li>Cargando insights...</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <h3 class="h1" style="margin-top:40px;">3. Vista estratégica</h3>
+      <section class="card" style="margin-bottom:60px;">
+        <div class="card__body">
+          <div style="display:flex; justify-content:space-between; gap:20px; flex-wrap:wrap; align-items:flex-start;">
             <div>
-              <span class="label" style="color:rgba(255,255,255,0.8);">AFK Workforce Score</span>
-              <span id="kpi_afk_score" class="value" style="font-size:52px; color:white; text-shadow:0 0 20px rgba(255,255,255,0.3);">--</span>
-              <div style="font-size:11px; color:rgba(255,255,255,0.9); margin-top:5px; font-weight:700;">Calidad y Cumplimiento Global</div>
+              <h4 style="margin:0 0 8px; font-size:18px; font-weight:900;">Tony Stark View</h4>
+              <p class="text-muted" style="margin:0; max-width:720px;">
+                Este módulo cruza score, experiencia, profesión y geografía para identificar focos de talento,
+                concentración regional y perfiles prioritarios para reclutamiento.
+              </p>
             </div>
-            <div id="scoreGaugeContainer" style="width:100px; height:100px; background:rgba(255,255,255,0.1); border-radius:50%; display:flex; align-items:center; justify-content:center; border:4px solid rgba(255,255,255,0.2);">
-               <span style="font-size:32px;">🏆</span>
-            </div>
-          </div>
-          <div style="position:absolute; bottom:0; left:0; width:100%; height:4px; background:rgba(255,255,255,0.2);">
-             <div id="scoreProgressBar" style="width:0%; height:100%; background:#fff; transition: width 1s ease-in-out;"></div>
-          </div>
-        </div>
 
-        <div class="card card--success-alt">
-          <div class="card__body kpi">
-            <span class="label">Total Personal</span>
-            <span id="kpi_total_workers" class="value">0</span>
-            <div style="font-size:11px; color:var(--ok); margin-top:5px;">Dotación total vigente</div>
-          </div>
-        </div>
-        <div class="card" style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(0,0,0,0.4)); border-color: rgba(59, 130, 246, 0.3);">
-          <div class="card__body kpi">
-            <span class="label">Candidatos en Pipeline</span>
-            <span id="kpi_total_candidates" class="value">0</span>
-            <div style="font-size:11px; color:var(--muted); margin-top:5px;">Talento por incorporar</div>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card__body kpi">
-            <span class="label">Edad Promedio</span>
-            <span id="kpi_avg_age" class="value">--</span>
-            <div style="font-size:11px; color:var(--muted); margin-top:5px;">Años</div>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card__body kpi">
-            <span class="label">Certificación Crítica</span>
-            <span id="kpi_critical_cert_pct" class="value">0%</span>
-            <div style="font-size:11px; color:var(--ok); margin-top:5px;">Personal habilitado</div>
-          </div>
-        </div>
-        <div class="card card--warning-alt">
-          <div class="card__body kpi">
-            <span class="label">Riesgo de Vacancia</span>
-            <span id="kpi_vacancy_risk" class="value">0</span>
-            <div style="font-size:11px; color:rgba(255,255,255,0.6); margin-top:5px;">Perfiles críticos</div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Block 1: Composición Demográfica -->
-      <h3 class="h1" style="margin-top:40px;">1. Composición Demográfica</h3>
-      <section class="section grid-3">
-        <div class="card">
-          <div class="card__body">
-            <h4 style="margin:0 0 15px; font-size:14px; font-weight:900; color:var(--muted); text-transform:uppercase;">Rango Etario</h4>
-            <div style="height:220px;"><canvas id="chart_age_dist"></canvas></div>
-            <p id="insight_age" class="text-muted" style="font-size:11px; margin-top:12px; font-style:italic;"></p>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card__body">
-            <h4 style="margin:0 0 15px; font-size:14px; font-weight:900; color:var(--muted); text-transform:uppercase;">Distribución Geográfica</h4>
-            <div style="height:220px;"><canvas id="chart_geo_dist"></canvas></div>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card__body">
-            <h4 style="margin:0 0 15px; font-size:14px; font-weight:900; color:var(--muted); text-transform:uppercase;">Antigüedad</h4>
-            <div style="height:220px;"><canvas id="chart_seniority_dist"></canvas></div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Block 2: Inteligencia de Perfiles -->
-      <h3 class="h1" style="margin-top:40px;">2. Inteligencia de Perfiles</h3>
-      <section class="section grid-2">
-        <div class="card">
-          <div class="card__body">
-            <h4 style="margin:0 0 15px; font-size:14px; font-weight:900; color:var(--muted); text-transform:uppercase;">Top Profesiones y Oficios</h4>
-            <div style="height:250px;"><canvas id="chart_professions"></canvas></div>
-            <p id="insight_professions" class="text-muted" style="font-size:11px; margin-top:12px; font-style:italic;"></p>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card__body">
-            <h4 style="margin:0 0 15px; font-size:14px; font-weight:900; color:var(--muted); text-transform:uppercase;">Perfiles Críticos vs Escasos</h4>
-            <div id="criticalProfilesList" class="toplist" style="margin-top:10px;">
-               <!-- Lista dinámica -->
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+              <button class="btn btn--primary" id="btnExportAnalytics">Exportar reporte</button>
+              <button class="btn" id="btnChat">Abrir chatbot</button>
             </div>
           </div>
         </div>
       </section>
-
-      <!-- Block 4: Simulador de Licitaciones y Proyectos (NEW) -->
-      <h3 class="h1" style="margin-top:40px;">4. Simulador de Licitaciones y Proyectos</h3>
-      <section class="section grid-2" style="grid-template-columns: 1fr 1.5fr;">
-        <div class="card">
-          <div class="card__body">
-            <h4 style="margin:0 0 15px; font-size:14px; font-weight:900; color:var(--muted); text-transform:uppercase;">Configurar Escenario</h4>
-            <div style="display:grid; gap:15px;">
-              <div>
-                <label style="font-size:11px; font-weight:700; color:var(--muted); display:block; margin-bottom:5px;">CARGO REQUERIDO</label>
-                <select id="sim_cargo" class="select" style="width:100%"></select>
-              </div>
-              <div>
-                <label style="font-size:11px; font-weight:700; color:var(--muted); display:block; margin-bottom:5px;">CANTIDAD DE PERSONAS</label>
-                <input type="number" id="sim_quantity" class="input" style="width:100%" value="5">
-              </div>
-              <button id="btnSimulate" class="btn btn--primary" style="width:100%; margin-top:10px;">Simular Factibilidad</button>
-            </div>
-          </div>
-        </div>
-        <div class="card card--success-alt" id="simResultCard" style="opacity:0.5;">
-          <div class="card__body">
-            <h4 style="margin:0 0 15px; font-size:14px; font-weight:900; color:var(--ok); text-transform:uppercase;">Resultado de Simulación</h4>
-            <div id="simulationResult" style="min-height:100px; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center;">
-              <p class="text-muted">Configure un cargo y cantidad para ver si su empresa está apta para esta licitación.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Block 5: Recomendaciones AFK Inteligencia Artificial -->
-      <h3 class="h1" style="margin-top:40px;">5. Recomendaciones AFK (Copilot)</h3>
-      <section class="card card--success-alt" style="margin-bottom:60px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(0,0,0,0.6)); border: 1px solid rgba(16, 185, 129, 0.3);">
-          <div class="card__body">
-              <div style="display:flex; gap:25px; align-items:flex-start;">
-                  <div style="font-size:48px; filter: drop-shadow(0 0 10px var(--ok));">🧠</div>
-                  <div style="flex:1;">
-                     <h4 style="margin:0; font-size:18px; font-weight:900; color:var(--ok); text-transform:uppercase; letter-spacing:1px;">Acciones Recomendadas para Gerencia</h4>
-                     <ul id="aiRecommendationsList" style="margin:15px 0 0; padding-left:20px; color:rgba(255,255,255,0.9); font-size:15px; line-height:1.8;">
-                        <li>Analizando datos estratégicos para generar recomendaciones...</li>
-                     </ul>
-                     <div id="strategicActions" style="margin-top:20px; display:flex; gap:10px; flex-wrap:wrap;">
-                        <button class="btn btn--mini btn--primary btn-action" data-action="recruit">🔍 Iniciar Reclutamiento</button>
-                        <button class="btn btn--mini btn-action" data-action="train">📚 Solicitar Capacitación</button>
-                        <button class="btn btn--mini btn-action" data-action="notify">📲 Notificar Gaps</button>
-                     </div>
-                  </div>
-                  <button id="btnTriggerRecs" class="btn btn--primary" style="border-radius:12px; padding:12px 24px; font-weight:800;">Ejecutar Plan de Acción</button>
-              </div>
-          </div>
-      </section>
-
     </main>
 
     <aside id="chatbot" class="chatbot">
@@ -258,4 +324,5 @@
   <script defer src="chat.js"></script>
   <script defer src="responsive.js"></script>
 </body>
+
 </html>
