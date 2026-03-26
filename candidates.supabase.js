@@ -641,10 +641,10 @@
       newSheet.getCell("H12").value = headerData.legalRepresentative; // Representante en row 12
       newSheet.getCell("X12").value = dateStr; // Fecha en X12
 
-      // Datos personales del candidato
-      newSheet.getCell("H17").value = c.nombre_completo;
-      newSheet.getCell("H19").value = c.profesion;
-      newSheet.getCell("H21").value = c.cargo_a_desempenar || headerData.projectName;
+      // Datos personales del candidato (Celdas blancas sobre las etiquetas grises)
+      newSheet.getCell("H16").value = c.nombre_completo;
+      newSheet.getCell("H18").value = c.profesion;
+      newSheet.getCell("H20").value = c.cargo_a_desempenar || headerData.projectName;
 
       // Bloques de experiencia (Headers en 24, 31, 38, 44 - El contenido en la celda siguiente)
       // Ajuste: El contenido suele ir en la celda mezclada justo debajo del header.
