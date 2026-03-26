@@ -655,44 +655,35 @@
     }
 
     points.forEach((p) => {
-      // Color-coding based on match score
-      const score = safeNum(p.matchScore) || 0;
-      let color = "#ef4444"; // Red
-      if (score >= 80) color = "#22c55e"; // Green
-      else if (score >= 60) color = "#0ea5e9"; // Blue
-      else if (score >= 40) color = "#eab308"; // Yellow
-
-      const radius = 6;
+      const radius = Math.max(12, Math.min(38, 8 + p.count * 3));
 
       const glow = L.circleMarker([p.lat, p.lng], {
-        radius: radius + 4,
+        radius: radius + 12,
         color: "rgba(0,0,0,0)",
-        fillColor: color,
-        fillOpacity: 0.2,
+        fillColor: "rgba(0,229,255,0.18)",
+        fillOpacity: 0.35,
         weight: 0
       });
 
       const core = L.circleMarker([p.lat, p.lng], {
         radius,
-        color: "#ffffff",
-        weight: 1,
-        fillColor: color,
-        fillOpacity: 0.9,
+        color: "#67e8f9",
+        weight: 1.5,
+        fillColor: "#00e5ff",
+        fillOpacity: 0.78,
         className: 'marker-pulse'
       });
 
       const html = `
-        <div style="min-width:180px; font-family: 'Inter', sans-serif;">
-          <div style="font-weight:800; color:${color}; margin-bottom:4px; font-size:14px;">
-            ${escapeHtml(p.names[0])}
+        <div style="min-width:200px; font-family: 'Inter', sans-serif;">
+          <div style="font-weight:800; color:#67e8f9; margin-bottom:6px; font-size:14px; border-bottom:1px solid rgba(103,232,249,0.2); padding-bottom:4px;">
+            ${escapeHtml(p.label)}
           </div>
-          <div style="color:#f1f5f9; font-size:12px; margin-bottom:8px;">
-            Match Score: <strong>${Math.round(score)}%</strong>
+          <div style="color:#f1f5f9; margin-bottom:4px;">
+            Candidatos: <strong>${p.count}</strong>
           </div>
-          <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top:6px;">
-            <div style="color:#94a3b8; font-size:10px; text-transform:uppercase; letter-spacing:0.5px;">Ubicación Detectada</div>
-            <div style="color:#e2e8f0; font-size:11px; margin-top:2px;">${escapeHtml(p.direccion)}</div>
-            <div style="color:#64748b; font-size:10px; margin-top:2px;">${escapeHtml(p.region)}</div>
+          <div style="color:#94a3b8; font-size:11px; max-height:80px; overflow-y:auto;">
+            ${escapeHtml(p.names.slice(0, 8).join(", "))}${p.names.length > 8 ? "..." : ""}
           </div>
         </div>
       `;
@@ -723,41 +714,37 @@
       "metropolitana": { lat: -33.4489, lng: -70.6693, label: "Santiago" }
     };
 
-    // Jitter function to avoid overlap
-    const getJitter = (id) => {
-      let hash = 0;
-      for (let i = 0; i < id.length; i++) hash = id.charCodeAt(i) + ((hash << 5) - hash);
-      return (hash % 100) / 4000; // Small offset ~500m
-    };
+    const grouped = {};
 
-    return candidates.map((c) => {
+    candidates.forEach((c) => {
       const fullDir = normalizeText(getLocation(c));
       const region = getRegionFromDireccion(fullDir);
-      
-      let baseCoords = regionMap[normalizeText(region)] || regionMap["metropolitana"];
-      let locLabel = baseCoords.label || region;
+      let key = normalizeText(region);
+      let coords = regionMap[key] || regionMap["metropolitana"];
 
-      // Filter against specific city/comuna
+      // Group by City/Comuna if match found
       for (const [cityKey, cityData] of Object.entries(cityCoordMap)) {
         if (fullDir.includes(cityKey)) {
-          baseCoords = cityData;
-          locLabel = cityData.label;
+          key = `city_${cityKey}`;
+          coords = cityData;
           break;
         }
       }
 
-      // Individual Scatter: Apply jitter based on candidate ID/Name
-      const seed = c.id || c.nombre_completo || "def";
-      return {
-        lat: baseCoords.lat + getJitter(seed),
-        lng: baseCoords.lng + getJitter(seed.split('').reverse().join('')),
-        count: 1, // Individual marker
-        region: locLabel,
-        names: [c.nombre_completo],
-        matchScore: c.match_score,
-        direccion: c.direccion || c.comuna || "Santiago, Chile"
-      };
+      if (!grouped[key]) {
+        grouped[key] = {
+          count: 0,
+          names: [],
+          label: coords.label || region,
+          ...coords
+        };
+      }
+
+      grouped[key].count += 1;
+      if (c.nombre_completo) grouped[key].names.push(c.nombre_completo);
     });
+
+    return Object.values(grouped);
   }
 
   init();
