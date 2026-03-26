@@ -292,8 +292,9 @@
     // Render header ONLY IF it's empty or needs refresh
     const headHtml = `
       <div class="t-head">
-        <div class="t-col-cb">
+        <div class="t-col-cb" style="display:flex; align-items:center; gap:4px;">
           <input type="checkbox" id="selectAllCandidates" ${allSelected ? "checked" : ""} title="Seleccionar todos">
+          <span style="font-size:9px; color:var(--muted); font-weight:800; cursor:pointer;" onclick="document.getElementById('selectAllCandidates').click()">TODOS</span>
         </div>
         <div class="t-col-name">Nombre</div>
         <div class="t-col-prof">Profesión</div>
