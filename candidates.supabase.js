@@ -168,8 +168,6 @@
             <div class="t-col-prof">Profesión</div>
             <div class="t-col-vac">Cargo a desempeñar</div>
             <div class="t-col-score">Puntaje</div>
-            <div class="t-col-loc">Ubicación</div>
-            <div class="t-col-exp">Años exp.</div>
             <div class="t-col-status">Estado</div>
           </div>
           ` + Array(5).fill(0).map(() => `
@@ -179,8 +177,6 @@
             <div class="t-col-prof"><div class="skeleton skeleton-text" style="width:60%"></div></div>
             <div class="t-col-vac"><div class="skeleton skeleton-text" style="width:70%"></div></div>
             <div class="t-col-score"><div class="skeleton skeleton-badge"></div></div>
-            <div class="t-col-loc"><div class="skeleton skeleton-text" style="width:60%"></div></div>
-            <div class="t-col-exp"><div class="skeleton skeleton-badge"></div></div>
             <div class="t-col-status"><div class="skeleton skeleton-badge"></div></div>
           </div>
           `).join('');
@@ -300,8 +296,6 @@
         <div class="t-col-prof">Profesión</div>
         <div class="t-col-vac">Cargo a desempeñar</div>
         <div class="t-col-score">Puntaje</div>
-        <div class="t-col-loc">Ubicación / Dirección</div>
-        <div class="t-col-exp">Años exp.</div>
         <div class="t-col-status">Estado</div>
       </div>
     `;
@@ -320,9 +314,6 @@
       const profesion = escapeHtml(c.profesion || "-");
       const cargo = escapeHtml(c.cargo_a_desempenar || "Sin asignar");
       const nota = Number.isFinite(num(c.score)) ? num(c.score).toFixed(1) : "-";
-      const ubicacion = escapeHtml(c.comuna || "-");
-      const direccion = escapeHtml(c.direccion || "-");
-      const exp = Number.isFinite(num(c.experiencia_total)) ? num(c.experiencia_total).toFixed(1) : "-";
       const status = escapeHtml(c.status || "Postulado");
 
       html += `
@@ -338,12 +329,10 @@
           </div>
 
           <div class="t-col-prof" data-label="Profesión">${profesion}</div>
-          <div class="t-col-vac" data-label="Cargo">${cargo}</div>
+          <div class="t-col-vac" data-label="Cargo" onclick="window.editCandidateCargo('${id}', '${cargo}')" title="Haga clic para editar">${cargo} ✎</div>
           <div class="t-col-score" data-label="Puntaje">${nota}</div>
-          <div class="t-col-loc" data-label="Ubicación" title="${direccion}">${ubicacion}${direccion !== '-' ? ' (' + direccion + ')' : ''}</div>
-          <div class="t-col-exp" data-label="Experiencia">${exp}</div>
-          <div class="t-col-status" data-label="Estado">
-            <span class="badge">${status}</span>
+          <div class="t-col-status" data-label="Estado" onclick="window.editCandidateStatus('${id}', '${status}')" title="Haga clic para cambiar estado">
+            <span class="badge" style="cursor:pointer;">${status} ✎</span>
           </div>
         </div>
       `;
@@ -688,6 +677,36 @@
     link.click();
     link.remove();
   }
+
+  window.editCandidateCargo = async (id, currentCargo) => {
+    const newCargo = prompt("Editar cargo a desempeñar:", currentCargo);
+    if (newCargo === null || newCargo === currentCargo) return;
+    try {
+      const { error } = await supabase.from("candidates").update({ cargo_a_desempenar: newCargo }).eq("id", id);
+      if (error) throw error;
+      window.notificar?.("Cargo actualizado", "success");
+      await loadCandidates();
+    } catch (err) {
+      console.error(err);
+      window.notificar?.("Error actualizando cargo", "error");
+    }
+  };
+
+  window.editCandidateStatus = async (id, currentStatus) => {
+    const statuses = ["Postulado", "En revisión", "Entrevista", "TEC-02 Generado", "Aceptado", "Rechazado", "Reserva", "Bloqueado"];
+    const newStatus = prompt(`Cambiar estado (Opciones: ${statuses.join(", ")}):`, currentStatus);
+    if (!newStatus || newStatus === currentStatus) return;
+    
+    try {
+      const { error } = await supabase.from("candidates").update({ status: newStatus }).eq("id", id);
+      if (error) throw error;
+      window.notificar?.("Estado actualizado", "success");
+      await loadCandidates();
+    } catch (err) {
+      console.error(err);
+      window.notificar?.("Error actualizando estado", "error");
+    }
+  };
 
   init();
 })();

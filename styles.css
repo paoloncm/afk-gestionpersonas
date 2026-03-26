@@ -648,53 +648,28 @@ body {
 
 .table.candidates .t-head,
 .table.candidates .t-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 40px 2.5fr 1.5fr 2fr 100px 150px;
   align-items: center;
   padding: 14px 18px;
+  gap: 10px;
 }
 
 .table.candidates .t-head>div,
 .table.candidates .t-row>div {
-  padding: 0 8px;
+  padding: 0 4px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.table.candidates .t-col-cb {
-  width: 40px;
-  flex-shrink: 0
-}
-
-.table.candidates .t-col-name {
-  flex: 2.5;
-  min-width: 180px
-}
-
-.table.candidates .t-col-prof {
-  flex: 1.5;
-  min-width: 140px
-}
-
-.table.candidates .t-col-vac {
-  flex: 1.8;
-  min-width: 160px
-}
-
-.table.candidates .t-col-score {
-  flex: .8;
-  min-width: 70px
-}
-
-.table.candidates .t-col-exp {
-  flex: .8;
-  min-width: 90px
-}
-
-.table.candidates .t-col-status {
-  flex: 1.2;
-  min-width: 140px
-}
+.table.candidates .t-col-cb { width: 40px; }
+.table.candidates .t-col-name { min-width: 0; }
+.table.candidates .t-col-prof { min-width: 0; }
+.table.candidates .t-col-vac { min-width: 0; cursor: pointer; border-bottom: 1px dashed rgba(255,255,255,0.2); }
+.table.candidates .t-col-vac:hover { color: var(--accent); }
+.table.candidates .t-col-score { text-align: center; }
+.table.candidates .t-col-status { min-width: 0; }
 
 /* =========================
    Alerts table
