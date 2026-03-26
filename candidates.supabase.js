@@ -192,10 +192,10 @@
         .order("nombre_completo", { ascending: true });
 
       if (error || !data) {
-          console.warn("[candidates] v_candidate_summary falló, intentando tabla candidates...");
-          const fallback = await supabase.from("candidates").select("*").order("nombre_completo", { ascending: true });
-          data = fallback.data;
-          error = fallback.error;
+        console.warn("[candidates] v_candidate_summary falló, intentando tabla candidates...");
+        const fallback = await supabase.from("candidates").select("*").order("nombre_completo", { ascending: true });
+        data = fallback.data;
+        error = fallback.error;
       }
 
       if (error) throw error;
@@ -203,14 +203,14 @@
       // Deduplicate by Name or RUT (keep newest)
       const candidateMap = new Map();
       (data || []).forEach(c => {
-          const rawRut = String(c.rut || "").toUpperCase();
-          const cleanRut = (rawRut === "NULL" || rawRut === "" || rawRut === "UNDEFINED") ? null : rawRut;
-          const nameKey = String(c.nombre_completo || "").toLowerCase().trim();
-          const key = cleanRut || nameKey;
-          
-          if (key && (!candidateMap.has(key) || (c.created_at && new Date(c.created_at) > new Date(candidateMap.get(key).created_at)))) {
-              candidateMap.set(key, c);
-          }
+        const rawRut = String(c.rut || "").toUpperCase();
+        const cleanRut = (rawRut === "NULL" || rawRut === "" || rawRut === "UNDEFINED") ? null : rawRut;
+        const nameKey = String(c.nombre_completo || "").toLowerCase().trim();
+        const key = cleanRut || nameKey;
+
+        if (key && (!candidateMap.has(key) || (c.created_at && new Date(c.created_at) > new Date(candidateMap.get(key).created_at)))) {
+          candidateMap.set(key, c);
+        }
       });
       allCandidates = Array.from(candidateMap.values());
       populateFilters();
@@ -356,7 +356,7 @@
         const val = String(e.target.value);
         if (e.target.checked) selectedCandidates.add(val);
         else selectedCandidates.delete(val);
-        
+
         // Update header checkbox
         const allChecked = Array.from(table.querySelectorAll(".candidate-check")).every(c => c.checked);
         if (selectAllCandidates) selectAllCandidates.checked = allChecked;
@@ -576,10 +576,10 @@
     const templateUrl = "./templates/tec02-A_template.xlsx";
     const response = await fetch(templateUrl);
     if (!response.ok) {
-        const altUrl = "templates/tec02-A_template.xlsx";
-        const altResp = await fetch(altUrl);
-        if (!altResp.ok) throw new Error(`No se encontró el archivo ${templateUrl}`);
-        response = altResp;
+      const altUrl = "templates/tec02-A_template.xlsx";
+      const altResp = await fetch(altUrl);
+      if (!altResp.ok) throw new Error(`No se encontró el archivo ${templateUrl}`);
+      response = altResp;
     }
 
     const arrayBuffer = await response.arrayBuffer();
@@ -595,7 +595,7 @@
       let baseName = (c.nombre_completo || "Candidato").substring(0, 31).replace(/[\\\/\?\*\[\]]/g, "_");
       let sheetName = baseName;
       let counter = 1;
-      
+
       while (usedSheetNames.has(sheetName)) {
         const suffix = ` (${counter})`;
         sheetName = baseName.substring(0, 31 - suffix.length) + suffix;
@@ -606,7 +606,7 @@
       const newSheet = mainWorkbook.addWorksheet(sheetName);
 
       // CLONACIÓN PROFUNDA (Celdas, Estilos, Mezclas y Columnas)
-      
+
       // 1. Clonar celdas combinadas (Muy importante para la estructura)
       if (masterSheet.model.merges) {
         masterSheet.model.merges.forEach(range => {
@@ -635,41 +635,41 @@
 
       // AJUSTAR DATOS DINÁMICOS (Según captura de celdas final)
       // Nota: H=8, X=24, NOMBRE=17, PROF=19, CARGO=21
-      
+
       // Encabezados comunes del proyecto
       newSheet.getCell("H10").value = headerData.legalName; // Razón Social en row 10
       newSheet.getCell("H12").value = headerData.legalRepresentative; // Representante en row 12
       newSheet.getCell("X12").value = dateStr; // Fecha en X12
 
       // Datos personales del candidato (Celdas blancas sobre las etiquetas grises)
-      const cellName = newSheet.getCell("H16");
+      const cellName = newSheet.getCell("H17");
       cellName.value = c.nombre_completo;
       cellName.alignment = { vertical: 'middle', horizontal: 'center' };
 
-      const cellProf = newSheet.getCell("H18");
+      const cellProf = newSheet.getCell("H19");
       cellProf.value = c.profesion;
       cellProf.alignment = { vertical: 'middle', horizontal: 'center' };
 
-      const cellCargo = newSheet.getCell("H20");
+      const cellCargo = newSheet.getCell("H21");
       cellCargo.value = c.cargo_a_desempenar || headerData.projectName;
       cellCargo.alignment = { vertical: 'middle', horizontal: 'center' };
 
       // Bloques de experiencia (Headers en 24, 31, 38, 44 - El contenido en la celda siguiente)
       // Ajuste: El contenido suele ir en la celda mezclada justo debajo del header.
       newSheet.getCell("B25").value = c.experiencia_general;
-      newSheet.getCell("B32").value = c.experiencia_especifica;
-      newSheet.getCell("B39").value = c.otras_experiencias;
-      newSheet.getCell("B45").value = c.antecedentes_academicos;
+      newSheet.getCell("B33").value = c.experiencia_especifica;
+      newSheet.getCell("B41").value = c.otras_experiencias;
+      newSheet.getCell("B49").value = c.antecedentes_academicos;
 
       // Forzar wrap text y ajuste de altura en los bloques de texto
       [25, 32, 39, 45].forEach(rowNum => {
         const cell = newSheet.getCell(`B${rowNum}`);
         cell.alignment = { vertical: 'top', horizontal: 'left', wrapText: true };
-        
+
         // Estimar altura si hay mucho texto (ExcelJS no auto-ajusta filas combinadas)
         const textLen = String(cell.value || "").length;
         if (textLen > 150) {
-            newSheet.getRow(rowNum).height = Math.min(150, Math.max(60, textLen / 2.5));
+          newSheet.getRow(rowNum).height = Math.min(150, Math.max(60, textLen / 2.5));
         }
       });
     }
@@ -681,7 +681,7 @@
     const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
     const link = document.createElement("a");
     const safeProject = (headerData.projectName || "Proyecto").replace(/[^\w\-]+/g, "_");
-    
+
     link.href = URL.createObjectURL(blob);
     link.download = `TEC-02-A_${safeProject}.xlsx`;
     document.body.appendChild(link);
