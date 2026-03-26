@@ -642,9 +642,17 @@
       newSheet.getCell("X12").value = dateStr; // Fecha en X12
 
       // Datos personales del candidato (Celdas blancas sobre las etiquetas grises)
-      newSheet.getCell("H16").value = c.nombre_completo;
-      newSheet.getCell("H18").value = c.profesion;
-      newSheet.getCell("H20").value = c.cargo_a_desempenar || headerData.projectName;
+      const cellName = newSheet.getCell("H16");
+      cellName.value = c.nombre_completo;
+      cellName.alignment = { vertical: 'middle', horizontal: 'center' };
+
+      const cellProf = newSheet.getCell("H18");
+      cellProf.value = c.profesion;
+      cellProf.alignment = { vertical: 'middle', horizontal: 'center' };
+
+      const cellCargo = newSheet.getCell("H20");
+      cellCargo.value = c.cargo_a_desempenar || headerData.projectName;
+      cellCargo.alignment = { vertical: 'middle', horizontal: 'center' };
 
       // Bloques de experiencia (Headers en 24, 31, 38, 44 - El contenido en la celda siguiente)
       // Ajuste: El contenido suele ir en la celda mezclada justo debajo del header.
@@ -653,10 +661,16 @@
       newSheet.getCell("B39").value = c.otras_experiencias;
       newSheet.getCell("B45").value = c.antecedentes_academicos;
 
-      // Forzar wrap text en los bloques de texto
+      // Forzar wrap text y ajuste de altura en los bloques de texto
       [25, 32, 39, 45].forEach(rowNum => {
         const cell = newSheet.getCell(`B${rowNum}`);
         cell.alignment = { vertical: 'top', horizontal: 'left', wrapText: true };
+        
+        // Estimar altura si hay mucho texto (ExcelJS no auto-ajusta filas combinadas)
+        const textLen = String(cell.value || "").length;
+        if (textLen > 150) {
+            newSheet.getRow(rowNum).height = Math.min(150, Math.max(60, textLen / 2.5));
+        }
       });
     }
 

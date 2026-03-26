@@ -406,9 +406,12 @@
     const ctx = $("#chart_geo_dist");
     if (!ctx) return;
 
-    // Use Chart.js Geo for a modern map
-    fetch('https://raw.githubusercontent.com/coder-cl/geojson-chile/master/comunas.json')
-      .then(res => res.json())
+    // Use a reliable GeoJSON source for Chile (Comunas)
+    fetch('https://raw.githubusercontent.com/caracena/chile-geojson/master/comunas.json')
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        return res.json();
+      })
       .then(geoData => {
         if (!ctx) return; // Cleanup check
         
