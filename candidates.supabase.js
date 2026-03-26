@@ -136,14 +136,23 @@
       };
     }
 
-    if (selectAllCandidates) {
-      selectAllCandidates.onchange = (e) => {
-        const checked = e.target.checked;
-        filteredCandidates.forEach(c => {
-          if (checked) selectedCandidates.add(String(c.id));
-          else selectedCandidates.delete(String(c.id));
-        });
-        renderCandidates(filteredCandidates);
+    // Use event delegation for the table to handle dynamic Select All and row checkboxes
+    if (table) {
+      table.onchange = (e) => {
+        if (e.target.id === "selectAllCandidates") {
+          const checked = e.target.checked;
+          const rows = filteredCandidates;
+          rows.forEach(c => {
+            if (checked) selectedCandidates.add(String(c.id));
+            else selectedCandidates.delete(String(c.id));
+          });
+          renderCandidates(filteredCandidates);
+        } else if (e.target.classList.contains("candidate-checkbox")) {
+          const id = e.target.dataset.id;
+          if (e.target.checked) selectedCandidates.add(id);
+          else selectedCandidates.delete(id);
+          renderCandidates(filteredCandidates);
+        }
       };
     }
   }
@@ -279,24 +288,24 @@
     if (!table) return;
 
     const allSelected = items.length > 0 && items.every(c => selectedCandidates.has(String(c.id)));
-    if (selectAllCandidates) selectAllCandidates.checked = allSelected;
 
-    const head = `
+    // Render header ONLY IF it's empty or needs refresh
+    const headHtml = `
       <div class="t-head">
         <div class="t-col-cb">
-          <input type="checkbox" id="selectAllCandidatesInner" ${allSelected ? "checked" : ""} title="Seleccionar todos">
+          <input type="checkbox" id="selectAllCandidates" ${allSelected ? "checked" : ""} title="Seleccionar todos">
         </div>
         <div class="t-col-name">Nombre</div>
         <div class="t-col-prof">Profesión</div>
         <div class="t-col-vac">Cargo a desempeñar</div>
         <div class="t-col-score">Puntaje</div>
-        <div class="t-col-loc">Ubicación</div>
+        <div class="t-col-loc">Ubicación / Dirección</div>
         <div class="t-col-exp">Años exp.</div>
         <div class="t-col-status">Estado</div>
       </div>
     `;
 
-    let html = head;
+    let html = headHtml;
 
     if (!items.length) {
       html += `<div style="padding:20px; color:var(--muted);">No se encontraron candidatos.</div>`;

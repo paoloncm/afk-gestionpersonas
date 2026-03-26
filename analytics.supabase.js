@@ -78,9 +78,8 @@
 
   async function loadData() {
     try {
-      const [
-        { data: workers, error: workersError },
-        { data: exams, error: examsError },
+      const { data: workers, error: workersError } = await window.db.from("workers").select("*");
+      const { data: exams, error: examsError } = await window.db.from("medical_exam_records").select("*");
       let { data: candidates, error: candidatesError } = await window.db.from("v_candidate_summary").select("*");
       
       // Fallback if view fails
@@ -359,16 +358,30 @@
     const ctx = $("#chart_age_dist");
     if (!ctx) return;
     
-    const labels = ["18-24", "25-34", "35-44", "45-54", "55-64", "65+"];
-    const data = [12, 28, 35, 18, 5, 2];
+    const now = new Date();
+    const ageGroups = { "18-24": 0, "25-34": 0, "35-44": 0, "45-54": 0, "55-64": 0, "65+": 0 };
+    
+    filteredWorkers.forEach(w => {
+        if (!w.birth_date) return;
+        const age = now.getFullYear() - new Date(w.birth_date).getFullYear();
+        if (age < 25) ageGroups["18-24"]++;
+        else if (age < 35) ageGroups["25-34"]++;
+        else if (age < 45) ageGroups["35-44"]++;
+        else if (age < 55) ageGroups["45-54"]++;
+        else if (age < 65) ageGroups["55-64"]++;
+        else ageGroups["65+"]++;
+    });
+
+    const labels = Object.keys(ageGroups);
+    const dataset = Object.values(ageGroups);
     
     charts.age = new Chart(ctx, {
       type: 'bar',
       data: {
         labels: labels,
         datasets: [{
-          label: '% de Dotación',
-          data: data,
+          label: 'Personas',
+          data: dataset,
           backgroundColor: '#e11d48',
           borderRadius: 6
         }]
@@ -378,7 +391,7 @@
         maintainAspectRatio: false,
         plugins: { legend: { display: false } },
         scales: {
-          y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#8e949e' } },
+          y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#8e949e', stepSize: 1 } },
           x: { grid: { display: false }, ticks: { color: '#8e949e' } }
         }
       }
@@ -467,16 +480,27 @@
     const ctx = $("#chart_seniority_dist");
     if (!ctx) return;
 
-    const labels = ["< 6m", "6m - 1a", "1a - 2a", "2a - 5a", "5a+"];
-    const values = [20, 30, 25, 15, 10];
+    const now = new Date();
+    const seniority = { "< 6m": 0, "6m - 1a": 0, "1a - 2a": 0, "2a - 5a": 0, "5a+": 0 };
+    
+    filteredWorkers.forEach(w => {
+        const joinDate = w.created_at ? new Date(w.created_at) : now;
+        const months = (now.getFullYear() - joinDate.getFullYear()) * 12 + (now.getMonth() - joinDate.getMonth());
+        
+        if (months < 6) seniority["< 6m"]++;
+        else if (months < 12) seniority["6m - 1a"]++;
+        else if (months < 24) seniority["1a - 2a"]++;
+        else if (months < 60) seniority["2a - 5a"]++;
+        else seniority["5a+"]++;
+    });
 
     charts.seniority = new Chart(ctx, {
       type: 'line',
       data: {
-        labels: labels,
+        labels: Object.keys(seniority),
         datasets: [{
           label: 'Trabajadores',
-          data: values,
+          data: Object.values(seniority),
           borderColor: '#10b981',
           backgroundColor: 'rgba(16, 185, 129, 0.1)',
           fill: true,
@@ -488,7 +512,7 @@
         maintainAspectRatio: false,
         plugins: { legend: { display: false } },
         scales: {
-          y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#8e949e' } },
+          y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#8e949e', stepSize: 1 } },
           x: { grid: { display: false }, ticks: { color: '#8e949e' } }
         }
       }
@@ -517,9 +541,6 @@
     });
 
     const entries = Object.entries(professions).sort((a,b) => b[1] - a[1]).slice(0, 8);
-    if (!entries.length) {
-        entries.push(["ELÉCTRICO SEC", 25], ["MECÁNICO", 18], ["PREVENCIONISTA", 12], ["SUPERVISOR", 10], ["OPERADOR", 8]);
-    }
 
     charts.professions = new Chart(ctx, {
       type: 'bar',
