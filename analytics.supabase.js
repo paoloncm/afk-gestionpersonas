@@ -764,7 +764,7 @@
       });
 
       const nameLinks = p.candidates.slice(0, 15).map(c => {
-         return `<a href="candidate.html?id=${encodeURIComponent(c.id)}" style="color:#67e8f9; text-decoration:none; border-bottom:1px solid rgba(103,232,249,0.2); font-size:11px; display:inline-block; margin-right:6px; margin-bottom:4px;" title="Ver perfil de ${escapeHtml(c.name)}">${escapeHtml(c.name)}</a>`;
+         return `<a href="#" onclick="window.showCandidateProfile('${c.id}'); return false;" style="color:#67e8f9; text-decoration:none; border-bottom:1px solid rgba(103,232,249,0.2); font-size:11px; display:inline-block; margin-right:6px; margin-bottom:4px;" title="Ver perfil rápido de ${escapeHtml(c.name)}">${escapeHtml(c.name)}</a>`;
       }).join("");
 
       const html = `
@@ -842,6 +842,123 @@
     });
 
     return Object.values(grouped);
+  }
+
+  let modalRadarChart = null;
+
+  window.showCandidateProfile = async (id) => {
+    const modal = $("#candidateProfileModal");
+    if (!modal) return;
+
+    modal.classList.add("is-open");
+
+    // Show loading state
+    $("#modalName").textContent = "Cargando...";
+    $("#modalProf").textContent = "—";
+    $("#modalScore").textContent = "0";
+    $("#modalExp").textContent = "0";
+    $("#modalEval").textContent = "Iniciando análisis Jarvis...";
+
+    try {
+      const { data, error } = await supabase
+        .from("candidates")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+      if (error || !data) throw error || new Error("No data found");
+
+      // Fill basic info
+      $("#modalName").textContent = data.nombre_completo || "Sin nombre";
+      $("#modalProf").textContent = data.profesion || "—";
+      $("#modalUltima").textContent = data.ultima_exp_laboral_empresa || "—";
+      $("#modalScore").textContent = data.match_score || (safeNum(data.nota) > 0 ? (safeNum(data.nota)*10).toFixed(0) : "0");
+      $("#modalExp").textContent = safeNum(data.experiencia_total).toFixed(0);
+      $("#modalEval").textContent = data.evaluacion_general || "Sin evaluación disponible.";
+
+      const statusVal = data.status || "Postulado";
+      const statusBadge = $("#modalStatus");
+      statusBadge.textContent = statusVal;
+      statusBadge.className = "badge " + (statusVal === "Aceptado" || statusVal === "Contratado" ? "badge--success" : (statusVal === "Rechazado" ? "badge--danger" : "badge--info"));
+
+      const recBadge = $("#modalRec");
+      const score = safeNum(data.match_score) || (safeNum(data.nota)*10);
+      if (score >= 70) {
+        recBadge.textContent = "Alto Potencial";
+        recBadge.style.color = "#10b981";
+      } else if (score >= 50) {
+        recBadge.textContent = "Recomendable";
+        recBadge.style.color = "#f59e0b";
+      } else {
+        recBadge.textContent = "Bajo Calce";
+        recBadge.style.color = "#ef4444";
+      }
+
+      $("#modalFullProfile").href = `candidate.html?id=${id}`;
+
+      // Radar Chart
+      renderModalRadar(data);
+
+    } catch (err) {
+      console.error("Error modal candidate:", err);
+      $("#modalName").textContent = "Error al cargar";
+      $("#modalEval").textContent = "No se pudo recuperar la ficha del candidato.";
+    }
+  };
+
+  function renderModalRadar(r) {
+    const canvas = $("#modalRadar");
+    if (!canvas) return;
+
+    const labels = ["Experiencia", "Formación", "Nota Técnica", "Ranking", "Nota Gral"];
+    
+    // Normalize values 0-10
+    const expN = Math.min(10, (safeNum(r.experiencia_total) / 2));
+    const formN = r.antecedentes_academicos ? 8 : 4;
+    const notaTecN = safeNum(r.nota_tecnica) || safeNum(r.nota) || 5;
+    const rankingN = Math.max(0, 10 - (safeNum(r.ranking) || 5));
+    const notaN = safeNum(r.nota) || 5;
+
+    const datasets = [{
+      label: "Perfil",
+      data: [expN, formN, notaTecN, rankingN, notaN],
+      borderColor: "#67e8f9",
+      backgroundColor: "rgba(103, 232, 249, 0.2)",
+      pointBackgroundColor: "#67e8f9",
+      borderWidth: 2,
+      fill: true
+    }];
+
+    if (modalRadarChart) {
+      modalRadarChart.destroy();
+    }
+
+    modalRadarChart = new Chart(canvas, {
+      type: "radar",
+      data: { labels, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          r: {
+            min: 0,
+            max: 10,
+            ticks: { display: false, stepSize: 2 },
+            grid: { color: "rgba(148, 163, 184, 0.15)" },
+            angleLines: { color: "rgba(148, 163, 184, 0.15)" },
+            pointLabels: { color: "#94a3b8", font: { size: 10 } }
+          }
+        },
+        plugins: {
+          legend: { display: false }
+        }
+      }
+    });
+  }
+
+  function capitalize(s) {
+    if (typeof s !== "string" || !s) return "";
+    return s.charAt(0).toUpperCase() + s.slice(1);
   }
 
   init();

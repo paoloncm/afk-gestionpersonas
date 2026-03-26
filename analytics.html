@@ -707,6 +707,65 @@
     </aside>
   </div>
 
+    <!-- Modal: Ficha de Inteligencia del Candidato -->
+    <div id="candidateProfileModal" class="modal">
+      <div class="modal__content" style="width: 800px; max-width: 95%; background: rgba(2, 6, 23, 0.98); border: 1px solid var(--accent); max-height: 90vh; overflow-y: auto;">
+        <div class="modal__header">
+          <h2 id="modalName" style="margin:0; color:var(--text); font-weight:900; font-size:24px;">Talent Profile</h2>
+          <button class="close-modal" onclick="document.getElementById('candidateProfileModal').classList.remove('is-open')">&times;</button>
+        </div>
+        
+        <div class="modal__body" id="modalBody">
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:24px;">
+            <!-- Left: Info -->
+            <div>
+              <div style="margin-bottom:20px;">
+                <span id="modalStatus" class="badge">Status</span>
+                <span id="modalRec" class="badge" style="margin-left:8px;">Recommendation</span>
+              </div>
+              
+              <div class="form-group">
+                <label>Profesión</label>
+                <div id="modalProf" style="font-size:16px; color:var(--text); font-weight:600;">—</div>
+              </div>
+              
+              <div class="form-group">
+                <label>Última Experiencia</label>
+                <div id="modalUltima" style="font-size:14px; color:var(--text-muted);">—</div>
+              </div>
+
+              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-top:20px;">
+                <div class="card" style="padding:15px; text-align:center; background:rgba(255,255,255,0.03);">
+                  <div style="font-size:10px; color:var(--muted); text-transform:uppercase; font-weight:800;">Score JARVIS</div>
+                  <div id="modalScore" style="font-size:32px; font-weight:900; color:var(--accent);">0</div>
+                </div>
+                <div class="card" style="padding:15px; text-align:center; background:rgba(255,255,255,0.03);">
+                  <div style="font-size:10px; color:var(--muted); text-transform:uppercase; font-weight:800;">Años Exp.</div>
+                  <div id="modalExp" style="font-size:32px; font-weight:900; color:var(--ok);">0</div>
+                </div>
+              </div>
+
+              <div style="margin-top:25px;">
+                <h4 style="font-size:12px; font-weight:900; color:var(--muted); text-transform:uppercase; margin-bottom:10px;">Evaluación General</h4>
+                <p id="modalEval" style="font-size:13px; color:var(--text-muted); line-height:1.6; font-style:italic;">—</p>
+              </div>
+            </div>
+
+            <!-- Right: Visual Intel -->
+            <div style="display:flex; flex-direction:column; gap:20px;">
+               <div class="card" style="flex:1; padding:15px; background:rgba(255,255,255,0.02); min-height:300px; display:flex; flex-direction:column;">
+                  <h4 style="font-size:12px; font-weight:900; color:var(--muted); text-transform:uppercase; margin-bottom:15px; text-align:center;">Perfil de Competencias (Radar)</h4>
+                  <div style="flex:1; position:relative;">
+                     <canvas id="modalRadar"></canvas>
+                  </div>
+               </div>
+               <a id="modalFullProfile" href="#" class="btn btn--primary" style="text-align:center; text-decoration:none;">Ver Perfil Completo</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase.js"></script>
   <script src="auth.js"></script>
