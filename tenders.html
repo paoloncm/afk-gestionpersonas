@@ -3,9 +3,54 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>AFK RRHH — Licitaciones</title>
+  <title>AFK RRHH — Licitaciones Intelligence</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
+  <!-- PDF.js for JARVIS OCR -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <style>
+    /* Stark Intelligence HUD Styles */
+    .hud-scanner {
+      position: relative;
+      background: rgba(2, 6, 23, 0.8);
+      border: 1px solid var(--accent);
+      padding: 30px;
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .hud-scanner::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 2px;
+      background: var(--accent);
+      box-shadow: 0 0 15px var(--accent);
+      animation: scan 3s linear infinite;
+      z-index: 10;
+    }
+    @keyframes scan {
+      0% { top: 0; opacity: 1; }
+      50% { top: 100%; opacity: 0.5; }
+      100% { top: 0; opacity: 1; }
+    }
+    .upload-zone {
+      border: 2px dashed rgba(34, 211, 238, 0.3);
+      padding: 40px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .upload-zone:hover {
+      border-color: var(--accent);
+      background: rgba(34, 211, 238, 0.05);
+    }
+    .intel-preview {
+      display: none;
+      margin-top: 20px;
+      animation: fadeIn 0.5s ease;
+    }
+  </style>
 </head>
 
 <body>
@@ -27,7 +72,10 @@
     <header class="topbar">
       <button class="btn-menu">☰</button>
       <div class="h1" style="font-size:18px; margin-right:auto; margin-bottom: 0;">Gestión de Licitaciones</div>
-      <button id="btnNewTender" class="btn btn--primary" style="margin-left:auto;">+ Nueva Licitación</button>
+      <div class="topbar__actions">
+        <button id="btnSmartTender" class="btn btn--primary" style="background: linear-gradient(135deg, #06b6d4 0%, #22d3ee 100%); border:none; box-shadow: 0 0 15px rgba(34,211,238,0.3); margin-right:10px;">🛰️ Lector JARVIS</button>
+        <button id="btnNewTender" class="btn btn--primary">+ Nueva Licitación</button>
+      </div>
     </header>
 
     <main class="main">
@@ -87,19 +135,59 @@
       </div>
     </div>
 
+    <!-- Modal Smart Analyzer (JARVIS) -->
+    <div id="smartModal" class="modal">
+      <div class="modal__content" style="max-width:700px; background: rgba(2, 6, 23, 0.98); border: 1px solid var(--accent);">
+        <div class="modal__header">
+          <h2 class="h1" style="color:var(--accent)">🛰️ JARVIS Intelligence: Tender Analysis</h2>
+          <button class="close-modal">&times;</button>
+        </div>
+        <div class="modal__body">
+          <div id="hudScanner" class="hud-scanner">
+             <div class="upload-zone" id="uploadZone">
+                <div style="font-size:32px; margin-bottom:10px;">📂</div>
+                <div style="font-weight:700; color:var(--text)">Arrastra el PDF de la Licitación</div>
+                <div style="font-size:12px; color:var(--muted)">Procesamiento Vectorial JARVIS Core v6.5</div>
+                <input type="file" id="pdfInput" hidden accept=".pdf">
+             </div>
+             
+             <div id="scanningState" style="display:none; margin:20px 0;">
+                <div style="font-weight:800; color:var(--accent); letter-spacing:2px; margin-bottom:10px;">VECTORIZANDO...</div>
+                <div style="font-size:11px; color:var(--muted); font-family:monospace;" id="scanLog">Analizando bloques de texto...</div>
+             </div>
+          </div>
+
+          <div id="intelPreview" class="intel-preview">
+             <h3 style="font-size:14px; color:var(--accent); margin-bottom:15px; text-transform:uppercase;">Requisitos Detectados</h3>
+             <div id="intelReqs" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:20px;">
+                <!-- Reqs detectados IRÁN AQUÍ -->
+             </div>
+             <button id="btnImportIntel" class="btn btn--primary" style="width:100%">Importar a Licitación</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Modal Matchmaking (Resultados) -->
     <div id="matchModal" class="modal">
-      <div class="modal__content" style="max-width:800px">
+      <div class="modal__content" style="max-width:900px">
         <div class="modal__header">
           <h2 id="matchTitle" class="h1">Buscando Trabajadores Aptos...</h2>
           <button class="close-modal">&times;</button>
         </div>
         <div class="modal__body">
+          <!-- Toggle Source -->
+          <div style="margin-bottom:20px; display:flex; gap:10px;">
+             <button class="btn btn--mini is-active" id="btnMatchWorkers">Trabajadores (Contratados)</button>
+             <button class="btn btn--mini" id="btnMatchCandidates">Candidatos (Pipeline)</button>
+          </div>
+
           <div id="matchResults" class="table">
             <div class="t-head">
-              <div class="t-col-name">Trabajador</div>
-              <div class="t-col-prof">Estado</div>
-              <div class="t-col-status">Detalle</div>
+              <div class="t-col-name">Perfil / Talento</div>
+              <div class="t-col-prof">Ficha / Aptitud</div>
+              <div class="t-col-status">Detalle de Calce</div>
+              <div class="t-col-actions"></div>
             </div>
             <div id="matchBody"></div>
           </div>
@@ -111,21 +199,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase.js"></script>
   <script src="auth.js"></script>
-  <script src="tenders.supabase.js?v=2.0"></script>
-    <aside id="chatbot" class="chatbot">
-      <div class="chatbot__head">
-        <strong>AFK Chatbot</strong>
-        <button id="closeChat" class="btn" type="button">Cerrar</button>
-      </div>
-
-      <div id="chatBody" class="chatbot__body"></div>
-
-      <div class="chatbot__input">
-        <input id="chatInput" type="text" placeholder="Escribe aqu�">
-        <button id="chatSend" class="btn btn--primary" type="button">Enviar</button>
-      </div>
-    </aside>
-  <script defer src="chat.js?v=5.0"></script>
+  <script src="tenders.supabase.js?v=3.0"></script>
+  <script defer src="chat.js?v=6.0"></script>
 </body>
 </html>
-
