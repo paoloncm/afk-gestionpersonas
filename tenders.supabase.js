@@ -57,9 +57,15 @@
 
   document.querySelectorAll('.close-modal').forEach(b => {
     b.onclick = () => { 
-      closeModal(tenderModal); 
-      closeModal(matchModal); 
-      closeModal($('#smartModal')); 
+      const modal = b.closest('.modal');
+      if (modal) closeModal(modal);
+      else {
+        // Failsafe
+        closeModal(tenderModal); 
+        closeModal(matchModal); 
+        closeModal($('#smartModal')); 
+        closeModal($('#profileModal'));
+      }
     };
   });
 
