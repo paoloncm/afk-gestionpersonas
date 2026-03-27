@@ -583,65 +583,154 @@
     renderHierarchicalResults(resultsByVacancy);
   }
 
+  const profileModal = $('#profileModal');
+
   function renderHierarchicalResults(groupedRes) {
     if (!matchBody) return;
     
     const vacancyTitles = Object.keys(groupedRes);
-    if (vacancyTitles.length === 0 || vacancyTitles.every(t => groupedRes[t].length === 0)) {
+    const totalFound = vacancyTitles.reduce((acc, t) => acc + groupedRes[t].length, 0);
+
+    if (totalFound === 0) {
        matchBody.innerHTML = '<div style="padding:40px; text-align:center; color:var(--muted);">No se encontraron perfiles con calce jerárquico.</div>';
        return;
     }
 
-    matchBody.innerHTML = vacancyTitles.map(vTitle => {
-       const res = groupedRes[vTitle];
-       if (res.length === 0) return '';
-       
-       return `
-         <div class="vacancy-section" style="margin-bottom:30px;">
-            <div style="font-size:16px; font-weight:800; color:var(--accent); margin-bottom:15px; display:flex; align-items:center; gap:10px; border-left:4px solid var(--accent); padding-left:15px;">
-               🛡️ VACANTE: ${escapeHtml(vTitle)}
-               <span style="font-size:11px; font-weight:400; color:rgba(255,255,255,0.5);">(${res.length} perfiles detectados)</span>
-            </div>
-            <div class="match-grid">
-               ${res.slice(0, 8).map(r => {
-                 const score = r.score || (r.titleMatch ? 50 : 0);
-                 const color = score >= 80 ? 'var(--ok)' : (score >= 50 ? 'var(--accent)' : '#f59e0b');
-                 return `
-                   <div class="match-card">
-                     <div class="match-card__header">
-                       <div class="match-card__meta">
-                         <h4>${escapeHtml(r.name)}</h4>
-                         <span>${escapeHtml(r.id)}</span>
-                       </div>
-                       <div class="match-score-badge" style="color:${color}; border-color:${color}44; background:${color}11">
-                         ${score.toFixed(0)}%
-                       </div>
-                     </div>
-                     <div class="match-progress-container">
-                       <div class="match-progress-bar" style="width: ${score}%; background: ${color};"></div>
-                     </div>
-                     <div class="match-card__status">
-                       <div style="font-weight:700; margin-bottom:8px; display:flex; align-items:center; gap:5px; font-size:11px;">
-                         Calce de Requisitos (${r.matched.length}/${r.allReqs.length})
-                       </div>
-                       <div style="display:flex; flex-wrap:wrap; gap:4px;">
-                         ${r.allReqs.map(req => {
-                           const isMatch = r.matched.includes(req);
-                           return `<span class="badge" style="font-size:9px; padding:2px 6px; opacity:${isMatch ? 1 : 0.3}; background:${isMatch ? 'rgba(34,211,238,0.2)' : 'transparent'}; border:1px solid ${isMatch ? 'var(--accent)' : 'rgba(255,255,255,0.1)'}">${escapeHtml(req)}</span>`;
-                         }).join('')}
-                       </div>
-                     </div>
-                     <div style="display:flex; gap:8px; margin-top:auto;">
-                       ${r.isCandidate ? `<a href="candidate.html?id=${encodeURIComponent(r.idx || r.id)}" class="btn btn--mini btn--primary" style="flex:1">Ver Perfil</a>` : ''}
-                       <button class="btn btn--mini" style="flex:1">Detalles</button>
-                     </div>
+    matchBody.innerHTML = `
+      <div style="margin-bottom:20px; padding:10px; background:rgba(34,211,238,0.05); border-radius:8px; border:1px solid rgba(34,211,238,0.1); font-size:12px; color:var(--accent); text-align:center; letter-spacing:1px;">
+         📡 ESCANEO COMPLETO: ${totalFound} PERFILES DETECTADOS EN ${vacancyTitles.length} CAPAS
+      </div>
+      <div class="vacancy-accordion">
+        ${vacancyTitles.map((vTitle, idx) => {
+           const res = groupedRes[vTitle];
+           if (res.length === 0) return '';
+           
+           return `
+             <div class="vacancy-section" style="margin-bottom:15px; border: 1px solid rgba(255,255,255,0.05); border-radius:12px; overflow:hidden; background:rgba(255,255,255,0.01);">
+                <div class="vacancy-header" 
+                     onclick="this.nextElementSibling.classList.toggle('is-collapsed'); this.querySelector('.toggle-icon').textContent = this.nextElementSibling.classList.contains('is-collapsed') ? '➕' : '➖'"
+                     style="padding:15px 20px; background:rgba(255,255,255,0.03); cursor:pointer; display:flex; justify-content:space-between; align-items:center; transition: background 0.3s;"
+                     onmouseover="this.style.background='rgba(34,211,238,0.05)'"
+                     onmouseout="this.style.background='rgba(255,255,255,0.03)'">
+                   <div style="font-size:15px; font-weight:800; color:var(--accent); display:flex; align-items:center; gap:12px;">
+                      <span class="toggle-icon" style="font-size:10px; opacity:0.6;">➖</span>
+                      🛡️ ${escapeHtml(vTitle)}
+                      <span style="font-size:11px; font-weight:400; color:rgba(34,211,238,0.6); background:rgba(34,211,238,0.1); padding:2px 8px; border-radius:10px;">
+                         ${res.length} Match
+                      </span>
                    </div>
-                 `;
-               }).join('')}
-            </div>
-         </div>
-       `;
-    }).join('');
+                   <div style="font-size:12px; opacity:0.5;">Click para expandir/contraer</div>
+                </div>
+                <div class="vacancy-content" style="padding:20px; transition: all 0.3s ease-out;">
+                   <div class="match-grid">
+                      ${res.slice(0, 15).map((r, rIdx) => {
+                        const score = r.score || (r.titleMatch ? 50 : 0);
+                        const color = score >= 80 ? 'var(--ok)' : (score >= 50 ? 'var(--accent)' : '#f59e0b');
+                        
+                        // ID temporal para el botón de detalles
+                        const btnId = `btn-det-${idx}-${rIdx}`;
+                        
+                        return `
+                          <div class="match-card">
+                            <div class="match-card__header">
+                              <div class="match-card__meta">
+                                <h4>${escapeHtml(r.name)}</h4>
+                                <span>${escapeHtml(r.id)}</span>
+                              </div>
+                              <div class="match-score-badge" style="color:${color}; border-color:${color}44; background:${color}11">
+                                ${score.toFixed(0)}%
+                              </div>
+                            </div>
+                            <div class="match-progress-container">
+                              <div class="match-progress-bar" style="width: ${score}%; background: ${color};"></div>
+                            </div>
+                            <div class="match-card__status">
+                              <div style="font-weight:700; margin-bottom:8px; display:flex; align-items:center; gap:5px; font-size:11px;">
+                                Calce de Requisitos (${r.matched.length}/${r.allReqs.length})
+                              </div>
+                              <div style="display:flex; flex-wrap:wrap; gap:4px;">
+                                ${r.allReqs.map(req => {
+                                  const isMatch = r.matched.includes(req);
+                                  return `<span class="badge" style="font-size:9px; padding:2px 6px; opacity:${isMatch ? 1 : 0.3}; background:${isMatch ? 'rgba(34,211,238,0.2)' : 'transparent'}; border:1px solid ${isMatch ? 'var(--accent)' : 'rgba(255,255,255,0.1)'}">${escapeHtml(req)}</span>`;
+                                }).join('')}
+                              </div>
+                            </div>
+                            <div style="display:flex; gap:8px; margin-top:auto;">
+                              ${r.isCandidate ? `<a href="candidate.html?id=${encodeURIComponent(r.idx || r.id)}" class="btn btn--mini btn--primary" style="flex:1">Ver Perfil</a>` : ''}
+                              <button class="btn btn--mini btn-show-prof" 
+                                      data-vtitle="${escapeHtml(vTitle)}"
+                                      data-payload='${JSON.stringify(r).replace(/'/g, "&apos;")}'
+                                      style="flex:1">Detalles</button>
+                            </div>
+                          </div>
+                        `;
+                      }).join('')}
+                   </div>
+                </div>
+             </div>
+           `;
+        }).join('')}
+      </div>
+      <style>
+        .vacancy-content.is-collapsed {
+           display: none;
+        }
+        .vacancy-header:hover {
+           border-bottom: 1px solid rgba(34,211,238,0.2);
+        }
+      </style>
+    `;
+
+    document.querySelectorAll('.btn-show-prof').forEach(btn => {
+       btn.onclick = () => {
+          const r = JSON.parse(btn.dataset.payload);
+          const vTitle = btn.dataset.vtitle;
+          showProfilePreview(r, vTitle);
+       };
+    });
+  }
+
+  function showProfilePreview(r, vTitle) {
+     if (!profileModal) return;
+
+     $('#profInitial').textContent = (r.name || "S").charAt(0).toUpperCase();
+     $('#profName').textContent = r.name;
+     $('#profTitle').textContent = r.id;
+     $('#profMatchVacancy').textContent = vTitle;
+
+     const strengths = r.matched.length > 0 ? r.matched : (r.titleMatch ? ["Título de Vacante coincide con perfil"] : ["Sin coincidencias explícitas"]);
+     $('#profStrengths').innerHTML = strengths.map(s => `
+        <div style="font-size:12px; color:var(--ok); display:flex; align-items:center; gap:8px;">
+           <span style="font-size:14px;">⚡</span> ${s}
+        </div>
+     `).join('');
+
+     const gaps = r.allReqs.filter(req => !r.matched.includes(req));
+     $('#profGaps').innerHTML = gaps.length > 0 ? gaps.map(g => `
+        <div style="font-size:12px; color:rgba(255,255,255,0.4); display:flex; align-items:center; gap:8px;">
+           <span style="font-size:14px; opacity:0.5;">⭕</span> ${g}
+        </div>
+     `).join('') : '<div style="font-size:12px; color:var(--ok);">✅ Sin brechas críticas detectadas.</div>';
+
+     $('#profReqChecklist').innerHTML = r.allReqs.map(req => {
+        const isMatch = r.matched.includes(req);
+        return `
+           <div style="display:flex; justify-content:space-between; align-items:center; padding:10px; background:rgba(255,255,255,0.02); border-radius:6px; border:1px solid ${isMatch ? 'rgba(34,211,238,0.2)' : 'rgba(255,255,255,0.05)'}">
+              <span style="font-size:13px; color:${isMatch ? '#fff' : 'rgba(255,255,255,0.5)'}">${req}</span>
+              <span style="font-weight:800; color:${isMatch ? 'var(--ok)' : 'var(--muted)'}">${isMatch ? 'HABILITADO' : 'PENDIENTE'}</span>
+           </div>
+        `;
+     }).join('');
+
+     const link = $('#profFullLink');
+     if (r.isCandidate) {
+        link.href = `candidate.html?id=${encodeURIComponent(r.idx || r.id)}`;
+        link.style.display = 'block';
+     } else {
+        link.style.display = 'none';
+     }
+
+     openModal(profileModal);
   }
 
   document.addEventListener('DOMContentLoaded', loadTenders);
