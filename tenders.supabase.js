@@ -12,13 +12,43 @@
   const tenderNameInput = $('#tenderName');
   const tenderDescInput = $('#tenderDesc');
 
-  function normalizeText(text) {
-    if (!text) return '';
-    return text.toString()
-      .toLowerCase()
+  // --- PROTOCOLO STARK: NORMALIZACIÓN Y TOKENIZACIÓN DE ALTA PRECISIÓN ---
+  const starkNormalize = (text) => {
+    if (!text) return [];
+    const stopwords = ["de", "en", "contra", "la", "el", "del", "con", "y", "a", "o", "un", "una", "para", "los", "las"];
+    
+    // Normalización Agresiva (Tildes, Caracteres Especiales, Minúsculas)
+    let clean = text.toString().toLowerCase()
       .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .trim();
+      .replace(/[\u0300-\u036f]/g, "") // Quitar tildes
+      .replace(/[^a-z0-9\s]/g, " "); // Solo letras, números y espacios
+    
+    return clean.split(/\s+/)
+      .filter(word => word.length > 2 && !stopwords.includes(word))
+      .map(word => {
+        // Lógica de Plurales Refinada
+        let w = word;
+        if (w.endsWith("es")) w = w.slice(0, -2);
+        else if (w.endsWith("s")) w = w.slice(0, -1);
+        
+        // Stark Synonym Map (Relaciones de alto nivel)
+        const synonyms = {
+          "electronico": "electrico",
+          "fuego": "incendio",
+          "prevencion": "seguridad",
+          "prevencionista": "seguridad",
+          "vial": "transporte",
+          "conductor": "operador"
+        };
+        
+        return synonyms[w] || w;
+      });
+  };
+
+  // Mantener por compatibilidad con otros fragmentos si existen
+  function normalizeText(text) {
+     const tokens = starkNormalize(text);
+     return tokens.join(" ");
   }
 
   // --- GESTIÓN DE INTERFAZ (RESTORED) ---
@@ -381,22 +411,37 @@
     const { data: ws } = await window.supabase.from('workers').select('*');
     const { data: cs } = await window.supabase.from('worker_credentials').select('*');
     const { data: ex } = await window.supabase.from('medical_exam_records').select('*');
-    const norm = (r) => String(r || "").replace(/[^0-9kK]/g, "").toUpperCase();
+    const normRut = (r) => String(r || "").replace(/[^0-9kK]/g, "").toUpperCase();
+
+    const reqs = tender.requirements || [];
 
     const results = ws.map(w => {
-      const docs = [...(cs||[]).filter(c => c.worker_id === w.id || norm(c.rut) === norm(w.rut)), ...(ex||[]).filter(e => norm(e.rut) === norm(w.rut))];
+      const docs = [
+        ...(cs || []).filter(c => c.worker_id === w.id || normRut(c.rut) === normRut(w.rut)), 
+        ...(ex || []).filter(e => normRut(e.rut) === normRut(w.rut))
+      ];
       
-      const matched = tender.requirements.filter(req => 
-        docs.some(d => (normalizeText(d.credential_name)+normalizeText(d.exam_type)).includes(normalizeText(req)))
-      );
+      // Unificamos toda la "Intel" del trabajador (Credenciales + Exámenes + Perfil)
+      const workerIntelTokens = [
+        ...starkNormalize(w.full_name),
+        ...starkNormalize(w.company_name),
+        ...docs.flatMap(d => [...starkNormalize(d.credential_name), ...starkNormalize(d.exam_type)])
+      ];
+      
+      const matchedRoles = reqs.filter(req => {
+        const reqTokens = starkNormalize(req);
+        if (reqTokens.length === 0) return false;
+        const intersection = reqTokens.filter(t => workerIntelTokens.includes(t));
+        return (intersection.length / reqTokens.length) >= 0.5 || (reqTokens.length >= 2 && intersection.length >= 2);
+      });
 
-      const score = matched.length > 0 ? 100 : 0;
+      const score = matchedRoles.length > 0 ? 100 : 0;
       
       return { 
         name: w.full_name, 
         id: w.rut, 
         detail: w.company_name, 
-        matched, 
+        matched: matchedRoles, 
         score 
       };
     }).filter(r => r.score > 0).sort((a,b) => b.matched.length - a.matched.length);
@@ -414,19 +459,6 @@
 
     const reqs = tender.requirements || [];
     
-    const starkNormalize = (text) => {
-      if (!text) return [];
-      const stopwords = ["de", "en", "contra", "la", "el", "del", "con", "y", "a", "o"];
-      return text.toString()
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .replace(/es$/g, "e") 
-        .replace(/s$/g, "")
-        .split(/[^a-z0-9]/)
-        .filter(word => word.length > 2 && !stopwords.includes(word));
-    };
-
     const results = cand.map(c => {
       // 1. Obtener todos los fragmentos asociados a este candidato
       const candNameNorm = c.nombre_completo.toLowerCase();
