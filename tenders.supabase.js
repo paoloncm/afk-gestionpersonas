@@ -408,31 +408,67 @@
     const { data: cand } = await window.supabase.from('candidates').select('*');
     if (!cand) return;
 
+    // PROTOCOLO CEREBRO: Búsqueda profunda en fragmentos vectorizados
+    const { data: chunks } = await window.supabase.from('document_chunks').select('*');
+    const { data: docs } = await window.supabase.from('client_documents').select('*');
+
+    const reqs = tender.requirements || [];
+    
+    const starkNormalize = (text) => {
+      if (!text) return [];
+      const stopwords = ["de", "en", "contra", "la", "el", "del", "con", "y", "a", "o"];
+      return text.toString()
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/es$/g, "e") 
+        .replace(/s$/g, "")
+        .split(/[^a-z0-9]/)
+        .filter(word => word.length > 2 && !stopwords.includes(word));
+    };
+
     const results = cand.map(c => {
-       const profileText = normalizeText(`
-          ${c.profesion || ''} 
-          ${c.cargo_a_desempenar || ''} 
-          ${c.experiencia_general || ''} 
-          ${c.experiencia_especifica || ''} 
-          ${c.otras_experiencias || ''} 
-          ${c.antecedentes_academicos || ''}
-       `);
-       
-       const matched = tender.requirements.filter(req => {
-          const reqNorm = normalizeText(req);
-          return profileText.includes(reqNorm);
-       });
+      // 1. Obtener todos los fragmentos asociados a este candidato
+      const candNameNorm = c.nombre_completo.toLowerCase();
+      const candidateDocs = (docs || []).filter(d => 
+        (d.category === 'Candidato CV' || d.category === 'CV') && 
+        (d.file_name?.toLowerCase().includes(candNameNorm) || d.metadata?.candidate_id === c.id)
+      );
+      
+      const docIds = candidateDocs.map(d => d.id);
+      const candidateChunks = (chunks || []).filter(ch => 
+        docIds.includes(ch.metadata?.document_id) || ch.metadata?.candidate_id === c.id
+      );
 
-       const score = matched.length > 0 ? 100 : 0;
+      // 2. Unificar Inteligencia (Metadata + Deep Content)
+      const deepContent = candidateChunks.map(ch => ch.content).join(" ");
+      const candidateTokens = [
+        ...starkNormalize(c.nombre_completo),
+        ...starkNormalize(c.profesion),
+        ...starkNormalize(c.cargo_a_desempenar),
+        ...starkNormalize(c.nombre_tokens_clave),
+        ...starkNormalize(deepContent)
+      ];
 
-       return { 
-         name: c.nombre_completo, 
-         id: c.profesion || 'Candidato', 
-         detail: `Compatible con: ${matched.join(', ')}`, 
-         matched, 
-         isCandidate: true, 
-         score 
-       };
+      const matchedRoles = reqs.filter(req => {
+        const reqTokens = starkNormalize(req);
+        if (reqTokens.length === 0) return false;
+        
+        // Match si al menos la mitad de los tokens importantes coinciden
+        const intersection = reqTokens.filter(t => candidateTokens.includes(t));
+        return (intersection.length / reqTokens.length) >= 0.5 || (reqTokens.length >= 2 && intersection.length >= 2);
+      });
+
+      const score = matchedRoles.length > 0 ? 100 : 0;
+      
+      return { 
+        name: c.nombre_completo, 
+        id: c.profesion || 'Candidato', 
+        idx: c.id,
+        matched: matchedRoles, 
+        isCandidate: true, 
+        score 
+      };
     }).filter(r => r.score > 0).sort((a,b) => b.matched.length - a.matched.length);
 
     renderMatchResults(results);

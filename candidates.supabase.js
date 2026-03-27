@@ -87,8 +87,17 @@
     if (candidateForm) {
       candidateForm.onsubmit = async (e) => {
         e.preventDefault();
+        const submitBtn = candidateForm.querySelector('button[type="submit"]');
+        const originalText = submitBtn?.textContent || "Guardar";
+        
         try {
+          if (submitBtn) {
+            submitBtn.textContent = "Procesando con JARVIS...";
+            submitBtn.disabled = true;
+          }
+
           const formData = new FormData(candidateForm);
+          const cvFile = formData.get("cv_file");
 
           const payload = {
             nombre_completo: formData.get("nombre_completo") || "",
@@ -106,15 +115,67 @@
             status: "Postulado"
           };
 
-          const { error } = await supabase.from("candidates").insert([payload]);
-          if (error) throw error;
+          // 1. Insert/Update Candidate Base Record
+          const { data: candData, error: candError } = await supabase.from("candidates").insert([payload]).select().single();
+          if (candError) throw candError;
+
+          const candidateId = candData.id;
+
+          // 2. Handle CV File (Storage + n8n)
+          if (cvFile && cvFile.size > 0) {
+            window.notificar?.("📦 Subiendo CV a Bóveda Stark...", "info");
+            
+            const safeName = cvFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+            const storagePath = `cvs/${candidateId}_${Date.now()}_${safeName}`;
+            
+            // Upload to Storage
+            const { error: stErr } = await supabase.storage.from('tenders_and_docs').upload(storagePath, cvFile);
+            if (stErr) throw stErr;
+
+            // Register in client_documents
+            const { data: docData, error: docErr } = await supabase.from('client_documents').insert({
+              file_name: cvFile.name,
+              file_size: cvFile.size,
+              storage_path: storagePath,
+              category: 'Candidato CV'
+            }).select().single();
+            if (docErr) throw docErr;
+
+            // Call n8n for Extraction + Vectorization (Protocolo Cerebro)
+            const { data: signedData } = await supabase.storage.from('tenders_and_docs').createSignedUrl(storagePath, 1200);
+            
+            const n8n_webhook_url = 'https://primary-production-aa252.up.railway.app/webhook/39501108-66d4-4117-99d1-7bc9cd21ca08';
+            
+            fetch(n8n_webhook_url, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'X-AFK-Secret': 'AFK_PRO_2024_SECURE_KEY' },
+              body: JSON.stringify({
+                task: "cv_extraction_vectorization",
+                candidate_id: candidateId,
+                document_id: docData.id,
+                file_name: cvFile.name,
+                signed_url: signedData?.signedUrl,
+                context: "Industrias Stark - Ingesta Automática"
+              })
+            }).catch(e => console.error("Error disparando n8n:", e));
+
+            window.notificar?.("🤖 JARVIS analizando CV en segundo plano...", "success");
+          } else {
+            window.notificar?.("Candidato registrado (Sin CV)", "success");
+          }
 
           candidateForm.reset();
           modal.classList.remove("is-open");
           await loadCandidates();
+          
         } catch (err) {
           console.error('Error guardando candidato:', err);
-          window.notificar?.('No se pudo guardar el candidato: ' + err.message, 'error');
+          window.notificar?.('No se pudo completar la operación: ' + err.message, 'error');
+        } finally {
+          if (submitBtn) {
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
+          }
         }
       };
     }
