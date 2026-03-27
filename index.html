@@ -96,7 +96,7 @@
       </section>
 
       <section class="decision-grid" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));">
-        <div class="card card--success-alt">
+        <div class="card card--success-alt card--glow">
           <div class="card__body kpi">
             <span class="label">👥 Total Personal</span>
             <span id="kpi_total_workers" class="value">0</span>
@@ -104,14 +104,14 @@
           </div>
         </div>
 
-        <div class="card">
+        <div class="card card--glow">
           <div class="card__body kpi">
             <span class="label">🎯 Postulaciones</span>
             <span id="kpi_total_candidates" class="value">0</span>
             <div style="font-size:11px; color:var(--muted); margin-top:5px;">Candidatos activos</div>
           </div>
         </div>
-        <div class="card card--critical" id="card_risks">
+        <div class="card card--critical card--scanning" id="card_risks">
           <div class="card__body kpi">
             <span class="label">🚨 Riesgos Críticos</span>
             <span id="kpi_risks" class="value">0</span>
@@ -135,7 +135,7 @@
           </div>
         </div>
 
-        <div class="card card--success-alt">
+        <div class="card card--success-alt card--glow">
           <div class="card__body kpi">
             <span class="label">✅ Índice de Cumplimiento</span>
             <span id="kpi_compliance_pct" class="value">0%</span>
@@ -239,17 +239,8 @@
         </div>
 
         <div class="card">
-          <div id="candidatesTable" class="table candidates">
-            <div class="t-head">
-              <div class="t-col-cb">
-                <input type="checkbox" id="selectAllCandidates" title="Seleccionar todos">
-              </div>
-              <div class="t-col-name">Nombre</div>
-              <div class="t-col-prof">Profesión</div>
-              <div class="t-col-vac">Cargo a desempeñar</div>
-              <div class="t-col-score">Puntaje</div>
-              <div class="t-col-status">Estado</div>
-            </div>
+          <div id="candidatesTable">
+            <!-- Rendered dynamically via candidates.supabase.js -->
           </div>
         </div>
       </section>

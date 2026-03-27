@@ -220,27 +220,37 @@
 
   async function loadCandidates() {
     try {
-      // Shimmer Loading State
+      // Stark Row Shimmer Loading State
       if (table) {
+        table.className = "table-container";
         table.innerHTML = `
-          <div class="t-head">
-            <div class="t-col-cb"><input type="checkbox" disabled></div>
-            <div class="t-col-name">Nombre</div>
-            <div class="t-col-prof">Profesión</div>
-            <div class="t-col-vac">Cargo a desempeñar</div>
-            <div class="t-col-score">Puntaje</div>
-            <div class="t-col-status">Estado</div>
-          </div>
-          ` + Array(5).fill(0).map(() => `
-          <div class="t-row">
-            <div class="t-col-cb"></div>
-            <div class="t-col-name"><div class="skeleton skeleton-text" style="width:80%"></div></div>
-            <div class="t-col-prof"><div class="skeleton skeleton-text" style="width:60%"></div></div>
-            <div class="t-col-vac"><div class="skeleton skeleton-text" style="width:70%"></div></div>
-            <div class="t-col-score"><div class="skeleton skeleton-badge"></div></div>
-            <div class="t-col-status"><div class="skeleton skeleton-badge"></div></div>
-          </div>
-          `).join('');
+          <table class="stark-table">
+            <thead>
+              <tr>
+                <th style="width:40px;"></th>
+                <th>Candidato</th>
+                <th>Profesión</th>
+                <th>Cargo Destino</th>
+                <th style="text-align:center;">Índice de Mérito</th>
+                <th>Estado</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              ${Array(6).fill(0).map(() => `
+                <tr class="stark-shimmer">
+                  <td><div style="width:18px; height:18px; background:rgba(255,255,255,0.05); border-radius:4px;"></div></td>
+                  <td><div style="width:140px; height:16px; background:rgba(255,255,255,0.1); border-radius:4px;"></div></td>
+                  <td><div style="width:100px; height:12px; background:rgba(255,255,255,0.05); border-radius:4px;"></div></td>
+                  <td><div style="width:90px; height:12px; background:rgba(255,255,255,0.05); border-radius:4px;"></div></td>
+                  <td><div style="width:40px; height:24px; background:rgba(255,255,255,0.1); border-radius:8px; margin:0 auto;"></div></td>
+                  <td><div style="width:80px; height:20px; background:rgba(255,255,255,0.05); border-radius:10px;"></div></td>
+                  <td><div style="width:60px; height:24px; background:rgba(255,255,255,0.05); border-radius:12px;"></div></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
       }
 
       let { data, error } = await supabase
@@ -344,89 +354,103 @@
   function renderCandidates(items) {
     if (!table) return;
 
-    const allSelected = items.length > 0 && items.every(c => selectedCandidates.has(String(c.id)));
-
-    // Render header ONLY IF it's empty or needs refresh
-    const headHtml = `
-      <div class="t-head">
-        <div class="t-col-cb" style="display:flex; align-items:center; gap:4px;">
-          <input type="checkbox" id="selectAllCandidates" ${allSelected ? "checked" : ""} title="Seleccionar todos">
-          <span style="font-size:9px; color:var(--muted); font-weight:800; cursor:pointer;" onclick="document.getElementById('selectAllCandidates').click()">TODOS</span>
-        </div>
-        <div class="t-col-name">Nombre</div>
-        <div class="t-col-prof">Profesión</div>
-        <div class="t-col-vac">Cargo a desempeñar</div>
-        <div class="t-col-score">Puntaje</div>
-        <div class="t-col-status">Estado</div>
-      </div>
-    `;
-
-    let html = headHtml;
-
+    // Reset container and apply table class
+    table.className = "table-container"; // Wrapper for responsiveness if needed
+    
     if (!items.length) {
-      html += `<div style="padding:20px; color:var(--muted);">No se encontraron candidatos.</div>`;
-      table.innerHTML = html;
+      table.innerHTML = `<div style="padding:40px; text-align:center; color:var(--muted); background:rgba(255,255,255,0.02); border-radius:20px;">No se encontraron candidatos para los criterios de búsqueda.</div>`;
       return;
     }
+
+    let html = `
+      <table class="stark-table">
+        <thead>
+          <tr>
+            <th style="width:40px;"><input type="checkbox" id="selectAllCandidates" style="width:18px; height:18px; cursor:pointer;"></th>
+            <th>Candidato</th>
+            <th>Profesión</th>
+            <th>Cargo Destino</th>
+            <th style="text-align:center;">Índice de Mérito</th>
+            <th>Estado</th>
+            <th style="text-align:right;">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
 
     items.forEach(c => {
       const id = c.id;
       const name = escapeHtml(c.nombre_completo || "Sin nombre");
-      const profesion = escapeHtml(c.profesion || "-");
-      const cargo = escapeHtml(c.cargo_a_desempenar || "Sin asignar");
-      const nota = Number.isFinite(num(c.score)) ? num(c.score).toFixed(1) : "-";
+      const profesion = escapeHtml(c.profesion || "Especialista Stark");
+      const cargo = escapeHtml(c.cargo_a_desempenar || "Por asignar");
+      const rawScore = num(c.score);
+      const score = Number.isFinite(rawScore) ? rawScore.toFixed(1) : "?.?";
       const status = escapeHtml(c.status || "Postulado");
+      const isSelected = selectedCandidates.has(String(id));
 
       html += `
-        <div class="t-row" data-id="${escapeHtml(id)}">
-          <div class="t-col-cb" data-label="Seleccionar">
-            <input type="checkbox" class="candidate-check" value="${escapeHtml(id)}" ${selectedCandidates.has(String(id)) ? "checked" : ""}>
-          </div>
-
-          <div class="t-col-name" data-label="Nombre">
-            <a href="candidate.html?id=${encodeURIComponent(id)}" style="color:var(--text); text-decoration:none; font-weight:700;">
-              ${name}
-            </a>
-          </div>
-
-          <div class="t-col-prof" data-label="Profesión">${profesion}</div>
-          <div class="t-col-vac" data-label="Cargo" onclick="window.editCandidateCargo('${id}', '${cargo}')" title="Haga clic para editar">${cargo} ✎</div>
-          <div class="t-col-score" data-label="Puntaje">${nota}</div>
-          <div class="t-col-status" data-label="Estado" onclick="window.editCandidateStatus('${id}', '${status}')" title="Haga clic para cambiar estado">
-            <span class="badge" style="cursor:pointer;">${status} ✎</span>
-          </div>
-        </div>
+        <tr class="${isSelected ? 'row--active' : ''}" data-id="${id}">
+          <td><input type="checkbox" class="candidate-check" value="${id}" ${isSelected ? "checked" : ""} style="width:18px; height:18px; cursor:pointer;"></td>
+          <td>
+            <div style="display:flex; align-items:center; gap:10px;">
+              <div style="width:32px; height:32px; border-radius:8px; background:rgba(103,232,249,0.1); border:1px solid rgba(103,232,249,0.2); display:grid; place-items:center;">👤</div>
+              <a href="candidate.html?id=${encodeURIComponent(id)}" class="col-name">${name}</a>
+            </div>
+          </td>
+          <td style="color:var(--muted); font-size:12px;">${profesion}</td>
+          <td class="col-cargo" onclick="window.editCandidateCargo('${id}', '${cargo}')" title="Editar cargo" style="cursor:pointer;">${cargo} ✎</td>
+          <td style="text-align:center;"><span class="col-merit">${score}</span></td>
+          <td>
+            <div onclick="window.editCandidateStatus('${id}', '${status}')" title="Cambiar estado" style="cursor:pointer;">
+               <span class="badge ${status === 'Aceptado' ? 'badge--active' : (status === 'Rechazado' ? 'badge--danger' : 'badge--info')}">${status} ✎</span>
+            </div>
+          </td>
+          <td style="text-align:right;">
+            <a href="candidate.html?id=${encodeURIComponent(id)}" class="btn btn--mini" style="background:rgba(103,232,249,0.1); border-color:rgba(103,232,249,0.2); color:var(--accent); padding:4px 10px;">Analizar</a>
+          </td>
+        </tr>
       `;
     });
 
+    html += `</tbody></table>`;
     table.innerHTML = html;
 
+    // Attach click event to entire row (excluding interactive elements)
+    table.querySelectorAll("tbody tr").forEach(tr => {
+      tr.onclick = (e) => {
+        if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'A' && !e.target.closest('.badge') && !e.target.classList.contains('col-cargo')) {
+          const chk = tr.querySelector('.candidate-check');
+          if (chk) chk.click();
+        }
+      };
+    });
+
+    // Attach checkbox events
     table.querySelectorAll(".candidate-check").forEach(chk => {
+      chk.onclick = (e) => { e.stopPropagation(); }; // Prevent double click if using row click
       chk.onchange = (e) => {
         const val = String(e.target.value);
-        if (e.target.checked) selectedCandidates.add(val);
-        else selectedCandidates.delete(val);
-
-        // Update header checkbox
-        const allChecked = Array.from(table.querySelectorAll(".candidate-check")).every(c => c.checked);
-        if (selectAllCandidates) selectAllCandidates.checked = allChecked;
-        const innerHeadCb = table.querySelector("#selectAllCandidatesInner");
-        if (innerHeadCb) innerHeadCb.checked = allChecked;
-
+        const row = e.target.closest('tr');
+        if (e.target.checked) {
+          selectedCandidates.add(val);
+          row?.classList.add('row--active');
+        } else {
+          selectedCandidates.delete(val);
+          row?.classList.remove('row--active');
+        }
         refreshCompareButton();
       };
     });
 
-    const innerHeadCb = table.querySelector("#selectAllCandidatesInner");
-    if (innerHeadCb) {
-      innerHeadCb.onchange = (e) => {
+    // Select All
+    const selectAll = table.querySelector("#selectAllCandidates");
+    if (selectAll) {
+      selectAll.onchange = (e) => {
         const checked = e.target.checked;
-        if (selectAllCandidates) selectAllCandidates.checked = checked;
-        items.forEach(c => {
-          if (checked) selectedCandidates.add(String(c.id));
-          else selectedCandidates.delete(String(c.id));
+        table.querySelectorAll(".candidate-check").forEach(c => {
+          c.checked = checked;
+          c.onchange({ target: c });
         });
-        renderCandidates(items);
       };
     }
 

@@ -136,17 +136,47 @@
 
     const matchCont = $('#aiMatchContainer');
     const matchVal = $('#matchScoreVal');
+    const matchLabel = matchCont ? matchCont.querySelector('div') : null;
     const btnGuide = $('#btnAiGuide');
+
     if (matchCont && matchVal) {
+        const hasVacancy = r.vacancy_id || r.vacancies;
         const score = r.match_score || (num(r.nota) > 0 ? (num(r.nota) * 10).toFixed(0) : null);
+        
         if (score) {
             matchCont.style.display = 'block';
             matchVal.textContent = score;
-            if (btnGuide) btnGuide.style.display = 'block';
+            
+            if (matchLabel) {
+               matchLabel.textContent = hasVacancy ? 'Match de Perfil IA' : 'Calificación Global';
+               matchLabel.style.color = hasVacancy ? 'var(--accent)' : 'var(--text-muted)';
+            }
         } else {
             matchCont.style.display = 'none';
-            if (btnGuide) btnGuide.style.display = 'none';
         }
+    }
+
+    // Ranking Logic (Super Stark Revision)
+    const hasVac = r.vacancy_id || r.vacancies;
+    const rkVal = $('#phRanking');
+    const rkLabel = rkVal ? rkVal.parentElement.previousElementSibling : null;
+    const rkBadge = $('#phRankingBadge');
+
+    if (rkVal) {
+       rkVal.textContent = num(r.ranking) || '—';
+       if (rkLabel) {
+          rkLabel.textContent = hasVac ? 'Méritos y Calce (Vacante)' : 'Índice de Mérito (Global)';
+       }
+    }
+
+    if (rkBadge) {
+       if (hasVac) {
+          rkBadge.style.display = 'block';
+          rkBadge.textContent = `Puntuación Oro: #${num(r.ranking) || '--'} en méritos`;
+       } else {
+          rkBadge.textContent = `Índice de Mérito: #${num(r.ranking) || '--'}`;
+          rkBadge.style.display = 'block';
+       }
     }
 
     const evalg = $('#phEval');
@@ -182,11 +212,6 @@
         }
     }
 
-    // Ranking Badge
-    const rkBadge = $('#phRankingBadge');
-    if (rkBadge) {
-        rkBadge.textContent = `Ranking: #${num(r.ranking) || '--'} en la vacante`;
-    }
 
     const activeProc = $('#activeProcess');
     if (activeProc) {
@@ -251,7 +276,7 @@
       const expN = clamp((Number.isFinite(expYears) ? expYears : 0) / 2, 0, 10);
       const edadN = clamp((Number.isFinite(edadYears) ? edadYears : 0) / 6, 0, 10);
       const notaTecN = clamp(notaTec, 0, 10);
-      const rankingN = clamp(ranking, 0, 10);
+      const rankingN = clamp(11 - ranking, 0, 10); // Invertimos: #1 es el máximo (10), #10 es el mínimo (1)
       const notaN = clamp(nota, 0, 10);
 
       return {
@@ -260,14 +285,32 @@
       };
     }
 
-    const labels = ['Experiencia', 'Edad', 'Nota técnica', 'Ranking', 'Nota'];
+    const labels = ['Experiencia', 'Edad', 'Nota técnica', 'Méritos y Calce', 'Nota'];
+    const canvas = $('#radar');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    // Create Gradient for Primary Dataset
+    const gradient = ctx.createRadialGradient(
+      canvas.width / 2, canvas.height / 2, 0,
+      canvas.width / 2, canvas.height / 2, 150
+    );
+    gradient.addColorStop(0, 'rgba(34, 211, 238, 0.4)');
+    gradient.addColorStop(1, 'rgba(34, 211, 238, 0.05)');
 
     const base = buildProfile(r);
     const datasets = [{
       label: base.label,
       data: base.values,
-      pointRadius: 3,
-      borderWidth: 2,
+      borderColor: 'rgba(34, 211, 238, 1)',
+      backgroundColor: gradient,
+      pointBackgroundColor: 'rgba(34, 211, 238, 1)',
+      pointBorderColor: '#fff',
+      pointHoverBackgroundColor: '#fff',
+      pointHoverBorderColor: 'rgba(34, 211, 238, 1)',
+      pointRadius: 4,
+      pointHoverRadius: 6,
+      borderWidth: 3,
       fill: true
     }];
 
@@ -276,14 +319,13 @@
       datasets.push({
         label: cmp.label,
         data: cmp.values,
+        borderColor: 'rgba(255, 255, 255, 0.5)',
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
         pointRadius: 3,
         borderWidth: 2,
         fill: true
       });
     }
-
-    const canvas = $('#radar');
-    if (!canvas) return;
 
     if (!window._afkRadar) {
       window._afkRadar = new Chart(canvas, {
@@ -292,26 +334,34 @@
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          animation: { duration: 700, easing: 'easeOutQuart' },
+          animation: { duration: 1500, easing: 'easeOutQuart' },
           plugins: {
             legend: {
               display: datasets.length > 1,
-              labels: { color: '#fff' }
+              labels: { color: '#fff', font: { family: 'Inter', size: 10 } }
             },
-            tooltip: { enabled: true }
+            tooltip: { 
+              backgroundColor: 'rgba(2, 6, 23, 0.9)',
+              titleColor: '#22d3ee',
+              bodyColor: '#fff',
+              borderColor: 'rgba(34, 211, 238, 0.3)',
+              borderWidth: 1,
+              padding: 12,
+              displayColors: false
+            }
           },
           scales: {
             r: {
               min: 0,
               max: 10,
-              ticks: {
-                stepSize: 2,
-                backdropColor: 'transparent',
-                color: '#aaa'
-              },
-              grid: { color: 'rgba(255,255,255,0.10)' },
-              angleLines: { color: 'rgba(255,255,255,0.15)' },
-              pointLabels: { color: '#fff', font: { size: 12, weight: '600' } }
+              ticks: { display: false },
+              grid: { color: 'rgba(255,255,255,0.05)' },
+              angleLines: { color: 'rgba(255,255,255,0.1)' },
+              pointLabels: { 
+                color: 'rgba(255,255,255,0.7)', 
+                font: { size: 10, weight: '700', family: 'Inter' },
+                padding: 15
+              }
             }
           }
         }
@@ -329,17 +379,41 @@
     const y = num(r.experiencia_total) || 0;
     const el = $('#expTimeline');
     if (!el) return;
+    const ctx = el.getContext('2d');
+
+    const gradient = ctx.createLinearGradient(0, 0, 400, 0);
+    gradient.addColorStop(0, 'rgba(34, 211, 238, 0.8)');
+    gradient.addColorStop(1, 'rgba(34, 211, 238, 0.2)');
 
     if (window._afkExpTimeline) window._afkExpTimeline.destroy();
     window._afkExpTimeline = new Chart(el, {
       type: 'bar',
       data: {
-        labels: [r.ultima_exp_laboral_empresa || 'Experiencia'],
-        datasets: [{ data: [y * 12] }]
+        labels: [r.ultima_exp_laboral_empresa || 'Experiencia Histórica'],
+        datasets: [{ 
+          data: [y],
+          backgroundColor: gradient,
+          borderRadius: 10,
+          borderSkipped: false,
+          barThickness: 40
+        }]
       },
       options: {
+        indexAxis: 'y',
         responsive: true,
-        plugins: { legend: { display: false } }
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+           x: { 
+             grid: { display: false },
+             ticks: { color: 'rgba(255,255,255,0.3)', font: { size: 10 } },
+             title: { display: true, text: 'Años de Experiencia', color: 'rgba(255,255,255,0.5)', font: { size: 10 } }
+           },
+           y: { 
+             grid: { display: false },
+             ticks: { color: '#fff', font: { size: 12, weight: '700' } }
+           }
+        }
       }
     });
   }
