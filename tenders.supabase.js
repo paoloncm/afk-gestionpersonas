@@ -165,7 +165,7 @@
          intelDesc.value = aiData.description;
       }
       
-      renderDetectedReqs(aiData.requirements || []);
+      renderDetectedReqs(aiData.vacancies || []);
       
       scanningState.style.display = 'none';
       intelPreview.style.display = 'block';
@@ -273,11 +273,21 @@
     return catalog.filter(c => c.keywords.some(k => clean.includes(k)));
   }
 
-  function renderDetectedReqs(reqs) {
-    intelReqs.innerHTML = reqs.map(r => `
-      <div class="card" style="padding:10px; border:1px solid rgba(34,211,238,0.2); background:rgba(255,255,255,0.02); display:flex; justify-content:space-between; align-items:center;">
-         <span style="font-size:12px; font-weight:600;">${r.label}</span>
-         <input type="checkbox" checked class="intel-check" data-label="${r.label}">
+  function renderDetectedReqs(vacancies) {
+    intelReqs.innerHTML = vacancies.map((v, vIdx) => `
+      <div class="card" style="padding:15px; border:1px solid rgba(34,211,238,0.2); background:rgba(255,255,255,0.02); margin-bottom:12px;">
+         <div style="font-size:14px; font-weight:800; color:var(--accent); margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+            <span>🛡️ ${v.title}</span>
+            <input type="checkbox" checked class="vacancy-group-check" data-vidx="${vIdx}">
+         </div>
+         <div style="display:flex; flex-wrap:wrap; gap:6px;">
+            ${(v.requirements || []).map((r, rIdx) => `
+               <div class="badge badge--dark" style="font-size:11px; display:flex; align-items:center; gap:5px;">
+                  ${r}
+                  <input type="checkbox" checked class="intel-check" data-vidx="${vIdx}" data-ridx="${rIdx}" data-label="${r}">
+               </div>
+            `).join('')}
+         </div>
       </div>
     `).join('');
   }
