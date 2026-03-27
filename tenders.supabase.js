@@ -185,21 +185,27 @@
            method: 'POST',
            headers: { 'Content-Type': 'application/json' },
            body: JSON.stringify({
-              message: `Analiza esta licitación y extrae: 
-              1) Un resumen técnico/estratégico del proyecto (max 300 caracteres). 
-              2) Una lista de vacantes o perfiles de personal requeridos. 
-              IMPORTANTE: Los requisitos deben ser GENERALES y CATEGORIZADOS (labels cortos), no descripciones largas. 
-              Ej: En lugar de "Técnicos certificados para dejar sistemas operativos y emitir informes", usa "Técnicos Certificados".
-              Responde estrictamente en formato JSON: {"description": "...", "requirements": ["Perfil 1", "Perfil 2"]}. 
+              message: `Analiza esta licitación y extrae una ESTRUCTURA JERÁRQUICA DE VACANTES:
+              1) Un resumen técnico/estratégico (max 300 caracteres). 
+              2) Una lista de VACANTES, donde cada vacante tiene un TÍTULO y una lista de REQUISITOS específicos.
+              
+              IMPORTANTE: Agrupa los requisitos técnicos y operativos bajo su vacante correspondiente.
+              Responde estrictamente en formato JSON: 
+              {
+                "description": "...", 
+                "vacancies": [
+                  {"title": "Nombre Vacante 1", "requirements": ["Req 1", "Req 2"]},
+                  {"title": "Nombre Vacante 2", "requirements": ["Req 3", "Req 4"]}
+                ]
+              }
               Texto: ${text.substring(0, 4000)}`,
-              meta: { task: "tender_deep_extraction", context: "Industrias Stark" }
+              meta: { task: "tender_hierarchical_extraction", context: "Nivel God Industrias Stark" }
            })
         });
         const data = await res.json();
         let payload = Array.isArray(data) ? data[0] : data;
-        let finalData = { description: "", requirements: [] };
+        let finalData = { description: "", vacancies: [] };
 
-        // Intentar parsear si viene como string
         const textResp = payload.output || payload.text || payload.reply || "";
         if (typeof textResp === 'string' && textResp.includes('{')) {
            try {
@@ -209,23 +215,20 @@
            } catch(e) { console.warn("JSON Parse err", e); }
         }
 
-        // Si falló el parse o no tiene la estructura, usamos lo que haya
-        if (!finalData.requirements?.length) {
-           const reqs = await detectRequirementsHeuristic(text);
-           finalData.requirements = reqs.map(r => r.label);
-           if (!finalData.description) finalData.description = "Licitación analizada mediante motor heurístico Stark. Revise los requisitos detectados.";
+        // Respaldo heurístico si la IA no entregó vacantes estructuradas
+        if (!finalData.vacancies?.length) {
+           const legacyReqs = await detectRequirementsHeuristic(text);
+           finalData.vacancies = [{ title: "Perfiles Detectados", requirements: legacyReqs.map(r => r.label) }];
         }
 
         return {
            description: finalData.description || "",
-           requirements: (finalData.requirements || []).map(s => ({ label: s, id: s.toLowerCase().replace(/\s+/g, '_') }))
+           vacancies: finalData.vacancies || []
         };
      } catch (e) {
-        updateScanLog("Enlace n8n offline o error de red. Activando Respaldo Heurístico...");
-        const reqs = detectRequirementsHeuristic(text);
         return {
-           description: "Error de conexión con el núcleo JARVIS. Se activó el respaldo local para detección de requisitos básicos.",
-           requirements: reqs
+           description: "Error de conexión con el núcleo JARVIS. Se activó el respaldo local.",
+           vacancies: [{ title: "Respaldo Local", requirements: (await detectRequirementsHeuristic(text)).map(r => r.label) }]
         };
      }
   }
@@ -282,7 +285,14 @@
   const btnImportIntel = $('#btnImportIntel');
   if (btnImportIntel) {
     btnImportIntel.onclick = () => {
-      const selected = Array.from(document.querySelectorAll('.intel-check:checked')).map(i => i.dataset.label);
+      // Recolectar vacantes con sus requisitos seleccionados
+      const vCards = Array.from(document.querySelectorAll('.vacancy-group-check:checked')).map(vc => {
+        const vIdx = vc.dataset.vidx;
+        const title = vc.closest('.card').querySelector('span').textContent.replace('🛡️ ', '');
+        const requirements = Array.from(document.querySelectorAll(`.intel-check[data-vidx="${vIdx}"]:checked`)).map(i => i.dataset.label);
+        return { title, requirements };
+      }).filter(v => v.requirements.length > 0);
+
       const description = $('#intelDesc')?.value || "";
       
       tenderIdInput.value = '';
@@ -291,11 +301,19 @@
       tenderDescInput.value = description;
       
       reqContainer.innerHTML = '';
-      selected.forEach(r => addReqInput(r));
+      
+      // NIVEL GOD: Almacenamos la estructura jerárquica
+      // Para retrocompatibilidad y visualización, creamos inputs especiales si es necesario,
+      // pero el guardado usará el JSON de vCards.
+      vCards.forEach(v => {
+        v.requirements.forEach(r => {
+           addReqInput(`[${v.title}] ${r}`);
+        });
+      });
       
       closeModal(smartModal);
       openModal(tenderModal);
-      window.notificar?.(`Importados ${selected.length} requisitos y descripción de IA`, "success");
+      window.notificar?.(`Importadas ${vCards.length} vacantes con sus requisitos`, "success");
     };
   }
 
@@ -325,21 +343,41 @@
     }
 
     if (tendersBody) {
-      tendersBody.innerHTML = filtered.map(t => `
-        <div class="t-row" style="border-bottom: 1px solid rgba(255,255,255,0.05); align-items: start;">
-          <div class="t-col-name" style="font-weight: 700; color: #fff;">${escapeHtml(t.name)}</div>
-          <div class="t-col-desc" style="color: rgba(255,255,255,0.8); font-size: 13.5px;">${escapeHtml(t.description)}</div>
-          <div class="t-col-reqs" style="display: flex; gap: 6px; flex-wrap: wrap;">
-            ${(t.requirements || []).slice(0, 8).map(r => `<span class="badge badge--info" style="font-size:11px;">${escapeHtml(r)}</span>`).join('')}
-            ${(t.requirements || []).length > 8 ? `<span class="badge" style="opacity:0.6">+${t.requirements.length - 8} más</span>` : ''}
+      tendersBody.innerHTML = filtered.map(t => {
+        // Agrupar por vacante para el renderizado
+        const vGroups = {};
+        (t.requirements || []).forEach(r => {
+           const m = r.match(/^\[(.*?)\]\s*(.*)$/);
+           const v = m ? m[1] : "General";
+           const l = m ? m[2] : r;
+           if (!vGroups[v]) vGroups[v] = [];
+           vGroups[v].push(l);
+        });
+
+        return `
+          <div class="t-row" style="border-bottom: 1px solid rgba(255,255,255,0.05); align-items: start; padding: 20px 0;">
+            <div class="t-col-name" style="font-weight: 700; color: #fff;">${escapeHtml(t.name)}</div>
+            <div class="t-col-desc" style="color: rgba(255,255,255,0.8); font-size: 13.5px; line-height:1.5;">${escapeHtml(t.description)}</div>
+            <div class="t-col-reqs" style="display: flex; flex-direction: column; gap: 12px;">
+              ${Object.keys(vGroups).slice(0, 3).map(v => `
+                <div class="v-tag-group">
+                   <div style="font-size:9px; text-transform:uppercase; color:var(--accent); font-weight:800; margin-bottom:4px; opacity:0.8;">${escapeHtml(v)}</div>
+                   <div style="display:flex; gap:4px; flex-wrap:wrap;">
+                      ${vGroups[v].slice(0, 4).map(req => `<span class="badge badge--info" style="font-size:10px; padding:2px 6px;">${escapeHtml(req)}</span>`).join('')}
+                      ${vGroups[v].length > 4 ? `<span style="font-size:10px; opacity:0.5; align-self:center;">+${vGroups[v].length - 4}</span>` : ''}
+                   </div>
+                </div>
+              `).join('')}
+              ${Object.keys(vGroups).length > 3 ? `<div style="font-size:10px; color:var(--muted); font-style:italic;">+${Object.keys(vGroups).length - 3} vacantes más</div>` : ''}
+            </div>
+            <div class="t-col-actions" style="text-align: right; display: flex; gap: 6px; justify-content: flex-end; align-self: center;">
+              <button class="btn btn--mini btn--primary btn-match" data-id="${t.id}" style="padding: 8px 15px;">Evaluar</button>
+              <button class="btn btn--mini btn-edit" data-id="${t.id}">✏️</button>
+              <button class="btn btn--mini btn-delete" data-id="${t.id}" style="color:#f87171">🗑️</button>
+            </div>
           </div>
-          <div class="t-col-actions" style="text-align: right; display: flex; gap: 6px; justify-content: flex-end;">
-            <button class="btn btn--mini btn--primary btn-match" data-id="${t.id}">Evaluar</button>
-            <button class="btn btn--mini btn-edit" data-id="${t.id}">✏️</button>
-            <button class="btn btn--mini btn-delete" data-id="${t.id}" style="color:#f87171">🗑️</button>
-          </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
 
       document.querySelectorAll('.btn-match').forEach(btn => btn.onclick = () => runMatchmaking(filtered.find(x => x.id === btn.dataset.id)));
       document.querySelectorAll('.btn-edit').forEach(btn => btn.onclick = () => editTender(filtered.find(x => x.id === btn.dataset.id)));
@@ -419,143 +457,181 @@
     const { data: ex } = await window.supabase.from('medical_exam_records').select('*');
     const normRut = (r) => String(r || "").replace(/[^0-9kK]/g, "").toUpperCase();
 
-    const reqs = tender.requirements || [];
+    const rawReqs = tender.requirements || [];
+    
+    // NIVEL GOD: Agrupar requisitos por vacante si tienen el formato [Vacante]
+    const vacancyGroups = {};
+    rawReqs.forEach(r => {
+      const match = r.match(/^\[(.*?)\]\s*(.*)$/);
+      const vTitle = match ? match[1] : "General";
+      const reqLabel = match ? match[2] : r;
+      if (!vacancyGroups[vTitle]) vacancyGroups[vTitle] = [];
+      vacancyGroups[vTitle].push(reqLabel);
+    });
 
-    const results = ws.map(w => {
-      const docs = [
-        ...(cs || []).filter(c => c.worker_id === w.id || normRut(c.rut) === normRut(w.rut)), 
-        ...(ex || []).filter(e => normRut(e.rut) === normRut(w.rut))
-      ];
-      
-      const workerIntelTokens = [
-        ...starkNormalize(w.full_name),
-        ...starkNormalize(w.company_name),
-        ...docs.flatMap(d => [...starkNormalize(d.credential_name), ...starkNormalize(d.exam_type)])
-      ];
-      
-      const matched = reqs.filter(req => {
-        const reqTokens = starkNormalize(req);
-        if (reqTokens.length === 0) return false;
-        const intersection = reqTokens.filter(t => workerIntelTokens.includes(t));
-        return (intersection.length / reqTokens.length) >= 0.5 || (reqTokens.length >= 2 && intersection.length >= 2);
-      });
+    const resultsByVacancy = {};
 
-      const score = reqs.length > 0 ? (matched.length / reqs.length) * 100 : 0;
-      
-      return { 
-        name: w.full_name, 
-        id: w.rut, 
-        detail: w.company_name, 
-        allReqs: reqs,
-        matched,
-        score 
-      };
-    }).filter(r => r.score > 0).sort((a,b) => b.score - a.score);
+    Object.keys(vacancyGroups).forEach(vTitle => {
+      const vReqs = vacancyGroups[vTitle];
+      resultsByVacancy[vTitle] = ws.map(w => {
+        const docs = [
+          ...(cs || []).filter(c => c.worker_id === w.id || normRut(c.rut) === normRut(w.rut)), 
+          ...(ex || []).filter(e => normRut(e.rut) === normRut(w.rut))
+        ];
+        const workerIntelTokens = [
+          ...starkNormalize(w.full_name),
+          ...starkNormalize(w.company_name),
+          ...docs.flatMap(d => [...starkNormalize(d.credential_name), ...starkNormalize(d.exam_type)])
+        ];
+        
+        const matched = vReqs.filter(req => {
+          const reqTokens = starkNormalize(req);
+          const intersection = reqTokens.filter(t => workerIntelTokens.includes(t));
+          return (intersection.length > 0 && reqTokens.length <= 1) || 
+                 (intersection.length >= 1 && reqTokens.some(rt => rt.length > 5 && workerIntelTokens.includes(rt))) ||
+                 (intersection.length / reqTokens.length) >= 0.25;
+        });
 
-    renderMatchResults(results);
+        // Match si el título de la vacante coincide o si calza requisitos
+        const titleMatch = starkNormalize(vTitle).some(t => workerIntelTokens.includes(t));
+        const finalMatched = matched;
+        if (titleMatch && !finalMatched.includes(vTitle)) {
+           // Si no hay requisitos que calzaran pero el título sí, le damos un boost
+        }
+
+        const score = vReqs.length > 0 ? (finalMatched.length / vReqs.length) * 100 : (titleMatch ? 100 : 0);
+        
+        return { name: w.full_name, id: w.rut, detail: w.company_name, allReqs: vReqs, matched: finalMatched, score, titleMatch };
+      }).filter(r => r.score > 0 || r.titleMatch).sort((a,b) => b.score - a.score);
+    });
+
+    renderHierarchicalResults(resultsByVacancy);
   }
 
   async function matchCandidates(tender) {
     const { data: cand } = await window.supabase.from('candidates').select('*');
     if (!cand) return;
 
-    // PROTOCOLO CEREBRO: Búsqueda focalizada por candidatos activos
     const candIds = cand.map(c => c.id);
     const { data: docs } = await window.supabase.from('client_documents').select('*').in('metadata->candidate_id', candIds);
     const docIds = (docs || []).map(d => d.id);
-    
-    // Solo traemos fragmentos relevantes para optimizar memoria
     const { data: chunks } = await window.supabase.from('document_chunks').select('*').in('metadata->document_id', docIds);
 
-    const reqs = tender.requirements || [];
-    
-    const results = cand.map(c => {
-      const candidateDocs = (docs || []).filter(d => d.metadata?.candidate_id === c.id);
-      const docIdsForCand = candidateDocs.map(d => d.id);
-      const candidateChunks = (chunks || []).filter(ch => docIdsForCand.includes(ch.metadata?.document_id) || ch.metadata?.candidate_id === c.id);
+    const rawReqs = tender.requirements || [];
+    const vacancyGroups = {};
+    rawReqs.forEach(r => {
+      const match = r.match(/^\[(.*?)\]\s*(.*)$/);
+      const vTitle = match ? match[1] : "General";
+      const reqLabel = match ? match[2] : r;
+      if (!vacancyGroups[vTitle]) vacancyGroups[vTitle] = [];
+      vacancyGroups[vTitle].push(reqLabel);
+    });
 
-      const deepContent = candidateChunks.map(ch => ch.content).join(" ");
-      const candidateTokens = [
-        ...starkNormalize(c.nombre_completo),
-        ...starkNormalize(c.profesion),
-        ...starkNormalize(c.cargo_a_desempenar),
-        ...starkNormalize(c.nombre_tokens_clave),
-        ...starkNormalize(deepContent)
-      ];
+    const resultsByVacancy = {};
 
-      const matched = reqs.filter(req => {
-        const reqTokens = starkNormalize(req);
-        if (reqTokens.length === 0) return false;
-        const intersection = reqTokens.filter(t => candidateTokens.includes(t));
-        return (intersection.length / reqTokens.length) >= 0.5 || (reqTokens.length >= 2 && intersection.length >= 2);
-      });
+    Object.keys(vacancyGroups).forEach(vTitle => {
+      const vReqs = vacancyGroups[vTitle];
+      resultsByVacancy[vTitle] = cand.map(c => {
+        const candidateDocs = (docs || []).filter(d => d.metadata?.candidate_id === c.id);
+        const docIdsForCand = candidateDocs.map(d => d.id);
+        const candidateChunks = (chunks || []).filter(ch => docIdsForCand.includes(ch.metadata?.document_id) || ch.metadata?.candidate_id === c.id);
+        const deepContent = candidateChunks.map(ch => ch.content).join(" ");
+        const candidateTokens = [
+          ...starkNormalize(c.nombre_completo),
+          ...starkNormalize(c.profesion),
+          ...starkNormalize(c.cargo_a_desempenar),
+          ...starkNormalize(c.nombre_tokens_clave),
+          ...starkNormalize(deepContent)
+        ];
 
-      const score = reqs.length > 0 ? (matched.length / reqs.length) * 100 : 0;
-      
-      return { 
-        name: c.nombre_completo, 
-        id: c.profesion || 'Candidato', 
-        idx: c.id,
-        allReqs: reqs,
-        matched,
-        isCandidate: true, 
-        score 
-      };
-    }).filter(r => r.score > 0).sort((a,b) => b.score - a.score);
+        const matched = vReqs.filter(req => {
+          const reqTokens = starkNormalize(req);
+          const intersection = reqTokens.filter(t => candidateTokens.includes(t));
+          return (intersection.length > 0 && reqTokens.length <= 1) || 
+                 (intersection.length >= 1 && reqTokens.some(rt => rt.length > 5 && candidateTokens.includes(rt))) ||
+                 (intersection.length / reqTokens.length) >= 0.25;
+        });
 
-    renderMatchResults(results);
+        const titleTokens = starkNormalize(vTitle);
+        const titleMatch = titleTokens.some(t => candidateTokens.includes(t));
+        
+        const score = vReqs.length > 0 ? (matched.length / vReqs.length) * 100 : (titleMatch ? 100 : 0);
+        
+        return { 
+          name: c.nombre_completo, 
+          id: c.profesion || 'Candidato', 
+          idx: c.id,
+          allReqs: vReqs,
+          matched,
+          isCandidate: true, 
+          score,
+          titleMatch
+        };
+      }).filter(r => r.score > 0 || r.titleMatch).sort((a,b) => b.score - a.score);
+    });
+
+    renderHierarchicalResults(resultsByVacancy);
   }
 
-  function renderMatchResults(res) {
-    if (matchBody) {
-      if (res.length === 0) {
-        matchBody.innerHTML = '<div style="padding:40px; text-align:center; color:var(--muted);">No se encontraron perfiles con calce para las vacantes detectadas.</div>';
-        return;
-      }
-
-      matchBody.innerHTML = `
-        <div class="match-grid">
-          ${res.slice(0, 15).map(r => {
-            const score = r.score || 0;
-            const color = score >= 80 ? 'var(--ok)' : (score >= 50 ? 'var(--accent)' : '#f59e0b');
-            return `
-              <div class="match-card">
-                <div class="match-card__header">
-                  <div class="match-card__meta">
-                    <h4>${escapeHtml(r.name)}</h4>
-                    <span>${escapeHtml(r.id)}</span>
-                  </div>
-                  <div class="match-score-badge" style="color:${color}; border-color:${color}44; background:${color}11">
-                    ${score.toFixed(0)}%
-                  </div>
-                </div>
-
-                <div class="match-progress-container">
-                  <div class="match-progress-bar" style="width: ${score}%; background: ${color};"></div>
-                </div>
-
-                <div class="match-card__status">
-                  <div style="font-weight:700; margin-bottom:8px; display:flex; align-items:center; gap:5px; font-size:12px;">
-                    Calce de Perfil (${r.matched.length}/${r.allReqs.length})
-                  </div>
-                  <div style="display:flex; flex-wrap:wrap; gap:4px;">
-                    ${r.allReqs.map(req => {
-                      const isMatch = r.matched.includes(req);
-                      return `<span class="badge" style="font-size:9px; padding:2px 6px; opacity:${isMatch ? 1 : 0.3}; background:${isMatch ? 'rgba(34,211,238,0.2)' : 'transparent'}; border:1px solid ${isMatch ? 'var(--accent)' : 'rgba(255,255,255,0.1)'}">${escapeHtml(req)}</span>`;
-                    }).join('')}
-                  </div>
-                </div>
-
-                <div style="display:flex; gap:8px; margin-top:auto;">
-                  ${r.isCandidate ? `<a href="candidate.html?id=${encodeURIComponent(r.idx || r.id)}" class="btn btn--mini btn--primary" style="flex:1">Ver Perfil</a>` : ''}
-                  <button class="btn btn--mini" style="flex:1">Detalles</button>
-                </div>
-              </div>
-            `;
-          }).join('')}
-        </div>
-      `;
+  function renderHierarchicalResults(groupedRes) {
+    if (!matchBody) return;
+    
+    const vacancyTitles = Object.keys(groupedRes);
+    if (vacancyTitles.length === 0 || vacancyTitles.every(t => groupedRes[t].length === 0)) {
+       matchBody.innerHTML = '<div style="padding:40px; text-align:center; color:var(--muted);">No se encontraron perfiles con calce jerárquico.</div>';
+       return;
     }
+
+    matchBody.innerHTML = vacancyTitles.map(vTitle => {
+       const res = groupedRes[vTitle];
+       if (res.length === 0) return '';
+       
+       return `
+         <div class="vacancy-section" style="margin-bottom:30px;">
+            <div style="font-size:16px; font-weight:800; color:var(--accent); margin-bottom:15px; display:flex; align-items:center; gap:10px; border-left:4px solid var(--accent); padding-left:15px;">
+               🛡️ VACANTE: ${escapeHtml(vTitle)}
+               <span style="font-size:11px; font-weight:400; color:rgba(255,255,255,0.5);">(${res.length} perfiles detectados)</span>
+            </div>
+            <div class="match-grid">
+               ${res.slice(0, 8).map(r => {
+                 const score = r.score || (r.titleMatch ? 50 : 0);
+                 const color = score >= 80 ? 'var(--ok)' : (score >= 50 ? 'var(--accent)' : '#f59e0b');
+                 return `
+                   <div class="match-card">
+                     <div class="match-card__header">
+                       <div class="match-card__meta">
+                         <h4>${escapeHtml(r.name)}</h4>
+                         <span>${escapeHtml(r.id)}</span>
+                       </div>
+                       <div class="match-score-badge" style="color:${color}; border-color:${color}44; background:${color}11">
+                         ${score.toFixed(0)}%
+                       </div>
+                     </div>
+                     <div class="match-progress-container">
+                       <div class="match-progress-bar" style="width: ${score}%; background: ${color};"></div>
+                     </div>
+                     <div class="match-card__status">
+                       <div style="font-weight:700; margin-bottom:8px; display:flex; align-items:center; gap:5px; font-size:11px;">
+                         Calce de Requisitos (${r.matched.length}/${r.allReqs.length})
+                       </div>
+                       <div style="display:flex; flex-wrap:wrap; gap:4px;">
+                         ${r.allReqs.map(req => {
+                           const isMatch = r.matched.includes(req);
+                           return `<span class="badge" style="font-size:9px; padding:2px 6px; opacity:${isMatch ? 1 : 0.3}; background:${isMatch ? 'rgba(34,211,238,0.2)' : 'transparent'}; border:1px solid ${isMatch ? 'var(--accent)' : 'rgba(255,255,255,0.1)'}">${escapeHtml(req)}</span>`;
+                         }).join('')}
+                       </div>
+                     </div>
+                     <div style="display:flex; gap:8px; margin-top:auto;">
+                       ${r.isCandidate ? `<a href="candidate.html?id=${encodeURIComponent(r.idx || r.id)}" class="btn btn--mini btn--primary" style="flex:1">Ver Perfil</a>` : ''}
+                       <button class="btn btn--mini" style="flex:1">Detalles</button>
+                     </div>
+                   </div>
+                 `;
+               }).join('')}
+            </div>
+         </div>
+       `;
+    }).join('');
   }
 
   document.addEventListener('DOMContentLoaded', loadTenders);
