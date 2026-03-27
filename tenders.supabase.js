@@ -602,39 +602,137 @@
        return;
     }
 
+    // --- PROTOCOLO STARK: CÁLCULO ESTRATÉGICO ---
+    let okCount = 0;
+    let criticalCertMissing = false;
+    const recommendations = [];
+    const coverageDetails = [];
+
+    vacancyTitles.forEach(title => {
+      const res = groupedRes[title];
+      const bestScore = res.length > 0 ? Math.max(...res.map(r => r.score)) : 0;
+      
+      let status = "missing";
+      if (bestScore >= 80) { status = "ok"; okCount++; }
+      else if (bestScore >= 40) status = "partial";
+
+      coverageDetails.push({ title, status, bestScore });
+
+      // Verificación de Certificaciones Críticas
+      const sample = res[0]; // All in group share same reqs
+      if (sample && sample.allReqs) {
+        sample.allReqs.forEach(req => {
+          if (req.toLowerCase().includes("certific") || req.toLowerCase().includes("carnet") || req.toLowerCase().includes("os10")) {
+            const hasMatch = res.some(r => r.matched.includes(req));
+            if (!hasMatch) criticalCertMissing = true;
+          }
+        });
+      }
+    });
+
+    const coveragePct = vacancyTitles.length > 0 ? Math.round((okCount / vacancyTitles.length) * 100) : 0;
+    
+    // Risk Assessment
+    let riskLevel = "low";
+    let riskMotive = "Cobertura y certificaciones en nivel óptimo.";
+    if (coveragePct < 50 || criticalCertMissing) {
+      riskLevel = "high";
+      riskMotive = criticalCertMissing ? "Falta certificación clave en perfiles detectados." : "Cobertura crítica insuficiente (<50%).";
+    } else if (coveragePct < 85) {
+      riskLevel = "medium";
+      riskMotive = "Cobertura incompleta en vacantes específicas.";
+    }
+
+    // Recommendations Engine
+    if (coveragePct < 100) {
+      const partials = coverageDetails.filter(d => d.status !== 'ok');
+      if (partials.length > 0) {
+        const listText = partials.length > 3 
+          ? `${partials.slice(0, 3).map(p => p.title).join(', ')} y ${partials.length - 3} perfiles más`
+          : partials.map(p => p.title).join(', ');
+        recommendations.push(`Reforzar pipeline para: ${listText}`);
+      }
+      recommendations.push("Optimizar búsqueda en región: Antofagasta");
+    }
+    if (criticalCertMissing) recommendations.push("Contratar especialistas con certificación OS10/Carnet");
+    if (recommendations.length === 0) recommendations.push("Protocolo de Vigilancia: Operación en nivel Óptimo.");
+
+    // Render Strategic HUD
+    const strategicHudHtml = `
+      <div class="stark-strategic-hud">
+        <div class="strategic-stat">
+          <label>Cobertura de Licitación</label>
+          <div class="val-big">${coveragePct}%</div>
+          <div class="coverage-status" style="flex-wrap:wrap; gap:4px; max-width:200px;">
+            ${coverageDetails.map((d, i) => `
+              <div class="cov-indicator cov--${d.status}" 
+                   title="${d.title}: ${d.bestScore.toFixed(0)}%"
+                   onclick="document.getElementById('v-sec-${i}').scrollIntoView({behavior:'smooth'}); document.getElementById('v-sec-${i}').style.background='rgba(34,211,238,0.1)';" 
+                   style="cursor:pointer;"></div>`).join('')}
+          </div>
+        </div>
+        
+        <div class="strategic-stat">
+          <label>Análisis de Riesgo</label>
+          <div style="margin-top:5px;">
+            <span class="risk-badge risk-badge--${riskLevel}">${riskLevel === 'high' ? 'ALTO' : (riskLevel === 'medium' ? 'MEDIO' : 'BAJO')}</span>
+          </div>
+          <div style="font-size:11px; color:rgba(255,255,255,0.6); margin-top:10px; font-weight:600;">MOTIVO: ${riskMotive.toUpperCase()}</div>
+        </div>
+
+        <div class="strategic-stat">
+          <label>Recomendación Táctica</label>
+          <ul class="reco-list" style="margin-top:5px;">
+            ${recommendations.slice(0, 3).map(r => `<li class="reco-item">${r}</li>`).join('')}
+          </ul>
+        </div>
+      </div>
+    `;
+
     matchBody.innerHTML = `
+      ${strategicHudHtml}
       <div style="margin-bottom:20px; padding:10px; background:rgba(34,211,238,0.05); border-radius:8px; border:1px solid rgba(34,211,238,0.1); font-size:12px; color:var(--accent); text-align:center; letter-spacing:1px;">
          📡 ESCANEO COMPLETO: ${totalFound} PERFILES DETECTADOS EN ${vacancyTitles.length} CAPAS
       </div>
       <div class="vacancy-accordion">
         ${vacancyTitles.map((vTitle, idx) => {
            const res = groupedRes[vTitle];
-           if (res.length === 0) return '';
+           const vCoverage = coverageDetails.find(d => d.title === vTitle);
+           const isMissing = res.length === 0;
            
            return `
-             <div class="vacancy-section" style="margin-bottom:15px; border: 1px solid rgba(255,255,255,0.05); border-radius:12px; overflow:hidden; background:rgba(255,255,255,0.01);">
+             <div class="vacancy-section" id="v-sec-${idx}" style="margin-bottom:15px; border: 1px solid ${isMissing ? 'rgba(239, 68, 68, 0.3)' : 'rgba(255,255,255,0.05)'}; border-radius:12px; overflow:hidden; background:${isMissing ? 'rgba(239, 68, 68, 0.05)' : 'rgba(255,255,255,0.01)'};">
                 <div class="vacancy-header" 
                      onclick="this.nextElementSibling.classList.toggle('is-collapsed'); this.querySelector('.toggle-icon').textContent = this.nextElementSibling.classList.contains('is-collapsed') ? '➕' : '➖'"
-                     style="padding:15px 20px; background:rgba(255,255,255,0.03); cursor:pointer; display:flex; justify-content:space-between; align-items:center; transition: background 0.3s;"
-                     onmouseover="this.style.background='rgba(34,211,238,0.05)'"
-                     onmouseout="this.style.background='rgba(255,255,255,0.03)'">
-                   <div style="font-size:15px; font-weight:800; color:var(--accent); display:flex; align-items:center; gap:12px;">
+                     style="padding:15px 20px; background:${isMissing ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.03)'}; cursor:pointer; display:flex; justify-content:space-between; align-items:center; transition: background 0.3s;"
+                     onmouseover="this.style.background='${isMissing ? 'rgba(239,68,68,0.15)' : 'rgba(34,211,238,0.05)'}'"
+                     onmouseout="this.style.background='${isMissing ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.03)'}'">
+                   <div style="font-size:15px; font-weight:800; color:${isMissing ? '#f87171' : 'var(--accent)'}; display:flex; align-items:center; gap:12px;">
                       <span class="toggle-icon" style="font-size:10px; opacity:0.6;">➖</span>
                       🛡️ ${escapeHtml(vTitle)}
-                      <span style="font-size:11px; font-weight:400; color:rgba(34,211,238,0.6); background:rgba(34,211,238,0.1); padding:2px 8px; border-radius:10px;">
-                         ${res.length} Match
+                      <span style="font-size:11px; font-weight:400; color:${isMissing ? '#fca5a5' : 'rgba(34,211,238,0.6)'}; background:${isMissing ? 'rgba(239,68,68,0.2)' : 'rgba(34,211,238,0.1)'}; padding:2px 8px; border-radius:10px;">
+                         ${isMissing ? 'SIN COBERTURA' : res.length + ' Match'}
                       </span>
                    </div>
-                   <div style="font-size:12px; opacity:0.5;">Click para expandir/contraer</div>
+                   <div style="font-size:12px; opacity:0.5;">${isMissing ? 'Ver criterios faltantes' : 'Click para expandir'}</div>
                 </div>
                 <div class="vacancy-content" style="padding:20px; transition: all 0.3s ease-out;">
+                   ${isMissing ? `
+                     <div style="padding:20px; text-align:center; background:rgba(239, 68, 68, 0.05); border-radius:8px; border:1px dashed rgba(239, 68, 68, 0.3);">
+                        <p style="color:#fca5a5; font-size:13px; font-weight:700; margin-bottom:12px;">❌ NO SE DETECTARON PERFILES PARA ESTA VACANTE</p>
+                        <div style="display:flex; flex-wrap:wrap; gap:6px; justify-content:center;">
+                           ${(vacancyGroups[vTitle] || []).map(req => `
+                             <span class="badge" style="background:rgba(239,68,68,0.1); border-color:rgba(239,68,68,0.2); color:#fca5a5; font-size:10px;">
+                                ⚠️ FALTANTE: ${escapeHtml(req)}
+                             </span>
+                           `).join('')}
+                        </div>
+                     </div>
+                   ` : `
                    <div class="match-grid">
                       ${res.slice(0, 15).map((r, rIdx) => {
                         const score = r.score || (r.titleMatch ? 50 : 0);
                         const color = score >= 80 ? 'var(--ok)' : (score >= 50 ? 'var(--accent)' : '#f59e0b');
-                        
-                        // ID temporal para el botón de detalles
-                        const btnId = `btn-det-${idx}-${rIdx}`;
                         
                         return `
                           <div class="match-card">
@@ -657,7 +755,14 @@
                               <div style="display:flex; flex-wrap:wrap; gap:4px;">
                                 ${r.allReqs.map(req => {
                                   const isMatch = r.matched.includes(req);
-                                  return `<span class="badge" style="font-size:9px; padding:2px 6px; opacity:${isMatch ? 1 : 0.3}; background:${isMatch ? 'rgba(34,211,238,0.2)' : 'transparent'}; border:1px solid ${isMatch ? 'var(--accent)' : 'rgba(255,255,255,0.1)'}">${escapeHtml(req)}</span>`;
+                                  return `
+                                    <span class="badge" style="font-size:9px; padding:2px 6px; 
+                                          opacity:${isMatch ? 1 : 0.6}; 
+                                          background:${isMatch ? 'rgba(34,211,238,0.2)' : 'rgba(239,68,68,0.05)'}; 
+                                          border:1px solid ${isMatch ? 'var(--accent)' : 'rgba(239,68,68,0.2)'};
+                                          color:${isMatch ? '#fff' : '#fca5a5'}">
+                                      ${isMatch ? '✅' : '❌'} ${escapeHtml(req)}
+                                    </span>`;
                                 }).join('')}
                               </div>
                             </div>
@@ -672,6 +777,7 @@
                         `;
                       }).join('')}
                    </div>
+                   `}
                 </div>
              </div>
            `;
