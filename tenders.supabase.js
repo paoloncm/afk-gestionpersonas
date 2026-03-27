@@ -241,7 +241,8 @@
     const pdfjsLib = window['pdfjs-dist/build/pdf'];
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    // DISABLE WORKER: To avoid "Storage Blocked" errors in some browsers
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer, disableWorker: true }).promise;
     let fullText = "";
     for (let i = 1; i <= Math.min(pdf.numPages, 5); i++) {
        updateScanLog(`Analizando página ${i} de ${pdf.numPages}...`);
@@ -399,7 +400,12 @@
     if (!tender) return;
     window.lastTender = tender;
     if ($('#matchTitle')) $('#matchTitle').textContent = `Matchmaking JARVIS: ${tender.name}`;
-    if (matchBody) matchBody.innerHTML = '<div style="padding:20px">Iniciando escaneo...</div>';
+    if (matchBody) matchBody.innerHTML = `
+      <div style="padding:40px; text-align:center;">
+        <div class="scanning-spinner" style="width:40px; height:40px; border:3px solid var(--accent); border-top-color:transparent; border-radius:50%; margin:0 auto 20px; animation: spin 1s linear infinite;"></div>
+        <p style="color:var(--accent); font-weight:600; letter-spacing:1px;">ORQUESTANDO INTELIGENCIA STARK...</p>
+      </div>
+    `;
     openModal(matchModal);
     try {
       if (currentSource === 'workers') await matchWorkers(tender);
@@ -421,30 +427,30 @@
         ...(ex || []).filter(e => normRut(e.rut) === normRut(w.rut))
       ];
       
-      // Unificamos toda la "Intel" del trabajador (Credenciales + Exámenes + Perfil)
       const workerIntelTokens = [
         ...starkNormalize(w.full_name),
         ...starkNormalize(w.company_name),
         ...docs.flatMap(d => [...starkNormalize(d.credential_name), ...starkNormalize(d.exam_type)])
       ];
       
-      const matchedRoles = reqs.filter(req => {
+      const matched = reqs.filter(req => {
         const reqTokens = starkNormalize(req);
         if (reqTokens.length === 0) return false;
         const intersection = reqTokens.filter(t => workerIntelTokens.includes(t));
         return (intersection.length / reqTokens.length) >= 0.5 || (reqTokens.length >= 2 && intersection.length >= 2);
       });
 
-      const score = matchedRoles.length > 0 ? 100 : 0;
+      const score = reqs.length > 0 ? (matched.length / reqs.length) * 100 : 0;
       
       return { 
         name: w.full_name, 
         id: w.rut, 
         detail: w.company_name, 
-        matched: matchedRoles, 
+        allReqs: reqs,
+        matched,
         score 
       };
-    }).filter(r => r.score > 0).sort((a,b) => b.matched.length - a.matched.length);
+    }).filter(r => r.score > 0).sort((a,b) => b.score - a.score);
 
     renderMatchResults(results);
   }
@@ -453,26 +459,21 @@
     const { data: cand } = await window.supabase.from('candidates').select('*');
     if (!cand) return;
 
-    // PROTOCOLO CEREBRO: Búsqueda profunda en fragmentos vectorizados
-    const { data: chunks } = await window.supabase.from('document_chunks').select('*');
-    const { data: docs } = await window.supabase.from('client_documents').select('*');
+    // PROTOCOLO CEREBRO: Búsqueda focalizada por candidatos activos
+    const candIds = cand.map(c => c.id);
+    const { data: docs } = await window.supabase.from('client_documents').select('*').in('metadata->candidate_id', candIds);
+    const docIds = (docs || []).map(d => d.id);
+    
+    // Solo traemos fragmentos relevantes para optimizar memoria
+    const { data: chunks } = await window.supabase.from('document_chunks').select('*').in('metadata->document_id', docIds);
 
     const reqs = tender.requirements || [];
     
     const results = cand.map(c => {
-      // 1. Obtener todos los fragmentos asociados a este candidato
-      const candNameNorm = c.nombre_completo.toLowerCase();
-      const candidateDocs = (docs || []).filter(d => 
-        (d.category === 'Candidato CV' || d.category === 'CV') && 
-        (d.file_name?.toLowerCase().includes(candNameNorm) || d.metadata?.candidate_id === c.id)
-      );
-      
-      const docIds = candidateDocs.map(d => d.id);
-      const candidateChunks = (chunks || []).filter(ch => 
-        docIds.includes(ch.metadata?.document_id) || ch.metadata?.candidate_id === c.id
-      );
+      const candidateDocs = (docs || []).filter(d => d.metadata?.candidate_id === c.id);
+      const docIdsForCand = candidateDocs.map(d => d.id);
+      const candidateChunks = (chunks || []).filter(ch => docIdsForCand.includes(ch.metadata?.document_id) || ch.metadata?.candidate_id === c.id);
 
-      // 2. Unificar Inteligencia (Metadata + Deep Content)
       const deepContent = candidateChunks.map(ch => ch.content).join(" ");
       const candidateTokens = [
         ...starkNormalize(c.nombre_completo),
@@ -482,26 +483,25 @@
         ...starkNormalize(deepContent)
       ];
 
-      const matchedRoles = reqs.filter(req => {
+      const matched = reqs.filter(req => {
         const reqTokens = starkNormalize(req);
         if (reqTokens.length === 0) return false;
-        
-        // Match si al menos la mitad de los tokens importantes coinciden
         const intersection = reqTokens.filter(t => candidateTokens.includes(t));
         return (intersection.length / reqTokens.length) >= 0.5 || (reqTokens.length >= 2 && intersection.length >= 2);
       });
 
-      const score = matchedRoles.length > 0 ? 100 : 0;
+      const score = reqs.length > 0 ? (matched.length / reqs.length) * 100 : 0;
       
       return { 
         name: c.nombre_completo, 
         id: c.profesion || 'Candidato', 
         idx: c.id,
-        matched: matchedRoles, 
+        allReqs: reqs,
+        matched,
         isCandidate: true, 
         score 
       };
-    }).filter(r => r.score > 0).sort((a,b) => b.matched.length - a.matched.length);
+    }).filter(r => r.score > 0).sort((a,b) => b.score - a.score);
 
     renderMatchResults(results);
   }
@@ -517,7 +517,7 @@
         <div class="match-grid">
           ${res.slice(0, 15).map(r => {
             const score = r.score || 0;
-            const color = 'var(--ok)';
+            const color = score >= 80 ? 'var(--ok)' : (score >= 50 ? 'var(--accent)' : '#f59e0b');
             return `
               <div class="match-card">
                 <div class="match-card__header">
@@ -526,20 +526,23 @@
                     <span>${escapeHtml(r.id)}</span>
                   </div>
                   <div class="match-score-badge" style="color:${color}; border-color:${color}44; background:${color}11">
-                    APTO
+                    ${score.toFixed(0)}%
                   </div>
                 </div>
 
                 <div class="match-progress-container">
-                  <div class="match-progress-bar" style="width: 100%; background: ${color};"></div>
+                  <div class="match-progress-bar" style="width: ${score}%; background: ${color};"></div>
                 </div>
 
                 <div class="match-card__status">
-                  <div style="font-weight:700; margin-bottom:4px; display:flex; align-items:center; gap:5px;">
-                    🟢 Perfil para Vacante
+                  <div style="font-weight:700; margin-bottom:8px; display:flex; align-items:center; gap:5px; font-size:12px;">
+                    Calce de Perfil (${r.matched.length}/${r.allReqs.length})
                   </div>
-                  <div style="color:var(--muted); font-size:11px; line-height:1.4;">
-                    <strong>Disponible para:</strong><br>${r.matched.join(', ')}
+                  <div style="display:flex; flex-wrap:wrap; gap:4px;">
+                    ${r.allReqs.map(req => {
+                      const isMatch = r.matched.includes(req);
+                      return `<span class="badge" style="font-size:9px; padding:2px 6px; opacity:${isMatch ? 1 : 0.3}; background:${isMatch ? 'rgba(34,211,238,0.2)' : 'transparent'}; border:1px solid ${isMatch ? 'var(--accent)' : 'rgba(255,255,255,0.1)'}">${escapeHtml(req)}</span>`;
+                    }).join('')}
                   </div>
                 </div>
 
