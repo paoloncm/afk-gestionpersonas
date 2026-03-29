@@ -144,8 +144,8 @@ class AFKProcessor:
             "cargo_a_desempenar", "experiencia_total", "experiencia_en_empresa_actual",
             "exp_cargo_actual", "exp_proy_similares", "antecedentes_academicos",
             "experiencia_general", "experiencia_especifica", "otras_experiencias",
-            "evaluacion_general", "match_score", "status",
-            "cv_full_text", "cv_embedding"  # Add these once created in Supabase
+            "evaluacion_general", "match_score", "match_explicacion", "status",
+            "cv_full_text", "cv_embedding"
         }
         
         raw = cv_data.model_dump()
