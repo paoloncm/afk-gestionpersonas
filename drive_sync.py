@@ -26,9 +26,15 @@ class DriveSync:
                     env_creds = env_creds[1:-1]
                 
                 info = json.loads(env_creds)
+                
+                # Critical fix for JWT Signature: ensure newlines in private_key are real \n
+                if "private_key" in info:
+                    # Replace literal \n and double escaped \\n with actual newlines
+                    info["private_key"] = info["private_key"].replace("\\n", "\n")
+                
                 self.creds = service_account.Credentials.from_service_account_info(
                     info, scopes=self.scopes)
-                print("✅ Google Credentials loaded from environment variable.")
+                print("✅ Google Credentials loaded from environment variable (Auto-fixed newlines).")
             except Exception as e:
                 print(f"❌ Error parsing GOOGLE_CREDENTIALS environment variable: {e}")
                 print(f"DEBUG: Content starts with: {env_creds[:20]}...")
