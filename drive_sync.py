@@ -14,6 +14,8 @@ class DriveSync:
         self.scopes = ['https://www.googleapis.com/auth/drive']
         self.creds = None
         
+        # 1. Try environment variable (for Production/Railway)
+        env_creds = os.getenv("GOOGLE_CREDENTIALS")
         if env_creds:
             env_creds = env_creds.strip()
             try:
