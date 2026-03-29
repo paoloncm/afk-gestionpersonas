@@ -14,8 +14,6 @@ class DriveSync:
         self.scopes = ['https://www.googleapis.com/auth/drive']
         self.creds = None
         
-        # 1. Try environment variable (for Production/Railway)
-        env_creds = os.getenv("GOOGLE_CREDENTIALS")
         if env_creds:
             env_creds = env_creds.strip()
             try:
@@ -25,16 +23,27 @@ class DriveSync:
                 if env_creds.startswith('"') and env_creds.endswith('"'):
                     env_creds = env_creds[1:-1]
                 
-                info = json.loads(env_creds)
+                # Try to detect if it's Base64 (common fix for corrupted JSON pastes)
+                import base64
+                try:
+                    # Base64 strings usually don't start with '{'
+                    if not env_creds.startswith('{'):
+                        decoded_creds = base64.b64decode(env_creds).decode('utf-8')
+                        info = json.loads(decoded_creds)
+                        print("✅ Google Credentials decoded from Base64.")
+                    else:
+                        info = json.loads(env_creds)
+                except Exception:
+                    # Fallback to normal JSON if Base64 fails
+                    info = json.loads(env_creds)
                 
                 # Critical fix for JWT Signature: ensure newlines in private_key are real \n
                 if "private_key" in info:
-                    # Replace literal \n and double escaped \\n with actual newlines
                     info["private_key"] = info["private_key"].replace("\\n", "\n")
                 
                 self.creds = service_account.Credentials.from_service_account_info(
                     info, scopes=self.scopes)
-                print("✅ Google Credentials loaded from environment variable (Auto-fixed newlines).")
+                print("✅ Google Credentials loaded from environment variable.")
             except Exception as e:
                 print(f"❌ Error parsing GOOGLE_CREDENTIALS environment variable: {e}")
                 print(f"DEBUG: Content starts with: {env_creds[:20]}...")
