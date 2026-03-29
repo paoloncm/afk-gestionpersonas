@@ -19,7 +19,8 @@
   const kpiPctN6 = $("#kpi_pct_n6");
   const topCandidatesEl = $("#topCandidates");
 
-  const modal = $("#candidateModal");
+  const btnSyncDrive = document.getElementById("btnSyncDrive");
+  const modal = document.getElementById("candidateModal");
   const closeModalBtn = $(".close-modal");
   const candidateForm = $("#candidateForm");
 
@@ -67,10 +68,36 @@
     }
 
     if (btnNewCandidate) {
-      btnNewCandidate.onclick = () => {
-        if (modal) modal.classList.add("is-open");
-      };
-    }
+    btnNewCandidate.onclick = () => {
+      candidateForm.reset();
+      modal.classList.add("is-open");
+    };
+  }
+
+  if (btnSyncDrive) {
+    btnSyncDrive.onclick = async () => {
+      try {
+        window.notificar?.("🚀 Iniciando sincronización con Google Drive...", "info");
+        btnSyncDrive.disabled = true;
+        btnSyncDrive.textContent = "⌛ Sincronizando...";
+
+        const resp = await fetch('/api/sync-drive', { method: 'POST' });
+        const result = await resp.json();
+
+        if (result.ok) {
+          window.notificar?.("✅ Sincronización lanzada en segundo plano.", "success");
+        } else {
+          window.notificar?.("❌ Error: " + result.detail, "error");
+        }
+      } catch (err) {
+        console.error("Sync error:", err);
+        window.notificar?.("Error conectando con el servidor", "error");
+      } finally {
+        btnSyncDrive.disabled = false;
+        btnSyncDrive.textContent = "🔄 Sincronizar Drive";
+      }
+    };
+  }
 
     if (closeModalBtn) {
       closeModalBtn.onclick = () => {
@@ -121,8 +148,8 @@
 
           const candidateId = candData.id;
 
-          // 2. Handle CV File (Storage + n8n)
-          if (cvFile && cvFile.size > 0) {
+            // 2. Handle CV File — JARVIS Pipeline (via local API)
+            if (cvFile && cvFile.size > 0) {
             window.notificar?.("📦 Subiendo CV a Bóveda Stark...", "info");
             
             const safeName = cvFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
@@ -141,23 +168,28 @@
             }).select().single();
             if (docErr) throw docErr;
 
-            // Call n8n for Extraction + Vectorization (Protocolo Cerebro)
-            const { data: signedData } = await supabase.storage.from('tenders_and_docs').createSignedUrl(storagePath, 1200);
+            // 🔥 JARVIS Pipeline — Replaced n8n with /api/process-cv
+            const { data: signedData } = await supabase.storage.from('tenders_and_docs').createSignedUrl(storagePath, 3600);
             
-            const n8n_webhook_url = 'https://primary-production-aa252.up.railway.app/webhook/39501108-66d4-4117-99d1-7bc9cd21ca08';
-            
-            fetch(n8n_webhook_url, {
+            fetch('/api/process-cv', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'X-AFK-Secret': 'AFK_PRO_2024_SECURE_KEY' },
+              headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                task: "cv_extraction_vectorization",
                 candidate_id: candidateId,
-                document_id: docData.id,
+                document_id: docData?.id,
                 file_name: cvFile.name,
                 signed_url: signedData?.signedUrl,
-                context: "Industrias Stark - Ingesta Automática"
+                storage_path: storagePath
               })
-            }).catch(e => console.error("Error disparando n8n:", e));
+            }).then(r => r.json())
+              .then(result => {
+                if (result.ok) {
+                  window.notificar?.("✅ JARVIS procesó el CV exitosamente.", "success");
+                } else {
+                  console.warn("JARVIS warning:", result.detail);
+                }
+              })
+              .catch(e => console.error("Error disparando JARVIS pipeline:", e));
 
             window.notificar?.("🤖 JARVIS analizando CV en segundo plano...", "success");
           } else {

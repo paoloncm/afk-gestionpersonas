@@ -131,39 +131,23 @@
 
   async function loadCandidates() {
     try {
+      // Use v_candidate_summary: pre-deduplicated + stark_score pre-calculated in Postgres
       const { data, error } = await window.db
-        .from("candidates")
+        .from("v_candidate_summary")
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        // Fallback to raw table if view not yet created
+        console.warn("[analytics] v_candidate_summary not available, falling back...");
+        const fallback = await window.db.from("candidates").select("*").order("created_at", { ascending: false });
+        if (fallback.error) throw fallback.error;
+        allCandidates = fallback.data || [];
+      } else {
+        allCandidates = data || [];
+      }
 
-      const map = new Map();
-
-      (data || []).forEach((c) => {
-        const rutKey = normalizeRut(c.rut);
-        const nameKey = normalizeText(c.nombre_completo || "");
-        const key = rutKey || nameKey;
-
-        if (!key) return;
-
-        if (!map.has(key)) {
-          map.set(key, c);
-          return;
-        }
-
-        const prev = map.get(key);
-        const prevDate = prev?.updated_at || prev?.created_at || 0;
-        const currDate = c?.updated_at || c?.created_at || 0;
-
-        if (new Date(currDate) > new Date(prevDate)) {
-          map.set(key, c);
-        }
-      });
-
-      allCandidates = Array.from(map.values());
       filteredCandidates = [...allCandidates];
-
       console.log(`[analytics] candidates cargados: ${allCandidates.length}`);
     } catch (err) {
       console.error("[analytics] Error cargando candidates:", err);

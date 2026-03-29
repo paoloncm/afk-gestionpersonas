@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
@@ -10,382 +9,6 @@
   <link rel="stylesheet" href="styles.css">
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
-
-  <style>
-    :root {
-      --jarvis-cyan: var(--accent);
-      --jarvis-cyan-2: var(--accent-2);
-      --jarvis-green: var(--ok);
-      --jarvis-yellow: var(--warning);
-      --jarvis-red: var(--danger);
-      --jarvis-text: var(--text);
-      --jarvis-muted: var(--muted);
-      --jarvis-bg: var(--bg);
-      --jarvis-card: var(--surface);
-      --jarvis-border: var(--card-border);
-    }
-
-    #geoMap {
-      height: 420px;
-      border-radius: 22px;
-      overflow: hidden;
-      border: 1px solid rgba(103, 232, 249, 0.18);
-      box-shadow:
-        0 0 0 1px rgba(103, 232, 249, 0.08) inset,
-        0 0 30px rgba(0, 229, 255, 0.12),
-        0 0 80px rgba(0, 229, 255, 0.08);
-      background:
-        radial-gradient(circle at top, rgba(0, 229, 255, 0.12), transparent 35%),
-        linear-gradient(180deg, #020617 0%, #07111f 100%);
-    }
-
-    .leaflet-popup-content-wrapper {
-      background: rgba(2, 6, 23, 0.96);
-      color: #e2e8f0;
-      border: 1px solid rgba(103, 232, 249, 0.25);
-      border-radius: 16px;
-      box-shadow: 0 0 30px rgba(0, 229, 255, 0.14);
-    }
-
-    .leaflet-popup-tip {
-      background: rgba(2, 6, 23, 0.96);
-    }
-
-    .leaflet-container {
-      background: #020617;
-      font-family: Inter, system-ui, sans-serif;
-    }
-
-    .analytics-grid-2 {
-      display: grid;
-      grid-template-columns: 1.25fr 1fr;
-      gap: 18px;
-      align-items: stretch;
-    }
-
-    .analytics-grid-3 {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 18px;
-      align-items: stretch;
-    }
-
-    .kpi-grid-modern {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 16px;
-    }
-
-    .chart-box {
-      height: 300px;
-      position: relative;
-    }
-
-    .chart-box--small {
-      height: 260px;
-      position: relative;
-    }
-
-    .jarvis-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 18px;
-      align-items: stretch;
-    }
-
-    .jarvis-card {
-      position: relative;
-      min-height: 280px;
-      border-radius: 22px;
-      overflow: hidden;
-      border: 1px solid rgba(103, 232, 249, 0.12);
-      background:
-        radial-gradient(circle at top right, rgba(0, 229, 255, 0.08), transparent 28%),
-        linear-gradient(180deg, rgba(8, 15, 29, 0.98) 0%, rgba(5, 10, 20, 0.98) 100%);
-      box-shadow:
-        0 0 0 1px rgba(255, 255, 255, 0.02) inset,
-        0 20px 60px rgba(0, 0, 0, 0.35),
-        0 0 26px rgba(0, 229, 255, 0.06);
-    }
-
-    .jarvis-card::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      background:
-        linear-gradient(90deg, transparent 0%, rgba(103, 232, 249, 0.08) 50%, transparent 100%);
-      transform: translateX(-100%);
-      animation: jarvisScan 6s linear infinite;
-      opacity: .45;
-    }
-
-    .jarvis-card__inner {
-      position: relative;
-      z-index: 1;
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-      padding: 22px;
-    }
-
-    .jarvis-card__top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 16px;
-      border-bottom: 1px solid rgba(103, 232, 249, 0.1);
-      padding-bottom: 10px;
-    }
-
-    /* HUD Energy Lines (Stark Style) */
-    .hud-line {
-      position: absolute;
-      background: linear-gradient(90deg, transparent, #67e8f9, transparent);
-      height: 1px;
-      width: 100%;
-      top: 0;
-      left: -100%;
-      animation: hudScan 4s linear infinite;
-      opacity: 0.3;
-    }
-
-    @keyframes hudScan {
-      0% { left: -100%; }
-      50% { left: 100%; }
-      100% { left: 100%; }
-    }
-
-    .jarvis-ticker {
-      font-family: 'Courier New', Courier, monospace;
-      font-size: 11px;
-      color: #67e8f9;
-      background: rgba(0, 0, 0, 0.3);
-      padding: 4px 8px;
-      border-radius: 4px;
-      border: 1px solid rgba(103, 232, 249, 0.2);
-    }
-
-    .jarvis-card__title {
-      margin: 0;
-      font-size: 15px;
-      font-weight: 900;
-      text-transform: uppercase;
-      letter-spacing: .04em;
-    }
-
-    .jarvis-chip {
-      font-size: 11px;
-      font-weight: 800;
-      padding: 6px 10px;
-      border-radius: 999px;
-      border: 1px solid currentColor;
-      white-space: nowrap;
-    }
-
-    .jarvis-icon {
-      width: 58px;
-      height: 58px;
-      border-radius: 18px;
-      display: grid;
-      place-items: center;
-      font-size: 26px;
-      margin-bottom: 14px;
-      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
-    }
-
-    .jarvis-main {
-      color: var(--jarvis-text);
-      font-size: 15px;
-      line-height: 1.75;
-      margin: 0 0 18px;
-      flex: 1;
-    }
-
-    .jarvis-panel {
-      padding: 14px 15px;
-      border-radius: 16px;
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-    }
-
-    .jarvis-panel__label {
-      font-size: 11px;
-      color: var(--jarvis-muted);
-      text-transform: uppercase;
-      font-weight: 900;
-      letter-spacing: .06em;
-      margin-bottom: 7px;
-    }
-
-    .jarvis-panel__text {
-      font-size: 14px;
-      color: #f8fafc;
-      line-height: 1.65;
-      margin: 0;
-    }
-
-    .jarvis-card--cyan {
-      border-color: rgba(103, 232, 249, 0.16);
-      box-shadow:
-        0 0 0 1px rgba(255, 255, 255, 0.02) inset,
-        0 20px 60px rgba(0, 0, 0, 0.35),
-        0 0 30px rgba(0, 229, 255, 0.08);
-    }
-
-    .jarvis-card--cyan .jarvis-card__title,
-    .jarvis-card--cyan .jarvis-chip {
-      color: var(--jarvis-cyan);
-    }
-
-    .jarvis-card--cyan .jarvis-icon {
-      background: rgba(0, 229, 255, 0.12);
-      color: var(--jarvis-cyan);
-      border: 1px solid rgba(103, 232, 249, 0.16);
-    }
-
-    .jarvis-card--yellow {
-      border-color: rgba(250, 204, 21, 0.16);
-      box-shadow:
-        0 0 0 1px rgba(255, 255, 255, 0.02) inset,
-        0 20px 60px rgba(0, 0, 0, 0.35),
-        0 0 28px rgba(250, 204, 21, 0.05);
-    }
-
-    .jarvis-card--yellow .jarvis-card__title,
-    .jarvis-card--yellow .jarvis-chip {
-      color: var(--jarvis-yellow);
-    }
-
-    .jarvis-card--yellow .jarvis-icon {
-      background: rgba(250, 204, 21, 0.12);
-      color: var(--jarvis-yellow);
-      border: 1px solid rgba(250, 204, 21, 0.16);
-    }
-
-    .jarvis-card--green {
-      border-color: rgba(52, 211, 153, 0.16);
-      box-shadow:
-        0 0 0 1px rgba(255, 255, 255, 0.02) inset,
-        0 20px 60px rgba(0, 0, 0, 0.35),
-        0 0 28px rgba(52, 211, 153, 0.05);
-    }
-
-    .jarvis-card--green .jarvis-card__title,
-    .jarvis-card--green .jarvis-chip {
-      color: var(--jarvis-green);
-    }
-
-    .jarvis-card--green .jarvis-icon {
-      background: rgba(52, 211, 153, 0.12);
-      color: var(--jarvis-green);
-      border: 1px solid rgba(52, 211, 153, 0.16);
-    }
-
-    .jarvis-footer {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 18px;
-      padding: 18px 20px;
-      border-radius: 22px;
-      border: 1px solid var(--jarvis-border);
-      background:
-        radial-gradient(circle at left top, rgba(0, 229, 255, 0.06), transparent 18%),
-        linear-gradient(180deg, rgba(11, 17, 32, 0.96) 0%, rgba(7, 12, 24, 0.98) 100%);
-      margin-bottom: 60px;
-    }
-
-    .jarvis-footer__title {
-      margin: 0 0 8px;
-      font-size: 20px;
-      font-weight: 900;
-      color: #f8fafc;
-    }
-
-    .jarvis-footer__desc {
-      margin: 0;
-      color: var(--jarvis-text);
-      line-height: 1.7;
-      max-width: 760px;
-      font-size: 14px;
-    }
-
-    /* JARVIS GOD Mode Enhancements */
-    .jarvis-metric {
-      margin-top: 15px;
-      padding-top: 12px;
-      border-top: 1px dashed rgba(0, 229, 255, 0.15);
-    }
-    .jarvis-metric__label {
-      font-size: 10px;
-      font-weight: 800;
-      color: #94a3b8;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 6px;
-      display: flex;
-      justify-content: space-between;
-    }
-    .jarvis-bar {
-      height: 4px;
-      background: rgba(255,255,255,0.05);
-      border-radius: 2px;
-      overflow: hidden;
-      position: relative;
-    }
-    .jarvis-bar__fill {
-      height: 100%;
-      background: #00e5ff;
-      width: 0%;
-      transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: 0 0 10px #00e5ff;
-    }
-    .jarvis-ticker {
-      font-family: 'Courier New', Courier, monospace;
-      font-size: 11px;
-      color: #67e8f9;
-      opacity: 0.7;
-      margin-top: 8px;
-    }
-    .jarvis-card--yellow .jarvis-bar__fill { background: #fbbf24; box-shadow: 0 0 10px #fbbf24; }
-    .jarvis-card--green .jarvis-bar__fill { background: #22c55e; box-shadow: 0 0 10px #22c55e; }
-
-    @keyframes jarvisScan {
-      0% {
-        transform: translateX(-100%);
-      }
-
-      100% {
-        transform: translateX(100%);
-      }
-    }
-
-    @media (max-width: 1200px) {
-
-      .jarvis-grid,
-      .analytics-grid-3 {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    @media (max-width: 1100px) {
-      .analytics-grid-2 {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    @media (max-width: 768px) {
-      .jarvis-footer {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-    }
-  </style>
 </head>
 
 <body>
@@ -404,7 +27,7 @@
         <a href="pipeline.html"><span class="label">Pipeline</span></a>
 
         <div class="nav-category">Gestión</div>
-        <a href="workers.html"><span class="label">Gestión Trabajadores</span></a>
+        <a href="workers.html"><span class="label">Trabajadores</span></a>
         <a href="alerts.html"><span class="label">Alertas</span></a>
         <a href="documents.html"><span class="label">Documentos</span></a>
         <a href="reports.html"><span class="label">Reportes</span></a>
@@ -413,285 +36,156 @@
         <div class="nav-category">Analítica e Inteligencia</div>
         <a class="is-active" href="analytics.html"><span class="label">People Analytics</span></a>
       </nav>
-
-      <div class="sidebar-footer">
-        <div class="system-status">
-          <div class="status-dot"></div>
-          <span>Protocol AFK: Active</span>
-        </div>
-        <span class="system-meta">JARVIS CORE v4.2.0-STARK</span>
-        <span class="protocol-label">Security: Level 5 Enforced</span>
-      </div>
     </aside>
 
     <header class="topbar">
       <button class="btn-menu" aria-label="Abrir menú">☰</button>
       <div style="display:flex; gap:10px; margin-left:auto; flex-wrap:wrap;">
-        <button class="btn btn--primary" id="btnExportAnalyticsTop">Exportar Reporte</button>
-        <button class="btn" id="btnChatTop">Abrir Chatbot</button>
+        <button class="btn btn--primary" id="btnExportAnalytics">Exportar Reporte</button>
+        <button class="btn" id="btnChat">Abrir Chatbot</button>
       </div>
     </header>
 
     <main class="main" id="app">
-      <section class="hero-dashboard"
-        style="background: linear-gradient(135deg, rgba(0, 229, 255, 0.16), rgba(0, 0, 0, 0.45)); border-color: rgba(0, 229, 255, 0.22);">
+      <!-- Strategic Header -->
+      <section class="hero-dashboard" style="background: linear-gradient(135deg, rgba(225, 29, 72, 0.15), rgba(0, 0, 0, 0.4)); border-color: rgba(225, 29, 72, 0.3);">
         <div class="hero-dashboard__text">
-          <h2 style="font-size: 34px; letter-spacing: -1px;">People Analytics — Candidates Intelligence</h2>
-          <p style="color: #fff; font-weight: 600; font-size: 18px; margin-top: 5px;">
-            Visualiza talento, distribución geográfica, score y composición del pipeline.
-          </p>
-
-          <div class="card"
-            style="margin-top:20px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); padding: 12px 20px; border-radius: 14px;">
-            <div style="display:flex; align-items:center; gap:12px;">
-              <span style="font-size:24px;">🧠</span>
-              <span style="font-size:14px; color:rgba(255,255,255,0.92); font-style:italic;">
-                Módulo conectado a <strong>public.candidates</strong> para análisis estratégico de reclutamiento.
-              </span>
-            </div>
+          <h2 style="font-size: 34px; letter-spacing: -1px;">People Analytics</h2>
+          <p style="color: #fff; font-weight: 600; font-size: 18px; margin-top: 5px;">Inteligencia de dotación para decisiones estratégicas.</p>
+          <div id="dynamicInsight" class="card" style="margin-top:20px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 12px 20px; border-radius: 12px;">
+             <div style="display:flex; align-items:center; gap:12px;">
+                <span style="font-size:24px;">💡</span>
+                <span id="headerInsightText" style="font-size:14px; color:rgba(255,255,255,0.9); font-style:italic;">
+                   Analizando tendencias de la dotación actual...
+                </span>
+             </div>
           </div>
         </div>
-
         <div class="hero-dashboard__visual">
-          <div class="badge badge--success" style="font-size:14px; padding:6px 16px;">LIVE DATA</div>
+           <div class="badge badge--success" style="font-size:14px; padding:6px 16px;">✨ Datos en Tiempo Real</div>
         </div>
       </section>
 
-      <section class="toolbar"
-        style="margin-bottom: 20px; background: rgba(255,255,255,0.03); border-radius: 15px; padding: 15px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
-        <div style="flex:1; min-width: 260px;">
-          <input type="text" id="globalAnalyticsSearch" placeholder="Filtrar por nombre, rut, ubicación o cargo..."
-            class="input" style="width:100%;">
-        </div>
-
-        <select id="filterCargo" class="select" style="min-width: 180px;">
-          <option value="">Todos los cargos</option>
-        </select>
-
-        <select id="filterStatus" class="select" style="min-width: 170px;">
-          <option value="">Todos los estados</option>
-        </select>
-
-        <select id="filterRegion" class="select" style="min-width: 190px;">
-          <option value="">Todas las regiones</option>
-        </select>
-      </section>
-
-      <section class="kpi-grid-modern" style="margin-bottom:22px;">
-        <div class="card card--success-alt"
-          style="background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); position:relative; overflow:hidden; min-height: 138px;">
+      <!-- KPI Grid -->
+      <section class="decision-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+        <div class="card card--success-alt">
           <div class="card__body kpi">
-            <span class="label" style="color:rgba(255,255,255,0.78);">Total Candidatos</span>
-            <span id="kpi_total_candidates" class="value" style="font-size:46px; color:white;">0</span>
-            <div style="font-size:11px; color:rgba(255,255,255,0.9); margin-top:5px; font-weight:700;">Base activa
-              analizada</div>
+            <span class="label">Total Personal</span>
+            <span id="kpi_total_workers" class="value">0</span>
+            <div style="font-size:11px; color:var(--ok); margin-top:5px;">Dotación total vigente</div>
           </div>
         </div>
-
-        <div class="card" style="min-height: 138px;">
+        <div class="card">
           <div class="card__body kpi">
-            <span class="label">Exp. Promedio</span>
-            <span id="kpi_avg_experience" class="value">--</span>
-            <div style="font-size:11px; color:var(--muted); margin-top:5px;">Años de experiencia</div>
+            <span class="label">Edad Promedio</span>
+            <span id="kpi_avg_age" class="value">--</span>
+            <div style="font-size:11px; color:var(--muted); margin-top:5px;">Años</div>
           </div>
         </div>
-
-        <div class="card" style="min-height: 138px;">
+        <div class="card">
           <div class="card__body kpi">
-            <span class="label">Match Score Promedio</span>
-            <span id="kpi_avg_score" class="value">--</span>
-            <div style="font-size:11px; color:var(--muted); margin-top:5px;">Ajuste promedio</div>
+            <span class="label">Antigüedad Promedio</span>
+            <span id="kpi_avg_seniority" class="value">--</span>
+            <div style="font-size:11px; color:var(--muted); margin-top:5px;">Meses en la empresa</div>
           </div>
         </div>
-
-        <div class="card" style="min-height: 138px;">
+        <div class="card">
           <div class="card__body kpi">
-            <span class="label">Nota Promedio</span>
-            <span id="kpi_avg_nota" class="value">--</span>
-            <div style="font-size:11px; color:var(--muted); margin-top:5px;">Evaluación global</div>
+            <span class="label">Certificación Crítica</span>
+            <span id="kpi_critical_cert_pct" class="value">0%</span>
+            <div style="font-size:11px; color:var(--ok); margin-top:5px;">Personal habilitado</div>
           </div>
         </div>
-
-        <div class="card card--warning-alt" style="min-height: 138px;">
+        <div class="card card--warning-alt">
           <div class="card__body kpi">
-            <span class="label">High Match</span>
-            <span id="kpi_high_match" class="value">0</span>
-            <div style="font-size:11px; color:rgba(255,255,255,0.72); margin-top:5px;">Score ≥ 70</div>
+            <span class="label">Riesgo de Vacancia</span>
+            <span id="kpi_vacancy_risk" class="value">0</span>
+            <div style="font-size:11px; color:rgba(255,255,255,0.6); margin-top:5px;">Perfiles críticos por vencer</div>
           </div>
         </div>
       </section>
 
-      <h3 class="h1" style="margin-top:36px;">1. Distribución geográfica</h3>
-      <section class="section">
+      <!-- Block 1: Composición Demográfica -->
+      <h3 class="h1" style="margin-top:40px;">1. Composición Demográfica</h3>
+      <section class="section grid-3">
         <div class="card">
           <div class="card__body">
-            <h4 style="margin:0 0 16px; font-size:14px; font-weight:900; color:var(--muted); text-transform:uppercase;">
-              Mapa de distribución con Heatmap Dinámico
-            </h4>
-            <div id="geoMap"></div>
-            <div id="geoStat" style="margin-top:10px; font-size:12px; color:var(--muted);">
-              Cuadrantes territoriales activos.
+            <h4 style="margin:0 0 15px; font-size:14px; font-weight:900; color:var(--muted); text-transform:uppercase;">Rango Etario</h4>
+            <div style="height:220px;"><canvas id="chart_age_dist"></canvas></div>
+            <p id="insight_age" class="text-muted" style="font-size:11px; margin-top:12px; font-style:italic;"></p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card__body">
+            <h4 style="margin:0 0 15px; font-size:14px; font-weight:900; color:var(--muted); text-transform:uppercase;">Distribución Geográfica</h4>
+            <div style="height:220px;"><canvas id="chart_geo_dist"></canvas></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card__body">
+            <h4 style="margin:0 0 15px; font-size:14px; font-weight:900; color:var(--muted); text-transform:uppercase;">Antigüedad</h4>
+            <div style="height:220px;"><canvas id="chart_seniority_dist"></canvas></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Block 2: Inteligencia de Perfiles -->
+      <h3 class="h1" style="margin-top:40px;">2. Inteligencia de Perfiles</h3>
+      <section class="section grid-2">
+        <div class="card">
+          <div class="card__body">
+            <h4 style="margin:0 0 15px; font-size:14px; font-weight:900; color:var(--muted); text-transform:uppercase;">Top Profesiones y Oficios</h4>
+            <div style="height:250px;"><canvas id="chart_professions"></canvas></div>
+            <p id="insight_professions" class="text-muted" style="font-size:11px; margin-top:12px; font-style:italic;"></p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card__body">
+            <h4 style="margin:0 0 15px; font-size:14px; font-weight:900; color:var(--muted); text-transform:uppercase;">Perfiles Críticos vs Escasos</h4>
+            <div id="criticalProfilesList" class="toplist" style="margin-top:10px;">
+               <!-- Lista dinámica -->
             </div>
           </div>
         </div>
       </section>
 
-      <h3 class="h1" style="margin-top:40px;">2. Inteligencia de perfiles y demografía</h3>
-      <section class="analytics-grid-3 section">
-        <div class="card">
+      <!-- Block 3: Riesgos y Brechas -->
+      <h3 class="h1" style="margin-top:40px;">3. Riesgos y Brechas</h3>
+      <section class="section grid-2">
+        <div class="card card--critical">
           <div class="card__body">
-            <h4 style="margin:0 0 14px; font-size:14px; font-weight:900; color:var(--muted); text-transform:uppercase;">
-              Distribución etaria
-            </h4>
-            <div class="chart-box--small">
-              <canvas id="chart_age_dist"></canvas>
-            </div>
+            <h4 style="margin:0 0 15px; font-size:14px; font-weight:900; color:#fca5a5; text-transform:uppercase;">Concentración de Riesgo por Faena</h4>
+            <div style="height:250px;"><canvas id="chart_risk_locations"></canvas></div>
           </div>
         </div>
-
-        <div class="card">
+        <div class="card card--warning-alt">
           <div class="card__body">
-            <h4 style="margin:0 0 14px; font-size:14px; font-weight:900; color:var(--muted); text-transform:uppercase;">
-              Distribución por estado
-            </h4>
-            <div class="chart-box--small">
-              <canvas id="chart_status_dist"></canvas>
-            </div>
-          </div>
-        </div>
-
-        <div class="card card--dark" style="background:rgba(103, 232, 249, 0.03); border:1px solid rgba(103, 232, 249, 0.1);">
-          <div class="card__body">
-            <h4 style="margin:0 0 14px; font-size:14px; font-weight:900; color:#67e8f9; text-transform:uppercase;">
-              Match por Cargo Objetivo
-            </h4>
-            <div id="role_match_container" style="display:flex; flex-direction:column; gap:12px; padding-top:10px;">
-              <!-- Dynamically filled -->
+            <h4 style="margin:0 0 15px; font-size:14px; font-weight:900; color:#fbbf24; text-transform:uppercase;">Brechas de Licitación</h4>
+            <div id="licitationGaps" style="font-size:13px; margin-top:10px;">
+               <!-- Texto dinámico -->
+               <div class="loading-state">Calculando capacidad operativa...</div>
             </div>
           </div>
         </div>
       </section>
 
-      <section class="analytics-grid-2 section" style="margin-top:20px;">
-        <div class="card">
+      <!-- Block 4: Recomendaciones AFK Inteligencia Artificial -->
+      <h3 class="h1" style="margin-top:40px;">4. Recomendaciones AFK (Copilot)</h3>
+      <section class="card card--success-alt" style="margin-bottom:60px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(0,0,0,0.6)); border: 1px solid rgba(16, 185, 129, 0.3);">
           <div class="card__body">
-            <h4 style="margin:0 0 14px; font-size:14px; font-weight:900; color:var(--muted); text-transform:uppercase;">
-              Top profesiones / cargos
-            </h4>
-            <div class="chart-box">
-              <canvas id="chart_professions"></canvas>
-            </div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card__body">
-            <h4 style="margin:0 0 14px; font-size:14px; font-weight:900; color:var(--muted); text-transform:uppercase;">
-              Distribución de score
-            </h4>
-            <div class="chart-box">
-              <canvas id="chart_score_dist"></canvas>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="section" style="margin-top:20px;">
-        <div class="card card--success-alt"
-          style="background: linear-gradient(135deg, rgba(0, 229, 255, 0.08), rgba(0,0,0,0.55)); border:1px solid rgba(0, 229, 255, 0.18);">
-          <div class="card__body">
-            <h4 style="margin:0 0 14px; font-size:14px; font-weight:900; color:#67e8f9; text-transform:uppercase;">
-              Insights ejecutivos
-            </h4>
-            <ul id="aiRecommendationsList"
-              style="margin:0; padding-left:20px; color:rgba(255,255,255,0.9); font-size:14px; line-height:1.8;">
-              <li>Cargando insights...</li>
-            </ul>
-          </div>
-        </div>
-      </section>
-
-      <h3 class="h1" style="margin-top:40px;">3. JARVIS Strategic Layer (v5.0 Engine)</h3>
-      <section class="jarvis-grid section" style="margin-bottom:22px;">
-        <!-- Card 1: Neural Clusters -->
-        <article class="jarvis-card jarvis-card--cyan">
-          <div class="hud-line"></div>
-          <div class="jarvis-card__inner">
-            <div class="jarvis-card__top">
-              <h4 class="jarvis-card__title">Detección de Clústeres</h4>
-              <div class="jarvis-ticker" id="jarvis_log_1">SCANNING...</div>
-            </div>
-            <div id="jarvis_signal_text" style="font-size:13px; color:#e2e8f0; margin-bottom:15px; min-height:60px;">
-              Iniciando mapeo de densidad neural...
-            </div>
-            <div class="jarvis-metric">
-              <div class="jarvis-metric__label">
-                <span>Densidad de Talento</span>
-                <span id="jarvis_metric_1_val">0%</span>
+              <div style="display:flex; gap:25px; align-items:flex-start;">
+                  <div style="font-size:48px; filter: drop-shadow(0 0 10px var(--ok));">🧠</div>
+                  <div style="flex:1;">
+                     <h4 style="margin:0; font-size:18px; font-weight:900; color:var(--ok); text-transform:uppercase; letter-spacing:1px;">Acciones Recomendadas para Gerencia</h4>
+                     <ul id="aiRecommendationsList" style="margin:15px 0 0; padding-left:20px; color:rgba(255,255,255,0.9); font-size:15px; line-height:1.8;">
+                        <li>Analizando datos estratégicos para generar recomendaciones...</li>
+                     </ul>
+                  </div>
+                  <button id="btnTriggerRecs" class="btn btn--primary" style="border-radius:12px; padding:12px 24px; font-weight:800;">Ejecutar Plan de Acción</button>
               </div>
-              <div class="jarvis-bar"><div class="jarvis-bar__fill" id="jarvis_metric_1_bar"></div></div>
-            </div>
           </div>
-        </article>
-
-        <!-- Card 2: Risk Calibration -->
-        <article class="jarvis-card jarvis-card--yellow">
-          <div class="hud-line"></div>
-          <div class="jarvis-card__inner">
-            <div class="jarvis-card__top">
-              <h4 class="jarvis-card__title">Calibración de Riesgos</h4>
-              <div class="jarvis-ticker" id="jarvis_log_2">MONITORING...</div>
-            </div>
-            <div id="jarvis_risk_text" style="font-size:13px; color:#e2e8f0; margin-bottom:15px; min-height:60px;">
-              Evaluando brechas de seniority y cobertura...
-            </div>
-            <div class="jarvis-metric">
-              <div class="jarvis-metric__label">
-                <span>Riesgo de Cobertura</span>
-                <span id="jarvis_metric_2_val">0%</span>
-              </div>
-              <div class="jarvis-bar"><div class="jarvis-bar__fill" id="jarvis_metric_2_bar"></div></div>
-            </div>
-          </div>
-        </article>
-
-        <!-- Card 3: Hiring Directives -->
-        <article class="jarvis-card jarvis-card--green">
-          <div class="hud-line"></div>
-          <div class="jarvis-card__inner">
-            <div class="jarvis-card__top">
-              <h4 class="jarvis-card__title">Directivas de Contratación</h4>
-              <div class="jarvis-ticker" id="jarvis_log_3">CALIBRATING...</div>
-            </div>
-            <div id="jarvis_action_text" style="font-size:13px; color:#e2e8f0; margin-bottom:15px; min-height:60px;">
-              Calculando vectores de contratación prioritaria...
-            </div>
-            <div class="jarvis-metric">
-              <div class="jarvis-metric__label">
-                <span>Viabilidad de Éxito</span>
-                <span id="jarvis_metric_3_val">0%</span>
-              </div>
-              <div class="jarvis-bar"><div class="jarvis-bar__fill" id="jarvis_metric_3_bar"></div></div>
-            </div>
-          </div>
-        </article>
       </section>
 
-      <section class="jarvis-footer">
-        <div>
-          <h4 class="jarvis-footer__title">Tony Stark View</h4>
-          <p class="jarvis-footer__desc">
-            Esta capa cruza score, experiencia, profesión y geografía para identificar focos de talento, concentración
-            regional y perfiles prioritarios para reclutamiento. Diseñada para lectura rápida, decisiones comerciales y
-            operación en tiempo real.
-          </p>
-        </div>
-
-        <div style="display:flex; gap:10px; flex-wrap:wrap;">
-          <button class="btn btn--primary" id="btnExportAnalyticsBottom">Exportar reporte</button>
-          <button class="btn" id="btnChatBottom">Abrir chatbot</button>
-        </div>
-      </section>
     </main>
 
     <aside id="chatbot" class="chatbot">
@@ -707,91 +201,11 @@
     </aside>
   </div>
 
-    <!-- Modal: Ficha de Inteligencia del Candidato -->
-    <div id="candidateProfileModal" class="modal">
-      <div class="modal__content" style="width: 800px; max-width: 95%; background: rgba(2, 6, 23, 0.98); border: 1px solid var(--accent); max-height: 90vh; overflow-y: auto;">
-        <div class="modal__header">
-          <h2 id="modalName" style="margin:0; color:var(--text); font-weight:900; font-size:24px;">Talent Profile</h2>
-          <button class="close-modal" onclick="document.getElementById('candidateProfileModal').classList.remove('is-open')">&times;</button>
-        </div>
-        
-        <div class="modal__body" id="modalBody">
-          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:24px;">
-            <!-- Left: Info -->
-            <div>
-              <div style="margin-bottom:20px;">
-                <span id="modalStatus" class="badge">Status</span>
-                <span id="modalRec" class="badge" style="margin-left:8px;">Recommendation</span>
-              </div>
-              
-              <div class="form-group">
-                <label>Profesión</label>
-                <div id="modalProf" style="font-size:16px; color:var(--text); font-weight:600;">—</div>
-              </div>
-              
-              <div class="form-group">
-                <label>Última Experiencia</label>
-                <div id="modalUltima" style="font-size:14px; color:var(--text-muted);">—</div>
-              </div>
-
-              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-top:20px;">
-                <div class="card" style="padding:15px; text-align:center; background:rgba(255,255,255,0.03);">
-                  <div style="font-size:10px; color:var(--muted); text-transform:uppercase; font-weight:800;">Score JARVIS</div>
-                  <div id="modalScore" style="font-size:32px; font-weight:900; color:var(--accent);">0</div>
-                </div>
-                <div class="card" style="padding:15px; text-align:center; background:rgba(255,255,255,0.03);">
-                  <div style="font-size:10px; color:var(--muted); text-transform:uppercase; font-weight:800;">Años Exp.</div>
-                  <div id="modalExp" style="font-size:32px; font-weight:900; color:var(--ok);">0</div>
-                </div>
-              </div>
-
-              <div style="margin-top:25px;">
-                <h4 style="font-size:12px; font-weight:900; color:var(--muted); text-transform:uppercase; margin-bottom:10px;">Evaluación General</h4>
-                <p id="modalEval" style="font-size:13px; color:var(--text-muted); line-height:1.6; font-style:italic;">—</p>
-              </div>
-            </div>
-
-            <!-- Right: Visual Intel -->
-            <div style="display:flex; flex-direction:column; gap:20px;">
-               <div class="card" style="flex:1; padding:15px; background:rgba(255,255,255,0.02); min-height:300px; display:flex; flex-direction:column;">
-                  <h4 style="font-size:12px; font-weight:900; color:var(--muted); text-transform:uppercase; margin-bottom:15px; text-align:center;">Perfil de Competencias (Radar)</h4>
-                  <div style="flex:1; position:relative;">
-                     <canvas id="modalRadar"></canvas>
-                  </div>
-               </div>
-               <a id="modalFullProfile" href="#" class="btn btn--primary" style="text-align:center; text-decoration:none;">Ver Perfil Completo</a>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase.js"></script>
   <script src="auth.js"></script>
   <script defer src="analytics.supabase.js"></script>
   <script defer src="chat.js"></script>
   <script defer src="responsive.js"></script>
-
-  <script>
-    const bindMirrorClick = (sourceId, targetId) => {
-      const source = document.getElementById(sourceId);
-      const target = document.getElementById(targetId);
-      if (!source || !target) return;
-      source.addEventListener('click', () => target.click());
-    };
-
-    bindMirrorClick('btnExportAnalyticsTop', 'btnExportAnalyticsBottom');
-    bindMirrorClick('btnChatTop', 'btnChatBottom');
-
-    document.getElementById('btnChatBottom')?.addEventListener('click', () => {
-      document.getElementById('openChatbot')?.click();
-    });
-
-    document.getElementById('btnChatTop')?.addEventListener('click', () => {
-      document.getElementById('openChatbot')?.click();
-    });
-  </script>
 </body>
-
 </html>

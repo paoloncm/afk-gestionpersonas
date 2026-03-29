@@ -31,17 +31,9 @@
     return map;
   }
 
-  function getStarkGradient(ctx, color1, color2) {
-    const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-    gradient.addColorStop(0, color1);
-    gradient.addColorStop(1, color2);
-    return gradient;
-  }
-
   function renderNotas(items) {
-    const can = document.getElementById("chart_notas");
-    if (!can) return;
-    const ctx = can.getContext('2d');
+    const ctx = document.getElementById("chart_notas");
+    if (!ctx) return;
 
     destroyIfExists(chartNotas);
 
@@ -65,44 +57,30 @@
       else bins["9-10"]++;
     });
 
-    const grad = getStarkGradient(ctx, "rgba(103, 232, 249, 0.8)", "rgba(8, 145, 178, 0.2)");
-
-    chartNotas = new Chart(can, {
+    chartNotas = new Chart(ctx, {
       type: "bar",
       data: {
         labels: Object.keys(bins),
         datasets: [{
           label: "Candidatos",
-          data: Object.values(bins),
-          backgroundColor: grad,
-          borderColor: "rgba(103, 232, 249, 0.5)",
-          borderWidth: 1,
-          borderRadius: 4
+          data: Object.values(bins)
         }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { 
-          legend: { display: false },
-          tooltip: {
-            backgroundColor: "rgba(15, 23, 42, 0.9)",
-            titleColor: "#67e8f9",
-            borderColor: "rgba(103, 232, 249, 0.2)",
-            borderWidth: 1
-          }
-        },
+        plugins: { legend: { display: false } },
         scales: {
-          x: { ticks: { color: "#94a3b8" }, grid: { display: false } },
-          y: { ticks: { color: "#94a3b8" }, grid: { color: "rgba(255,255,255,.05)" }, beginAtZero: true }
+          x: { ticks: { color: "#b3b7bd" }, grid: { color: "rgba(255,255,255,.06)" } },
+          y: { ticks: { color: "#b3b7bd" }, grid: { color: "rgba(255,255,255,.06)" }, beginAtZero: true }
         }
       }
     });
   }
 
   function renderScatter(items) {
-    const can = document.getElementById("chart_scatter");
-    if (!can) return;
+    const ctx = document.getElementById("chart_scatter");
+    if (!ctx) return;
 
     destroyIfExists(chartScatter);
 
@@ -113,39 +91,28 @@
       }))
       .filter(p => Number.isFinite(p.x) && Number.isFinite(p.y));
 
-    chartScatter = new Chart(can, {
+    chartScatter = new Chart(ctx, {
       type: "scatter",
       data: {
         datasets: [{
           label: "Candidatos",
-          data: points,
-          backgroundColor: "rgba(103, 232, 249, 0.8)",
-          pointRadius: 6,
-          pointHoverRadius: 9,
-          pointBorderColor: "#fff",
-          pointBorderWidth: 1
+          data: points
         }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { 
-          legend: { labels: { color: "#94a3b8" } },
-          tooltip: {
-            backgroundColor: "rgba(15, 23, 42, 0.9)",
-            titleColor: "#67e8f9"
-          }
-        },
+        plugins: { legend: { labels: { color: "#b3b7bd" } } },
         scales: {
           x: {
-            title: { display: true, text: "Años experiencia", color: "#94a3b8", font: { weight: 'bold' } },
-            ticks: { color: "#94a3b8" },
-            grid: { color: "rgba(255,255,255,.05)" }
+            title: { display: true, text: "Años experiencia", color: "#b3b7bd" },
+            ticks: { color: "#b3b7bd" },
+            grid: { color: "rgba(255,255,255,.06)" }
           },
           y: {
-            title: { display: true, text: "Nota", color: "#94a3b8", font: { weight: 'bold' } },
-            ticks: { color: "#94a3b8" },
-            grid: { color: "rgba(255,255,255,.05)" },
+            title: { display: true, text: "Nota", color: "#b3b7bd" },
+            ticks: { color: "#b3b7bd" },
+            grid: { color: "rgba(255,255,255,.06)" },
             beginAtZero: true
           }
         }
@@ -154,8 +121,8 @@
   }
 
   function renderProfesiones(items) {
-    const can = document.getElementById("chart_profesiones");
-    if (!can) return;
+    const ctx = document.getElementById("chart_profesiones");
+    if (!ctx) return;
 
     destroyIfExists(chartProfesiones);
 
@@ -164,34 +131,21 @@
       .sort((a, b) => b[1] - a[1])
       .slice(0, 8);
 
-    chartProfesiones = new Chart(can, {
+    chartProfesiones = new Chart(ctx, {
       type: "doughnut",
       data: {
         labels: entries.map(x => x[0]),
         datasets: [{
-          data: entries.map(x => x[1]),
-          backgroundColor: [
-            "rgba(103, 232, 249, 0.8)",
-            "rgba(8, 145, 178, 0.7)",
-            "rgba(52, 211, 153, 0.7)",
-            "rgba(139, 92, 246, 0.7)",
-            "rgba(251, 113, 133, 0.7)",
-            "rgba(251, 191, 36, 0.7)",
-            "rgba(148, 163, 184, 0.5)",
-            "rgba(71, 85, 105, 0.4)"
-          ],
-          borderWidth: 0,
-          hoverOffset: 15
+          data: entries.map(x => x[1])
         }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        cutout: '70%',
         plugins: {
           legend: {
-            position: "right",
-            labels: { color: "#94a3b8", usePointStyle: true, boxWidth: 8 }
+            position: "top",
+            labels: { color: "#b3b7bd" }
           }
         }
       }
@@ -199,9 +153,8 @@
   }
 
   function renderPipeline(items) {
-    const can = document.getElementById("chart_pipeline");
-    if (!can) return;
-    const ctx = can.getContext('2d');
+    const ctx = document.getElementById("chart_pipeline");
+    if (!ctx) return;
 
     destroyIfExists(chartPipeline);
 
@@ -209,17 +162,13 @@
     const labels = [...counts.keys()];
     const values = [...counts.values()];
 
-    const grad = getStarkGradient(ctx, "rgba(103, 232, 249, 0.9)", "rgba(52, 211, 153, 0.2)");
-
-    chartPipeline = new Chart(can, {
+    chartPipeline = new Chart(ctx, {
       type: "bar",
       data: {
         labels,
         datasets: [{
           label: "Candidatos",
-          data: values,
-          backgroundColor: grad,
-          borderRadius: 8
+          data: values
         }]
       },
       options: {
@@ -227,8 +176,8 @@
         maintainAspectRatio: false,
         plugins: { legend: { display: false } },
         scales: {
-          x: { ticks: { color: "#94a3b8" }, grid: { display: false } },
-          y: { ticks: { color: "#94a3b8" }, grid: { color: "rgba(255,255,255,.05)" }, beginAtZero: true }
+          x: { ticks: { color: "#b3b7bd" }, grid: { color: "rgba(255,255,255,.06)" } },
+          y: { ticks: { color: "#b3b7bd" }, grid: { color: "rgba(255,255,255,.06)" }, beginAtZero: true }
         }
       }
     });
@@ -241,19 +190,19 @@
     renderWorkerPressure(exams);
     renderWorkerCompanies(workers);
   };
+
   function renderWorkerExpirations(exams) {
-    const can = document.getElementById("chartCompliance");
-    if (!can) return;
-    const ctx = can.getContext('2d');
+    const ctx = document.getElementById("chartCompliance");
+    if (!ctx) return;
     destroyIfExists(chartExpirations);
 
     const now = new Date();
     const buckets = {
-      "Vencidos":    { count: 0, color: "#fb7185" },
-      "0–100 días":  { count: 0, color: "#fbbf24" },
-      "101–200 días":{ count: 0, color: "#34d399" },
-      "201–300 días":{ count: 0, color: "#67e8f9" },
-      "+300 días":   { count: 0, color: "#10b981" }
+      "Vencidos":    { count: 0, color: "#e74c3c" },
+      "0–100 días":  { count: 0, color: "#e67e22" },
+      "101–200 días":{ count: 0, color: "#f1c40f" },
+      "201–300 días":{ count: 0, color: "#3498db" },
+      "+300 días":   { count: 0, color: "#2ecc71" }
     };
 
     exams.forEach(e => {
@@ -272,38 +221,45 @@
     const values  = labels.map(k => buckets[k].count);
     const colors  = labels.map(k => buckets[k].color);
 
-    chartExpirations = new Chart(can, {
+    chartExpirations = new Chart(ctx, {
       type: "bar",
       data: {
         labels,
         datasets: [{
           label: "Documentos",
           data: values,
-          backgroundColor: colors.map(c => c + "aa"),
+          backgroundColor: colors.map(c => c + "cc"),
           borderColor: colors,
-          borderWidth: 1,
-          borderRadius: 4
+          borderWidth: 1.5,
+          borderRadius: 6
         }]
       },
       options: {
         indexAxis: "y",
         responsive: true,
         maintainAspectRatio: false,
+        onClick: (event, elements) => {
+          if (elements.length > 0) {
+            const label = labels[elements[0].index];
+            if (window.onChartDrillDown) window.onChartDrillDown("expiration", label);
+          }
+        },
         plugins: {
           legend: { display: false },
           tooltip: {
-            backgroundColor: "rgba(15, 23, 42, 0.9)",
-            titleColor: "#67e8f9"
+            callbacks: {
+              label: ctx => ` ${ctx.raw} documento${ctx.raw !== 1 ? "s" : ""}`
+            }
           }
         },
         scales: {
           x: {
             beginAtZero: true,
-            ticks: { color: "#94a3b8", stepSize: 1 },
+            ticks: { color: "#b3b7bd", stepSize: 1 },
             grid: { color: "rgba(255,255,255,0.05)" }
           },
           y: {
-            ticks: { color: "#94a3b8" },
+            ticks: { color: "#b3b7bd" },
             grid: { display: false }
           }
         }
@@ -311,10 +267,21 @@
     });
   }
 
+  function getLatestExamsPerWorker(exams) {
+    const latest = {};
+    exams.forEach(e => {
+      const id = e.worker_id || e.rut;
+      if (!id) return;
+      if (!latest[id] || new Date(e.exam_date) > new Date(latest[id].exam_date)) {
+        latest[id] = e;
+      }
+    });
+    return Object.values(latest);
+  }
+
   function renderWorkerIMC(exams) {
-    const can = document.getElementById("chartIMC");
-    if (!can) return;
-    const ctx = can.getContext('2d');
+    const ctx = document.getElementById("chartIMC");
+    if (!ctx) return;
     destroyIfExists(chartIMC);
 
     const latestExams = getLatestExamsPerWorker(exams);
@@ -330,29 +297,33 @@
       else bins["Obeso II+"]++;
     });
 
-    chartIMC = new Chart(can, {
+    chartIMC = new Chart(ctx, {
       type: "bar",
       data: {
         labels: Object.keys(bins),
         datasets: [{
           label: "Trabajadores",
           data: Object.values(bins),
-          backgroundColor: ["#fcd34d", "#34d399", "#fbbf24", "#fb7185", "#be123c"],
+          backgroundColor: ["#f1c40f", "#2ecc71", "#e67e22", "#e74c3c", "#c0392b"],
           borderRadius: 6
         }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { 
-          legend: { display: false },
-          tooltip: { backgroundColor: "rgba(15, 23, 42, 0.9)" }
+        onClick: (event, elements) => {
+          if (elements.length > 0) {
+            const index = elements[0].index;
+            const label = Object.keys(bins)[index];
+            if (window.onChartDrillDown) window.onChartDrillDown("imc", label);
+          }
         },
+        plugins: { legend: { display: false } },
         scales: {
-          x: { ticks: { color: "#94a3b8" }, grid: { display: false } },
+          x: { ticks: { color: "#b3b7bd" }, grid: { display: false } },
           y: { 
             beginAtZero: true, 
-            ticks: { color: "#94a3b8", stepSize: 1 }, 
+            ticks: { color: "#b3b7bd", stepSize: 1 }, 
             grid: { color: "rgba(255,255,255,0.05)" } 
           }
         }
@@ -360,18 +331,26 @@
     });
   }
 
+  function classifyPressure(sys, dia) {
+    if (sys < 120 && dia < 80)                         return { label: "Normal",          color: "#2ecc71" };
+    if (sys < 130 && dia < 80)                         return { label: "Elevada",          color: "#f1c40f" };
+    if ((sys >= 130 && sys < 140) || (dia >= 80 && dia < 90)) return { label: "Hipertensión I",   color: "#e67e22" };
+    return                                                      { label: "Hipertensión II",  color: "#e74c3c" };
+  }
+
   function renderWorkerPressure(exams) {
-    const can = document.getElementById("chartPressure");
-    if (!can) return;
+    const ctx = document.getElementById("chartPressure");
+    if (!ctx) return;
     destroyIfExists(chartPressure);
 
     const latestExams = getLatestExamsPerWorker(exams);
 
+    // Build per-risk-level buckets
     const levels = {
-      "Normal":         { color: "#34d399", points: [] },
-      "Elevada":        { color: "#fbbf24", points: [] },
-      "Hipertensión I": { color: "#f59e0b", points: [] },
-      "Hipertensión II":{ color: "#fb7185", points: [] }
+      "Normal":         { color: "#2ecc71", points: [] },
+      "Elevada":        { color: "#f1c40f", points: [] },
+      "Hipertensión I": { color: "#e67e22", points: [] },
+      "Hipertensión II":{ color: "#e74c3c", points: [] }
     };
 
     latestExams.forEach(e => {
@@ -394,13 +373,13 @@
       label,
       data: cfg.points,
       backgroundColor: cfg.color + "cc",
-      borderColor: "#fff",
+      borderColor: cfg.color,
       pointRadius: 7,
       hoverRadius: 11,
-      pointBorderWidth: 1
+      pointBorderWidth: 1.5
     }));
 
-    chartPressure = new Chart(can, {
+    chartPressure = new Chart(ctx, {
       type: "scatter",
       data: { datasets },
       options: {
@@ -409,22 +388,43 @@
         plugins: {
           legend: {
             position: "bottom",
-            labels: { color: "#94a3b8", usePointStyle: true, boxWidth: 8 }
+            labels: { color: "#b3b7bd", padding: 12, boxWidth: 12 }
           },
           tooltip: {
-            backgroundColor: "rgba(15,23,42,0.95)",
-            titleColor: "#67e8f9"
+            backgroundColor: "rgba(15,17,26,0.92)",
+            titleColor: "#ffffff",
+            bodyColor: "#b3b7bd",
+            borderColor: "rgba(255,255,255,0.08)",
+            borderWidth: 1,
+            padding: 10,
+            callbacks: {
+              title: (items) => items[0]?.raw?.full_name ?? "",
+              label: (ctx) => {
+                const p = ctx.raw;
+                return [
+                  `  Sistólica / Diastólica: ${p.x} / ${p.y} mmHg`,
+                  `  Clasificación: ${p.classification}`
+                ];
+              }
+            }
+          }
+        },
+        onClick: (event, elements) => {
+          if (elements.length > 0) {
+            const ds = datasets[elements[0].datasetIndex];
+            const pt = ds.data[elements[0].index];
+            if (window.onChartDrillDown) window.onChartDrillDown("worker_name", pt.full_name);
           }
         },
         scales: {
           x: {
-            title: { display: true, text: "Sistólica (mmHg)", color: "#94a3b8" },
-            ticks: { color: "#94a3b8" },
+            title: { display: true, text: "Sistólica (mmHg)", color: "#b3b7bd" },
+            ticks: { color: "#b3b7bd" },
             grid: { color: "rgba(255,255,255,0.05)" }
           },
           y: {
-            title: { display: true, text: "Diastólica (mmHg)", color: "#94a3b8" },
-            ticks: { color: "#94a3b8" },
+            title: { display: true, text: "Diastólica (mmHg)", color: "#b3b7bd" },
+            ticks: { color: "#b3b7bd" },
             grid: { color: "rgba(255,255,255,0.05)" }
           }
         }
@@ -433,46 +433,47 @@
   }
 
   function renderWorkerCompanies(workers) {
-    const can = document.getElementById("chartCompanies");
-    if (!can) return;
+    const ctx = document.getElementById("chartCompanies");
+    if (!ctx) return;
     destroyIfExists(chartCompanies);
 
     const counts = countBy(workers, w => w.company_name && w.company_name !== "Sin asignar" ? w.company_name : "Sin asignar");
     const entries = [...counts.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 6);
+      .sort((a, b) => b[1] - a[1]) // highest first
+      .slice(0, 6); // max 6 slices for readability
 
-    chartCompanies = new Chart(can, {
+    chartCompanies = new Chart(ctx, {
       type: "doughnut",
       data: {
         labels: entries.map(x => x[0]),
         datasets: [{
           data: entries.map(x => x[1]),
           borderWidth: 0,
-          backgroundColor: ["#67e8f9", "#3b82f6", "#8b5cf6", "#10b981", "#fbbf24", "#94a3b8"],
-          hoverOffset: 12
+          backgroundColor: ["#3498db", "#9b59b6", "#e67e22", "#1abc9c", "#f1c40f", "#7f8c8d"]
         }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        cutout: '65%',
         plugins: {
-          legend: { position: "right", labels: { color: "#94a3b8", boxWidth: 8, font: { size: 10 } } }
+          legend: { position: "right", labels: { color: "#b3b7bd", boxWidth: 12, font: { size: 10 } } }
         }
       }
     });
   }
 
   function renderWorkerStatus(workers, exams) {
-    const can = document.getElementById("chart_worker_status");
-    if (!can) return;
+    const ctx = document.getElementById("chart_worker_status");
+    if (!ctx) return;
     destroyIfExists(chartWorkerStatus);
 
     const counts = { "Habilitado": 0, "No habilitado": 0, "En riesgo": 0, "Sin info": 0 };
     
     workers.forEach(w => {
+      // Logic synchronized with workers.supabase.js & getComplianceSummary
       const wExams = exams.filter(e => e.worker_id === w.id || (e.rut && w.rut && e.rut.replace(/\./g,'').split('-')[0] === w.rut.replace(/\./g,'').split('-')[0]));
+      
+      // 1. SIN DOCUMENTOS -> NO HABILITADO (ROJO/BLOQUEADO)
       if (wExams.length === 0) {
         counts["No habilitado"]++;
         return;
@@ -485,35 +486,38 @@
         if (diff < minDiff) minDiff = diff;
       });
 
-      if (minDiff <= 300) counts["En riesgo"]++;
-      else counts["Habilitado"]++;
+      // 2. VENCIDOS O PRÓXIMOS (Tensión Operativa 300 días) -> EN RIESGO (AMARILLO)
+      if (minDiff <= 300) {
+        counts["En riesgo"]++;
+      } else {
+        // 3. TODO AL DÍA -> HABILITADO (VERDE)
+        counts["Habilitado"]++;
+      }
     });
 
-    chartWorkerStatus = new Chart(can, {
+    chartWorkerStatus = new Chart(ctx, {
       type: "doughnut",
       data: {
         labels: Object.keys(counts),
         datasets: [{
           data: Object.values(counts),
-          backgroundColor: ["#10b981", "#fb7185", "#f59e0b", "#64748b"],
+          backgroundColor: ["#10b981", "#ef4444", "#f59e0b", "#6b7280"],
           borderWidth: 0
         }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        cutout: '70%',
         plugins: {
-          legend: { position: "bottom", labels: { color: "#94a3b8", boxWidth: 8 } }
+          legend: { position: "bottom", labels: { color: "#b3b7bd", boxWidth: 12 } }
         }
       }
     });
   }
 
   function renderExpMonthly(exams) {
-    const can = document.getElementById("chart_exp_monthly");
-    if (!can) return;
-    const ctx = can.getContext('2d');
+    const ctx = document.getElementById("chart_exp_monthly");
+    if (!ctx) return;
     destroyIfExists(chartExpMonthly);
 
     const now = new Date();
@@ -529,17 +533,14 @@
       else if (diff > 21 && diff <= 30) buckets["Semana 4"]++;
     });
 
-    const grad = getStarkGradient(ctx, "rgba(59, 130, 246, 0.8)", "rgba(59, 130, 246, 0.1)");
-
-    chartExpMonthly = new Chart(can, {
+    chartExpMonthly = new Chart(ctx, {
       type: "bar",
       data: {
         labels: Object.keys(buckets),
         datasets: [{
           label: "Vencimientos",
           data: Object.values(buckets),
-          backgroundColor: grad,
-          borderRadius: 4
+          backgroundColor: "#3498db"
         }]
       },
       options: {
@@ -547,16 +548,16 @@
         maintainAspectRatio: false,
         plugins: { legend: { display: false } },
         scales: {
-          x: { ticks: { color: "#94a3b8" }, grid: { display: false } },
-          y: { beginAtZero: true, ticks: { color: "#94a3b8", stepSize: 1 }, grid: { color: "rgba(255,255,255,.05)" } }
+          x: { ticks: { color: "#b3b7bd" }, grid: { display: false } },
+          y: { beginAtZero: true, ticks: { color: "#b3b7bd", stepSize: 1 }, grid: { color: "rgba(255,255,255,.05)" } }
         }
       }
     });
   }
 
   function renderRiskTypes(exams) {
-    const can = document.getElementById("chart_risk_types");
-    if (!can) return;
+    const ctx = document.getElementById("chart_risk_types");
+    if (!ctx) return;
     destroyIfExists(chartRiskTypes);
 
     const latestExams = getLatestExamsPerWorker(exams);
@@ -572,14 +573,13 @@
       counts[cat.label]++;
     });
 
-    chartRiskTypes = new Chart(can, {
+    chartRiskTypes = new Chart(ctx, {
       type: "bar",
       data: {
         labels: Object.keys(counts),
         datasets: [{
           data: Object.values(counts),
-          backgroundColor: ["#10b981", "#fbbf24", "#f59e0b", "#fb7185"],
-          borderRadius: 4
+          backgroundColor: ["#10b981", "#f1c40f", "#e67e22", "#e74c3c"]
         }]
       },
       options: {
@@ -588,66 +588,73 @@
         maintainAspectRatio: false,
         plugins: { legend: { display: false } },
         scales: {
-          x: { beginAtZero: true, ticks: { color: "#94a3b8", stepSize: 1 }, grid: { color: "rgba(255,255,255,.05)" } },
-          y: { ticks: { color: "#94a3b8" }, grid: { display: false } }
+          x: { beginAtZero: true, ticks: { color: "#b3b7bd", stepSize: 1 }, grid: { color: "rgba(255,255,255,.05)" } },
+          y: { ticks: { color: "#b3b7bd" }, grid: { display: false } }
         }
       }
     });
   }
   
   function renderCredentialsPct(workers, exams) {
-    const can = document.getElementById("chart_credentials_pct");
-    if (!can) return;
+    const ctx = document.getElementById("chart_credentials_pct");
+    if (!ctx) return;
     destroyIfExists(chartCredentialsPct);
 
     if (!workers.length) return;
 
+    // Con v_worker_profile, cada worker tiene un array 'credentials'
     const withDocs = workers.filter(w => w.credentials && w.credentials.length > 0).length;
     const total = workers.length;
     const withoutDocs = total - withDocs;
 
-    chartCredentialsPct = new Chart(can, {
+    chartCredentialsPct = new Chart(ctx, {
       type: "doughnut",
       data: {
         labels: ["Con Exámenes", "Sin Exámenes"],
         datasets: [{
           data: [withDocs, withoutDocs],
-          backgroundColor: ["#10b981", "rgba(148, 163, 184, 0.3)"],
+          backgroundColor: ["#10b981", "#6b7280"],
           borderWidth: 0
         }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        cutout: '75%',
         plugins: {
-          legend: { position: "bottom", labels: { color: "#94a3b8", boxWidth: 8 } }
+          legend: { position: "bottom", labels: { color: "#b3b7bd", boxWidth: 12 } },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => {
+                const val = ctx.raw;
+                const pct = Math.round((val / total) * 100);
+                return ` ${val} trabajadores (${pct}%)`;
+              }
+            }
+          }
         }
       }
     });
   }
 
   function renderExamsDistribution(exams) {
-    const can = document.getElementById("chart_exams_distribution");
-    if (!can) return;
-    const ctx = can.getContext('2d');
+    const ctx = document.getElementById("chart_exams_distribution");
+    if (!ctx) return;
     destroyIfExists(chartExamsDistribution);
 
+    // Count by credential_name or exam_type
     const counts = countBy(exams, e => e.credential_name || e.exam_type || "Otros");
     const entries = [...counts.entries()]
       .sort((a, b) => b[1] - a[1])
       .slice(0, 8);
 
-    const grad = getStarkGradient(ctx, "rgba(59, 130, 246, 0.8)", "rgba(59, 130, 246, 0.1)");
-
-    chartExamsDistribution = new Chart(can, {
+    chartExamsDistribution = new Chart(ctx, {
       type: "bar",
       data: {
         labels: entries.map(x => x[0]),
         datasets: [{
           label: "Cantidad",
           data: entries.map(x => x[1]),
-          backgroundColor: grad,
+          backgroundColor: "#3498db",
           borderRadius: 4
         }]
       },
@@ -657,8 +664,8 @@
         maintainAspectRatio: false,
         plugins: { legend: { display: false } },
         scales: {
-          x: { beginAtZero: true, ticks: { color: "#94a3b8", stepSize: 1 }, grid: { color: "rgba(255,255,255,0.05)" } },
-          y: { ticks: { color: "#94a3b8", font: { size: 10 } }, grid: { display: false } }
+          x: { beginAtZero: true, ticks: { color: "#b3b7bd", stepSize: 1 }, grid: { color: "rgba(255,255,255,.05)" } },
+          y: { ticks: { color: "#b3b7bd", font: { size: 10 } }, grid: { display: false } }
         }
       }
     });
@@ -672,21 +679,26 @@
         renderPipeline(items);
     }
     if (workers || exams) {
+        // renderWorkerStatus ya no se usa en Dashboard, pero se mantiene para Workers.html
+        // renderWorkerStatus(workers || [], exams || []); 
         renderCredentialsPct(workers || [], exams || []);
         renderExamsDistribution(exams || []);
     }
   };
 
+  /**
+   * Nuevo: Distribución por Tipo de Examen (altfis, ruido, silice, etc.)
+   */
   window.renderExamTypeDistribution = function(exams) {
-    const can = document.getElementById("chart_exam_types");
-    if (!can) return;
-    const ctx = can.getContext('2d');
+    const ctx = document.getElementById("chart_exam_types");
+    if (!ctx) return;
     destroyIfExists(window.chartExamTypes);
 
     const counts = {};
     (exams || []).forEach(e => {
       let type = String(e.exam_type || "").trim();
-      if (!type || type.toLowerCase() === "null") return;
+      if (!type || type.toLowerCase() === "null") return; // Ignoramos nulos
+      
       counts[type] = (counts[type] || 0) + 1;
     });
 
@@ -694,18 +706,16 @@
     const labels = sortedEntries.map(e => e[0].toUpperCase());
     const values = sortedEntries.map(e => e[1]);
 
-    const grad = getStarkGradient(ctx, "rgba(59, 130, 246, 0.9)", "rgba(59, 130, 246, 0.2)");
-
-    window.chartExamTypes = new Chart(can, {
+    window.chartExamTypes = new Chart(ctx, {
       type: 'bar',
       data: {
         labels: labels,
         datasets: [{
           label: 'Cantidad',
           data: values,
-          backgroundColor: grad,
+          backgroundColor: '#3b82f6',
           borderRadius: 8,
-          barThickness: 20
+          barThickness: 24
         }]
       },
       options: {
@@ -715,13 +725,14 @@
         plugins: {
           legend: { display: false },
           tooltip: {
-            backgroundColor: "rgba(15, 23, 42, 0.9)",
-            titleColor: "#67e8f9"
+            callbacks: {
+              label: (ctx) => ` ${ctx.raw} exámenes`
+            }
           }
         },
         scales: {
-          x: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', stepSize: 1 } },
-          y: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 10, weight: 'bold' } } }
+          x: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#6b7280', stepSize: 1 } },
+          y: { grid: { display: false }, ticks: { color: '#b3b7bd', font: { size: 10, weight: 'bold' } } }
         }
       }
     });

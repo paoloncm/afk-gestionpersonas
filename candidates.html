@@ -11,154 +11,55 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
   <style>
-    :root {
-      --accent-glow: rgba(34, 211, 238, 0.4);
-      --card-bg: rgba(2, 6, 23, 0.7);
-      --glass-border: rgba(34, 211, 238, 0.15);
+    .profile {
+      display: grid;
+      gap: 16px
     }
 
-    body {
-       background: #020617;
-       background-image: 
-         radial-gradient(circle at 20% 20%, rgba(34, 211, 238, 0.05) 0%, transparent 40%),
-         radial-gradient(circle at 80% 80%, rgba(6, 182, 212, 0.03) 0%, transparent 40%);
+    .profile__header {
+      display: flex;
+      align-items: center;
+      gap: 16px
     }
 
-    .card {
-       background: var(--card-bg) !important;
-       backdrop-filter: blur(12px);
-       -webkit-backdrop-filter: blur(12px);
-       border: 1px solid var(--glass-border) !important;
-       box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
-       border-radius: 16px !important;
-       transition: transform 0.3s ease, border-color 0.3s ease;
+    .grid2 {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: repeat(2, minmax(0, 1fr))
     }
 
-    .card:hover {
-       border-color: rgba(34, 211, 238, 0.3) !important;
+    @media(max-width:900px) {
+      .grid2 {
+        grid-template-columns: 1fr
+      }
     }
 
-    .hero-dashboard {
-       background: linear-gradient(135deg, rgba(34,211,238,0.05) 0%, rgba(2,6,23,0.9) 100%) !important;
-       border-bottom: 2px solid var(--accent) !important;
-       border-radius: 16px !important;
-       margin-bottom: 24px;
-       position: relative;
-       overflow: hidden;
+    .timeline {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      gap: 10px
     }
 
-    .hero-dashboard::after {
-       content: "";
-       position: absolute;
-       top: -50%; left: -50%; width: 200%; height: 200%;
-       background: radial-gradient(circle, rgba(34,211,238,0.02) 0%, transparent 70%);
-       pointer-events: none;
-    }
-
-    #phName {
-       text-shadow: 0 0 20px rgba(34, 211, 238, 0.3);
-       letter-spacing: -1px;
-    }
-
-    .stark-hud-val {
-       font-family: 'Inter', sans-serif;
-       font-weight: 900;
-       color: var(--accent);
-       text-shadow: 0 0 15px var(--accent-glow);
-    }
-
-    .pill-list li {
-       background: rgba(34, 211, 238, 0.1) !important;
-       border: 1px solid rgba(34, 211, 238, 0.2) !important;
-       color: var(--accent) !important;
-       padding: 4px 12px !important;
-       border-radius: 20px !important;
-       font-size: 11px !important;
-       font-weight: 700 !important;
-       text-transform: uppercase !important;
-       letter-spacing: 0.5px !important;
-       transition: all 0.2s ease;
-    }
-
-    .pill-list li:hover {
-       background: rgba(34, 211, 238, 0.2) !important;
-       box-shadow: 0 0 10px var(--accent-glow);
-       transform: translateY(-1px);
+    .timeline li {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: 12px;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, .03)
     }
 
     .chart-box {
       height: 280px;
-      width: 100%;
-      position: relative;
+      width: 100%
     }
 
-    .score-tactical {
-       display: flex;
-       flex-direction: column;
-       align-items: center;
-       justify-content: center;
-       padding: 20px;
-       border-radius: 50%;
-       width: 140px;
-       height: 140px;
-       border: 2px solid var(--glass-border);
-       background: rgba(34, 211, 238, 0.03);
-       margin: 0 auto 20px;
-       position: relative;
-    }
-
-    .score-tactical::before {
-       content: "";
-       position: absolute;
-       inset: -5px;
-       border: 1px dashed rgba(34, 211, 238, 0.3);
-       border-radius: 50%;
-       animation: rotate 20s linear infinite;
-    }
-
-    @keyframes rotate {
-       from { transform: rotate(0deg); }
-       to { transform: rotate(360deg); }
-    }
-
-    .timeline li {
-       background: rgba(255, 255, 255, 0.02) !important;
-       border: 1px solid rgba(255, 255, 255, 0.05) !important;
-       transition: border-color 0.3s;
-    }
-
-    .timeline li:hover {
-       border-color: var(--accent-glow) !important;
-    }
-
-    .stark-tooltip {
-       position: relative;
-       cursor: help;
-    }
-
-    .stark-tooltip::before {
-       content: attr(data-tip);
-       position: absolute;
-       bottom: 125%;
-       left: 50%;
-       transform: translateX(-50%);
-       padding: 8px 12px;
-       background: rgba(2, 6, 23, 0.95);
-       border: 1px solid var(--accent);
-       color: #fff;
-       font-size: 11px;
-       border-radius: 4px;
-       white-space: nowrap;
-       opacity: 0;
-       visibility: hidden;
-       transition: opacity 0.3s;
-       z-index: 100;
-       box-shadow: 0 0 15px rgba(34,211,238,0.2);
-    }
-
-    .stark-tooltip:hover::before {
-       opacity: 1;
-       visibility: visible;
+    .files a {
+      display: inline-block;
+      margin: 6px 10px 6px 0
     }
   </style>
 </head>
@@ -179,7 +80,7 @@
         <a href="pipeline.html"><span class="label">Pipeline</span></a>
 
         <div class="nav-category">Gestión</div>
-        <a href="workers.html"><span class="label">Gestión Trabajadores</span></a>
+        <a href="workers.html"><span class="label">Trabajadores</span></a>
         <a href="alerts.html"><span class="label">Alertas</span></a>
         <a href="documents.html"><span class="label">Documentos</span></a>
         <a href="reports.html"><span class="label">Reportes</span></a>
@@ -280,40 +181,21 @@
             </div>
           </div>
 
-          <div class="card" style="grid-column: 1 / -1; display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 24px; padding: 24px; align-items: center;">
-             <!-- Col 1: Radar (Inteligencia) -->
-             <div style="height: 300px; position: relative;">
-                <div style="font-size:12px; font-weight:800; color:var(--accent); margin-bottom:15px; text-transform:uppercase; letter-spacing:2px;">
-                   🛡️ Perfil de Competencias 
-                </div>
+          <div class="card">
+            <div class="card__body">
+              <h2 class="h1" style="font-size:18px">Score</h2>
+
+              <div class="text-muted">Ranking</div>
+              <div id="phRanking">—</div><br />
+
+              <div class="text-muted">Nota</div>
+              <div id="phNota">—</div><br />
+
+              <div class="text-muted" style="margin-top:10px;">Perfil de competencias</div>
+              <div class="chart-box">
                 <canvas id="radar"></canvas>
-             </div>
-
-             <!-- Col 2: Score (Core) -->
-             <div style="text-align: center;">
-                <div class="stark-tooltip" data-tip="Nivel de Maestría: Basado en evaluación técnica y triage inicial de Industrias Stark." style="font-size:12px; font-weight:800; color:var(--text-muted); margin-bottom:20px; text-transform:uppercase; letter-spacing:2px;">
-                   Calificación Global
-                </div>
-                <div class="score-tactical">
-                   <div id="phNota" class="stark-hud-val" style="font-size: 48px; position:relative; z-index:2;">—</div>
-                   <div style="font-size:10px; color:var(--accent); font-weight:800; margin-top:-5px; letter-spacing:1px;">POINTS</div>
-                </div>
-                <div id="phEval" style="font-size:12px; font-style:italic; color:var(--text-muted); max-width:200px; margin:0 auto;">—</div>
-             </div>
-
-             <!-- Col 3: Ranking (Posicionamiento) -->
-             <div style="text-align: center; border-left: 1px dashed rgba(34,211,238,0.2); height: 80%; display: flex; flex-direction: column; justify-content: center;">
-                <div class="stark-tooltip" data-tip="Índice de Mérito: Puntuación basada en el calce estratégico y logros del candidato. #1 es el nivel de élite." style="font-size:12px; font-weight:800; color:var(--text-muted); margin-bottom:10px; text-transform:uppercase; letter-spacing:2px;">
-                   Méritos y Calce
-                </div>
-                <div style="display:flex; align-items:baseline; justify-content:center; gap:5px;">
-                   <span style="font-size:20px; font-weight:900; color:var(--accent); opacity:0.5;">#</span>
-                   <span id="phRanking" class="stark-hud-val" style="font-size: 64px;">—</span>
-                </div>
-                <div style="font-size:11px; font-weight:700; color:var(--ok); background:rgba(0,255,100,0.1); padding:4px 12px; border-radius:20px; display:inline-block; margin:10px auto 0;">
-                   TOP CANDIDATE
-                </div>
-             </div>
+              </div>
+            </div>
           </div>
 
           <div class="card" style="grid-column:1 / -1">
