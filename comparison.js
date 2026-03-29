@@ -131,49 +131,48 @@
 
         candidates.forEach((c, idx) => {
             const isWinner = idx === 0;
-            const seed = encodeURIComponent(c.nombre_completo || 'AFK');
-            const avatar = `https://i.pravatar.cc/80?u=${seed}`;
             
             const div = document.createElement('div');
-            div.className = `card ${isWinner ? 'winner-card' : ''}`;
+            div.className = `card stark-card ${isWinner ? 'winner-card stark-card--winner' : ''}`;
             div.style.position = 'relative';
 
             // Nota Status
             const notaVal = Number(String(c.nota || '0').replace(',', '.'));
-            let statusText = 'A evaluar';
+            let statusText = 'A EVALUAR';
             let statusColor = 'var(--muted)';
-            if (notaVal >= 6.5) { statusText = 'Alto Potencial'; statusColor = '#10b981'; }
-            else if (notaVal >= 5.5) { statusText = 'Recomendable'; statusColor = '#f59e0b'; }
+            if (notaVal >= 6.5) { statusText = 'ALTO POTENCIAL'; statusColor = '#10b981'; }
+            else if (notaVal >= 5.5) { statusText = 'RECOMENDABLE'; statusColor = '#f59e0b'; }
 
             div.innerHTML = `
-                ${isWinner ? '<div class="best-option-badge">Mejor Opción</div>' : ''}
+                ${isWinner ? '<div class="best-option-badge">SYSTEM_CHOICE</div>' : ''}
                 <div class="card__body" style="height:100%; display:flex; flex-direction:column;">
-                    <div style="display:flex; gap:16px; align-items:center; margin-bottom:20px;">
-                        <img src="${avatar}" style="width:60px; height:60px; border-radius:15px; border:2px solid ${isWinner? '#10b981':'var(--border)'}">
-                        <div>
-                            <h4 style="margin:0; font-size:18px;">${c.nombre_completo}</h4>
-                            <div style="color:${statusColor}; font-size:12px; font-weight:700; text-transform:uppercase;">${statusText}</div>
+                    <div class="stark-header" style="margin-bottom:20px;">
+                        <div class="stark-id-badge">FILE_ID: ${c.id.substring(0,8).toUpperCase()}</div>
+                        <h4 class="stark-name">${c.nombre_completo}</h4>
+                        <div class="stark-status" style="color:${statusColor}">${statusText}</div>
+                    </div>
+
+                    <div class="stark-stats-grid">
+                        <div class="stark-stat">
+                            <div class="stark-stat-value">${c.match_score || '80'}%</div>
+                            <div class="stark-stat-label">MATCH_IA</div>
+                        </div>
+                        <div class="stark-stat">
+                            <div class="stark-stat-value">${c.nota || '—'}</div>
+                            <div class="stark-stat-label">SC_OPERATIONAL</div>
                         </div>
                     </div>
 
-                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-bottom:20px;">
-                        <div>
-                            <div style="font-size:24px; font-weight:900; color:var(--accent);">${c.match_score || '80'}%</div>
-                            <div style="font-size:10px; color:var(--muted); text-transform:uppercase;">Match IA</div>
+                    <div class="stark-summary" style="margin-bottom:20px;">
+                        <div class="stark-summary-label">// OPERATIONAL_ANALYSIS</div>
+                        <div class="stark-summary-content">
+                            ${c.evaluacion_general || 'Data awaiting deep-link synchronization...'}
                         </div>
-                        <div>
-                            <div style="font-size:24px; font-weight:900;">${c.nota || '—'}</div>
-                            <div style="font-size:10px; color:var(--muted); text-transform:uppercase;">Score Final</div>
-                        </div>
-                    </div>
-
-                    <div style="margin-bottom:20px; font-size:13px; line-height:1.6; color:rgba(255,255,255,0.7);">
-                        <strong>Resumen AFK:</strong> ${c.evaluacion_general || 'Pendiente de análisis detallado por parte del equipo.'}
                     </div>
 
                     <div style="margin-top:auto; display:flex; gap:8px;">
-                        <button class="btn btn--primary" style="flex:1; border-radius:10px;" onclick="location.href='candidates.html?id=${c.id}'">Ver Perfil</button>
-                        <button class="btn" style="flex:1; border-radius:10px;" ${!c.cv_url ? 'disabled' : `onclick="window.open('${c.cv_url}')"`}>📄 Ver CV</button>
+                        <button class="btn btn--primary" style="flex:1; border-radius:4px; font-family:'JetBrains Mono',monospace; font-size:12px;" onclick="location.href='candidates.html?id=${c.id}'">OPEN_FILE</button>
+                        <button class="btn" style="flex:1; border-radius:4px; font-family:'JetBrains Mono',monospace; font-size:12px;" ${!c.cv_url ? 'disabled' : `onclick="window.open('${c.cv_url}')"`}>VIEW_DOC</button>
                     </div>
                 </div>
             `;

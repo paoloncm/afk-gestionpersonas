@@ -181,6 +181,110 @@ body {
   box-shadow: 0 0 30px rgba(103, 232, 249, 0.3);
 }
 
+/* Stark HUD Card Specifics */
+.stark-card {
+    border: 1px solid rgba(103, 232, 249, 0.3) !important;
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.6), rgba(0, 0, 0, 0.4)) !important;
+    clip-path: polygon(
+        0% 10px, 10px 0%, 
+        calc(100% - 10px) 0%, 100% 10px, 
+        100% calc(100% - 10px), calc(100% - 10px) 100%, 
+        10px 100%, 0% calc(100% - 10px)
+    );
+    transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+.stark-card--winner {
+    border: 2px solid var(--accent) !important;
+    box-shadow: 0 0 30px rgba(103, 232, 249, 0.2) !important;
+}
+
+.stark-card::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.05) 0px,
+        rgba(0, 0, 0, 0.05) 1px,
+        transparent 1px,
+        transparent 2px
+    );
+    pointer-events: none;
+    z-index: 5;
+}
+
+.stark-id-badge {
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    font-size: 9px;
+    color: var(--accent);
+    opacity: 0.6;
+    letter-spacing: 2px;
+    margin-bottom: 4px;
+}
+
+.stark-name {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #fff;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+}
+
+.stark-status {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-top: 4px;
+}
+
+.stark-stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 20px 0;
+    padding: 15px;
+    background: rgba(103, 232, 249, 0.05);
+    border: 1px solid rgba(103, 232, 249, 0.1);
+    border-left: 3px solid var(--accent);
+}
+
+.stark-stat-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 28px;
+    font-weight: 900;
+    color: var(--accent);
+}
+
+.stark-stat-label {
+    font-size: 9px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+}
+
+.stark-summary-label {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--accent);
+    font-size: 10px;
+    margin-bottom: 8px;
+    opacity: 0.8;
+}
+
+.stark-summary-content {
+    font-size: 13px;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.8);
+    border-left: 1px solid rgba(103, 232, 249, 0.2);
+    padding-left: 12px;
+}
+
 /* Marker Pulse for Map */
 .marker-pulse {
   animation: markerPulse 2s infinite;

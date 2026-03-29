@@ -59,7 +59,7 @@
             const colCandidates = candidates.filter(c => {
                 const s = String(c.status || '').trim().toLowerCase();
                 const p = phase.toLowerCase();
-                if (phase === 'Postulado' && (s === 'nuevo' || s === '' || s === 'postulado' || s === 'pendiente')) return true;
+                if (phase === 'Postulado' && (s === 'nuevo' || s === '' || s === 'postulado')) return true;
                 return s === p;
             });
 
