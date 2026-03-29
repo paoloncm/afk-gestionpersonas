@@ -89,22 +89,33 @@
 
     <!-- Modal Matchmaking (Resultados) -->
     <div id="matchModal" class="modal">
-      <div class="modal__content" style="max-width:800px">
-        <div class="modal__header">
-          <h2 id="matchTitle" class="h1">Buscando Trabajadores Aptos...</h2>
+      <div class="modal__content" style="max-width:1000px; background:var(--bg-card); border:1px solid rgba(255,255,255,0.1);">
+        <div class="modal__header" style="border-bottom:none; padding-bottom:5px;">
+          <h2 class="h1" id="matchTitle">Aptitud Licitación</h2>
           <button class="close-modal">&times;</button>
         </div>
-        <div class="modal__body">
-          <div id="matchResults" class="table">
-            <div class="t-head">
-              <div class="t-col-name">Trabajador</div>
-              <div class="t-col-prof">Estado</div>
-              <div class="t-col-status">Detalle</div>
+        <div style="padding:0 20px 10px; border-bottom:1px solid rgba(255,255,255,0.1); display:flex; gap:20px;">
+           <button class="btn btn--mini" id="tabWorkers" style="background:transparent; color:var(--text); border-bottom:2px solid var(--primary); padding-bottom:8px; border-radius:0;">👷 Trabajadores (Cumplimiento Duros)</button>
+           <button class="btn btn--mini" id="tabCandidates" style="background:transparent; color:var(--muted); border-bottom:2px solid transparent; padding-bottom:8px; border-radius:0;">🦸 Candidatos (Afinidad Semántica IA)</button>
+        </div>
+        <div class="modal__body" style="padding:0; max-height:60vh; overflow-y:auto">
+            <div id="matchBodyWorkers" class="table">
+              <div class="t-head">
+                <div class="t-col-name" style="width:200px">Trabajador</div>
+                <div class="t-col-prof" style="width:100px">Estado</div>
+                <div class="t-col-status">Detalle</div>
+              </div>
             </div>
-            <div id="matchBody"></div>
-          </div>
+            <div id="matchBodyCandidates" class="table" style="display:none;">
+              <div class="t-head">
+                <div class="t-col-name" style="flex: 0 0 250px">Candidato</div>
+                <div class="t-col-score" style="flex: 0 0 100px; text-align:center;">Match AI</div>
+                <div class="t-col-desc" style="flex: 1">Evaluación General</div>
+              </div>
+            </div>
         </div>
       </div>
+    </div>
     </div>
   </div>
 
@@ -121,7 +132,7 @@
       <div id="chatBody" class="chatbot__body"></div>
 
       <div class="chatbot__input">
-        <input id="chatInput" type="text" placeholder="Escribe aqu�">
+        <input id="chatInput" type="text" placeholder="Escribe aqu�">
         <button id="chatSend" class="btn btn--primary" type="button">Enviar</button>
       </div>
     </aside>
