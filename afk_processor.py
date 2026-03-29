@@ -16,18 +16,29 @@ load_dotenv()
 class CandidateCV(BaseModel):
     nombre_completo: str = Field(..., description="Full name of the candidate")
     rut: Optional[str] = Field(None, description="Chilean ID (RUT) if present, formatted as 12.345.678-9")
+    fecha_nacimiento: Optional[str] = Field(None, description="Date of birth if present (YYYY-MM-DD format)")
     profesion: str = Field(..., description="Main profession or degree")
     correo: str = Field(..., description="Email address")
     telefono: Optional[str] = Field(None, description="Contact phone number")
+    direccion: Optional[str] = Field(None, description="Physical address or city of residence")
+    
+    cargo: Optional[str] = Field(None, description="Current or most recent job title/position")
+    ultima_exp_laboral_empresa: Optional[str] = Field(None, description="Name of the most recent company worked for")
+    periodo: Optional[str] = Field(None, description="Time period of the most recent employment (e.g., '2019 - Present')")
+    software_que_domina: Optional[str] = Field(None, description="List of software, tools, or technologies the candidate masters")
+    experiencia: Optional[str] = Field(None, description="Summary of the most recent work experience")
+    
     cargo_a_desempenar: Optional[str] = Field(None, description="Latest or targeted position")
     experiencia_total: float = Field(0.0, description="Total years of work experience (numeric)")
     experiencia_en_empresa_actual: float = Field(0.0, description="Years in the current or most recent company")
     exp_cargo_actual: float = Field(0.0, description="Years in the current or most recent position")
     exp_proy_similares: float = Field(0.0, description="Estimated years of experience in industrial/mining projects or similar to the target role")
+    
     antecedentes_academicos: str = Field("", description="Summary of education and degrees")
     experiencia_general: str = Field("", description="Draft of General Experience for TEC-02 report")
     experiencia_especifica: str = Field("", description="Draft of Specific Experience for TEC-02-A report")
     otras_experiencias: str = Field("", description="Other relevant experiences or certifications")
+    
     evaluacion_general: str = Field("", description="A professional 3-sentence summary highlighting the candidate's value proposition for industrial roles")
     match_score: float = Field(80.0, description="A score from 0 to 100 representing how well the candidate matches a generic high-level industrial role")
     match_explicacion: str = Field("", description="A short explanation of why the candidate received the match_score")
@@ -67,7 +78,14 @@ class AFKProcessor:
             raise ValueError(f"Unsupported file format: {ext}")
 
     def process_cv_with_ai(self, text: str) -> CandidateCV:
-        system_prompt = "You are JARVIS, an expert HR Intelligence agent. Extract structured data from the CV text provided."
+        system_prompt = (
+            "You are JARVIS, an expert HR Intelligence agent. Extract structured data from the CV text provided. "
+            "BE EXHAUSTIVE: Ensure EVERY field is populated if the information exists anywhere in the text. "
+            "Never leave a field null if the data can be inferred or extracted. "
+            "For 'software_que_domina', list all tools explicitly. "
+            "For 'experiencia', concisely describe the most recent role. "
+            "For 'ultima_exp_laboral_empresa', 'cargo', and 'periodo', accurately extract the details of the latest job."
+        )
         
         # Define the tool/function based on the Pydantic model
         tools = [
@@ -121,7 +139,8 @@ class AFKProcessor:
         
         # 2. Build payload using ONLY columns that exist in the candidates table
         EXISTING_DB_COLUMNS = {
-            "nombre_completo", "rut", "profesion", "correo", "telefono",
+            "nombre_completo", "rut", "fecha_nacimiento", "profesion", "correo", "telefono", "direccion",
+            "cargo", "ultima_exp_laboral_empresa", "periodo", "software_que_domina", "experiencia",
             "cargo_a_desempenar", "experiencia_total", "experiencia_en_empresa_actual",
             "exp_cargo_actual", "exp_proy_similares", "antecedentes_academicos",
             "experiencia_general", "experiencia_especifica", "otras_experiencias",
@@ -142,17 +161,29 @@ class AFKProcessor:
             print(f"🔄 Syncing to Supabase ID: {candidate_id}...")
             result = self.supabase.table("candidates").update(payload).eq("id", candidate_id).execute()
         else:
-            print("🆕 No ID provided. Checking for existing candidate by RUT...")
+            print("🆕 No ID provided. Checking for existing candidate by RUT or Name...")
+            found_id = None
+            
+            # Check by RUT first
             if cv_data.rut:
-                existing = self.supabase.table("candidates").select("id").eq("rut", cv_data.rut).execute()
+                # Clean rut strings to avoid trailing spaces/inconsistencies
+                clean_rut = cv_data.rut.replace(" ", "").strip()
+                existing = self.supabase.table("candidates").select("id").eq("rut", clean_rut).execute()
                 if existing.data:
                     found_id = existing.data[0]['id']
-                    print(f"⚠️ Candidate with RUT {cv_data.rut} already exists (ID: {found_id}). Updating.")
-                    result = self.supabase.table("candidates").update(payload).eq("id", found_id).execute()
-                    return result
             
-            print(f"✨ Inserting new candidate: {cv_data.nombre_completo}")
-            result = self.supabase.table("candidates").insert(payload).execute()
+            # Check by Name if RUT didn't match
+            if not found_id and cv_data.nombre_completo:
+                existing = self.supabase.table("candidates").select("id").ilike("nombre_completo", cv_data.nombre_completo.strip()).execute()
+                if existing.data:
+                    found_id = existing.data[0]['id']
+
+            if found_id:
+                print(f"⚠️ Candidate {cv_data.nombre_completo} already exists (ID: {found_id}). Updating.")
+                result = self.supabase.table("candidates").update(payload).eq("id", found_id).execute()
+            else:
+                print(f"✨ Inserting new candidate: {cv_data.nombre_completo}")
+                result = self.supabase.table("candidates").insert(payload).execute()
         
         return result
 
