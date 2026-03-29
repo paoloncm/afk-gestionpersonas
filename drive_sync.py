@@ -13,11 +13,26 @@ class DriveSync:
     def __init__(self, credentials_path='credentials.json'):
         self.scopes = ['https://www.googleapis.com/auth/drive']
         self.creds = None
-        if os.path.exists(credentials_path):
+        
+        # 1. Try environment variable (for Production/Railway)
+        env_creds = os.getenv("GOOGLE_CREDENTIALS")
+        if env_creds:
+            try:
+                info = json.loads(env_creds)
+                self.creds = service_account.Credentials.from_service_account_info(
+                    info, scopes=self.scopes)
+                print("✅ Google Credentials loaded from environment variable.")
+            except Exception as e:
+                print(f"❌ Error parsing GOOGLE_CREDENTIALS environment variable: {e}")
+
+        # 2. Falling back to local file if no env var
+        if not self.creds and os.path.exists(credentials_path):
             self.creds = service_account.Credentials.from_service_account_file(
                 credentials_path, scopes=self.scopes)
-        else:
-            print(f"⚠️ Warning: {credentials_path} not found. Drive Sync will fail.")
+            print("✅ Google Credentials loaded from local file.")
+            
+        if not self.creds:
+            print(f"⚠️ Warning: No credentials found (Tried GOOGLE_CREDENTIALS env var and {credentials_path}).")
         
         self.service = build('drive', 'v3', credentials=self.creds) if self.creds else None
         self.processor = AFKProcessor()
