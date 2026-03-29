@@ -7,10 +7,37 @@
   const tenderForm = $('#tenderForm');
   const reqContainer = $('#reqContainer');
   const matchModal = $('#matchModal');
-  const matchBody = $('#matchBody');
+  
+  // New tab elements
+  const tabWorkers = $('#tabWorkers');
+  const tabCandidates = $('#tabCandidates');
+  const matchBodyWorkers = $('#matchBodyWorkers') || $('#matchBody'); // Fallback if HTML wasn't patched properly
+  const matchBodyCandidates = $('#matchBodyCandidates');
+
   const tenderIdInput = $('#tenderId');
   const tenderNameInput = $('#tenderName');
   const tenderDescInput = $('#tenderDesc');
+
+  // Set up Tabs
+  if (tabWorkers && tabCandidates) {
+    tabWorkers.onclick = () => {
+      tabWorkers.style.color = "var(--text)";
+      tabWorkers.style.borderColor = "var(--primary)";
+      tabCandidates.style.color = "var(--muted)";
+      tabCandidates.style.borderColor = "transparent";
+      if (matchBodyWorkers) matchBodyWorkers.style.display = "block";
+      if (matchBodyCandidates) matchBodyCandidates.style.display = "none";
+    };
+    
+    tabCandidates.onclick = () => {
+      tabCandidates.style.color = "var(--text)";
+      tabCandidates.style.borderColor = "var(--primary)";
+      tabWorkers.style.color = "var(--muted)";
+      tabWorkers.style.borderColor = "transparent";
+      if (matchBodyWorkers) matchBodyWorkers.style.display = "none";
+      if (matchBodyCandidates) matchBodyCandidates.style.display = "block";
+    };
+  }
 
   function normalizeText(text) {
     if (!text) return '';
@@ -206,11 +233,14 @@
     }
   };
 
-  // --- LÓGICA DE MATCHMAKING (CORE) ---
-
   async function runMatchmaking(tender) {
     $('#matchTitle').textContent = `Aptitud para: ${tender.name}`;
-    matchBody.innerHTML = '<p style="padding:20px">Calculando compatibilidad...</p>';
+    
+    if (tabWorkers) tabWorkers.click();
+    
+    if (matchBodyWorkers) matchBodyWorkers.innerHTML = '<p style="padding:20px">Calculando compatibilidad estricta de certificaciones...</p>';
+    if (matchBodyCandidates) matchBodyCandidates.innerHTML = '<p style="padding:20px">Iniciando búsqueda semántica en la Bóveda de Candidatos...</p>';
+    
     openModal(matchModal);
 
     try {
@@ -276,8 +306,8 @@
         };
       });
 
-      // 3. Renderizar resultados
-      matchBody.innerHTML = results.map(r => `
+      // 3. Renderizar resultados (Trabajadores Duros)
+      matchBodyWorkers.innerHTML = results.map(r => `
         <div class="t-row" style="display: flex; padding: 16px; border-bottom: 1px solid rgba(255,255,255,0.05); align-items: stretch; gap: 15px;">
           <div class="t-col-name" style="flex: 0 0 200px;">
             <strong style="display:block; margin-bottom:4px;">${r.worker.full_name}</strong>
@@ -312,7 +342,78 @@
       `).join('');
 
     } catch (err) {
-      matchBody.innerHTML = `<p class="error">Error: ${err.message}</p>`;
+      matchBodyWorkers.innerHTML = `<p class="error">Error: ${err.message}</p>`;
+    }
+    
+    // --- 4. BÚSQUEDA SEMÁNTICA "TONY STARK" (Candidates) ---
+    if (!matchBodyCandidates) return;
+    
+    try {
+        const payload = {
+            tender_id: tender.id,
+            tender_name: tender.name || 'Servicio de Industria',
+            requirements: tender.requirements || []
+        };
+        
+        const resp = await fetch('/api/match-tender-candidates', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+        
+        const data = await resp.json();
+        
+        if (!data.ok) throw new Error(data.detail);
+        
+        const cands = data.matches || [];
+        
+        if (cands.length === 0) {
+            matchBodyCandidates.innerHTML = '<p style="padding:40px; color:var(--muted); text-align:center;">Ningún candidato supera el umbral del 40% de similitud de perfil con esta licitación.</p>';
+        } else {
+            matchBodyCandidates.innerHTML = cands.map(c => {
+                const score = c.ai_match_score || 0;
+                
+                // Colors based on score
+                let color = "var(--primary)";
+                if (score >= 80) color = "var(--ok)";
+                else if (score >= 60) color = "var(--warning)";
+                else color = "var(--danger)";
+                
+                return `
+                <div class="t-row" style="display: flex; padding: 18px; border-bottom: 1px solid rgba(255,255,255,0.05); align-items: start; gap: 20px;">
+                  <div class="t-col-name" style="flex: 0 0 250px;">
+                    <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+                        <div style="width:28px; height:28px; border-radius:6px; background:rgba(103,232,249,0.1); border:1px solid rgba(103,232,249,0.2); display:grid; place-items:center; font-size:14px;">🕵️</div>
+                        <a href="candidate.html?id=${c.id}" target="_blank" style="color:var(--text); font-weight:700; text-decoration:none;">${escapeHtml(c.nombre_completo || 'Desconocido')}</a>
+                    </div>
+                    <div style="font-size:12px; color:var(--muted); opacity:0.8;">${escapeHtml(c.rut || '')}</div>
+                    <div style="font-size:12px; color:var(--primary); margin-top:2px;">${escapeHtml(c.profesion || '')}</div>
+                  </div>
+                  
+                  <div class="t-col-score" style="flex: 0 0 100px; text-align:center; padding-top:6px;">
+                    <div style="font-size:24px; font-weight:900; color:${color}; letter-spacing:-1px;">${score.toFixed(1)}%</div>
+                    <div style="font-size:9px; color:var(--muted); text-transform:uppercase; margin-top:2px; font-weight:800; letter-spacing:0.5px;">AFINIDAD IA</div>
+                    <!-- ProgressBar -->
+                    <div style="width:100%; height:4px; border-radius:2px; background:rgba(255,255,255,0.05); margin-top:6px; overflow:hidden;">
+                        <div style="height:100%; width:${score}%; background:${color}; border-radius:2px; transition: width 1s ease-out;"></div>
+                    </div>
+                  </div>
+                  
+                  <div class="t-col-desc" style="flex: 1; font-size:12.5px; color:rgba(255,255,255,0.85); line-height:1.5;">
+                    <div style="display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden; border-left: 2px solid rgba(255,255,255,0.1); padding-left:12px;">
+                        ${escapeHtml(c.evaluacion_general || "El candidato aún no posee resumen general de sus aptitudes.")}
+                    </div>
+                    <div style="margin-top:6px; margin-left:14px;">
+                        <span class="badge" style="background:rgba(255,255,255,0.05); font-size:10px;">${escapeHtml(c.status || 'Postulado')}</span>
+                    </div>
+                  </div>
+                  
+                </div>
+              `}).join('');
+        }
+        
+    } catch (err) {
+        matchBodyCandidates.innerHTML = `<p class="error" style="padding:20px; color:#f87171;">Hubo un error contactando el oráculo semántico de JARVIS: ${err.message}</p>`;
     }
   }
 

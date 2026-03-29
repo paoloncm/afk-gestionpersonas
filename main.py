@@ -33,10 +33,73 @@ def comparison():
 def candidates_html():
     return (FRONTEND_DIR / "candidates.html").read_text(encoding="utf-8")
 
-# Aquí después conectas RAG / Supabase helpers
-# @app.post("/api/chat")
-# def chat(...):
-#     pass
+# --- AI Semantic Matchmaking Endpoint ---
+class TenderMatchRequest(BaseModel):
+    tender_id: str
+    tender_name: str
+    requirements: list[str]
+
+@app.post("/api/match-tender-candidates")
+async def match_tender_candidates(req: TenderMatchRequest):
+    try:
+        import json
+        from openai import OpenAI
+        from supabase import create_client
+        
+        url = os.getenv("SUPABASE_URL")
+        key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+        openai_key = os.getenv("OPENAI_API_KEY")
+        
+        if not all([url, key, openai_key]):
+            return JSONResponse({"ok": False, "detail": "Missing API keys"}, status_code=500)
+            
+        supabase = create_client(url, key)
+        openai = OpenAI(api_key=openai_key)
+        
+        # 1. Create embedding for the Tender
+        req_text = f"Rol o Servicio: {req.tender_name}. Requisitos claves: " + ". ".join(req.requirements)
+        res = openai.embeddings.create(input=req_text, model="text-embedding-3-small")
+        query_emb = res.data[0].embedding
+        
+        # 2. Fetch all candidates with their vectors
+        candidates = supabase.table("candidates").select("id, nombre_completo, rut, profesion, cargo_a_desempenar, evaluacion_general, status, cv_embedding").execute()
+        
+        # 3. Compute Cosine Similarity (OpenAI vectors are already normalized, so dot product == cosine similarity)
+        matches = []
+        for c in candidates.data:
+            emb = c.get("cv_embedding")
+            if not emb: continue
+            
+            if isinstance(emb, str):
+                try:
+                    emb = json.loads(emb)
+                except:
+                    continue
+                    
+            if len(emb) != len(query_emb): continue
+            
+            score = sum(a * b for a, b in zip(query_emb, emb))
+            
+            # Map score roughly to a realistic percentage. 
+            # OpenAI cosine similarities usually range from 0.3 (unrelated) to 0.85 (identical)
+            # We normalize this range to 0-100% for the HUD
+            base_score = max(0, score - 0.25) / 0.6 
+            pct = min(100.0, max(0.0, round(base_score * 100, 1)))
+            
+            if pct > 40.0: # Minimum affinity threshold
+                c.pop("cv_embedding", None)
+                c["ai_match_score"] = pct
+                matches.append(c)
+                
+        # 4. Sort and return Top 15
+        matches.sort(key=lambda x: x["ai_match_score"], reverse=True)
+        return {"ok": True, "matches": matches[:15]}
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JSONResponse({"ok": False, "detail": str(e)}, status_code=500)
+
 
 # --- JARVIS CV Processing Endpoint ---
 class CVProcessRequest(BaseModel):
