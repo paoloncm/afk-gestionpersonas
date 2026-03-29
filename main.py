@@ -70,18 +70,34 @@ async def process_cv(req: CVProcessRequest, background_tasks: BackgroundTasks):
 
 def run_drive_sync():
     """Triggers the DriveSync class logic."""
-    from drive_sync import DriveSync
-    FOLDER_ID = os.getenv("DRIVE_FOLDER_ID")
-    ARCHIVE_ID = os.getenv("DRIVE_ARCHIVE_ID")
-    if not FOLDER_ID:
-        print("[JARVIS] No DRIVE_FOLDER_ID found in environment.")
-        return
-    
-    sync = DriveSync()
-    sync.process_folder(FOLDER_ID, ARCHIVE_ID)
+    print("[JARVIS] ⚙️ Background task START: run_drive_sync")
+    try:
+        from drive_sync import DriveSync
+        FOLDER_ID = os.getenv("DRIVE_FOLDER_ID")
+        ARCHIVE_ID = os.getenv("DRIVE_ARCHIVE_ID")
+        
+        print(f"[JARVIS] 📁 Folder ID to sync: {FOLDER_ID}")
+        if not FOLDER_ID:
+            print("[JARVIS] ❌ Aborting: No DRIVE_FOLDER_ID found.")
+            return
+        
+        print("[JARVIS] 🔌 Initializing DriveSync...")
+        sync = DriveSync()
+        print("[JARVIS] 🚀 Starting process_folder...")
+        sync.process_folder(FOLDER_ID, ARCHIVE_ID)
+        print("[JARVIS] ✅ Background task FINISHED.")
+    except Exception as e:
+        print(f"[JARVIS] 💥 CRITICAL ERROR in run_drive_sync: {e}")
+        import traceback
+        traceback.print_exc()
 
 @app.post("/api/sync-drive")
 async def sync_drive(background_tasks: BackgroundTasks):
+    folder_id = os.getenv("DRIVE_FOLDER_ID")
+    if not folder_id:
+        return JSONResponse({"ok": False, "detail": "DRIVE_FOLDER_ID not set in Railway variables"}, status_code=400)
+    
+    print(f"[JARVIS] Manual sync requested for folder: {folder_id}")
     background_tasks.add_task(run_drive_sync)
     return {"ok": True, "message": "Google Drive sync started in background."}
 
