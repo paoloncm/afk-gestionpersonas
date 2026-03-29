@@ -278,20 +278,34 @@
 
       // 3. Renderizar resultados
       matchBody.innerHTML = results.map(r => `
-        <div class="t-row">
-          <div class="t-col-name">
-            <strong>${r.worker.full_name}</strong><br>
+        <div class="t-row" style="display: flex; padding: 16px; border-bottom: 1px solid rgba(255,255,255,0.05); align-items: stretch; gap: 15px;">
+          <div class="t-col-name" style="flex: 0 0 200px;">
+            <strong style="display:block; margin-bottom:4px;">${r.worker.full_name}</strong>
             <span style="font-size:11px; color:var(--muted)">${r.worker.rut}</span>
           </div>
-          <div class="t-col-prof">
-            <span class="badge ${r.isApto ? 'badge--success' : 'badge--danger'}">
+          <div class="t-col-prof" style="flex: 0 0 100px; display:flex; align-items:start;">
+            <span class="badge ${r.isApto ? 'badge--success' : 'badge--danger'}" style="margin-top:2px;">
               ${r.isApto ? 'APTO' : 'NO APTO'}
             </span>
           </div>
-          <div class="t-col-status" style="font-size:12px;">
-            ${r.isApto ? '<span style="color:var(--primary)">✓ Cumple todos los requisitos</span>' :
-          (r.missing.length ? `<span style="color:#f87171">Faltan: ${r.missing.join(', ')}</span><br>` : '') +
-          (r.expired.length ? `<span style="color:#fbbf24">Vencidos: ${r.expired.join(', ')}</span>` : '')
+          <div class="t-col-status" style="flex: 1; font-size:12px;">
+            ${r.isApto ? '<div style="color:var(--primary); font-weight:700; height:100%; display:flex; align-items:center;">✓ Cumple todos los requisitos</div>' :
+          (r.missing.length ? `
+            <div style="margin-bottom:8px;">
+              <span style="color:#f87171; font-weight:700; font-size:11px; text-transform:uppercase;">Faltan (${r.missing.length}):</span>
+              <ul style="margin:6px 0 0 0; padding:0 0 0 16px; color:#f87171; opacity:0.9; font-size:11px; line-height:1.4; max-height:150px; overflow-y:auto; border-left:2px solid rgba(248,113,113,0.2);">
+                ${r.missing.map(m => `<li style="margin-bottom:3px;">${escapeHtml(m)}</li>`).join('')}
+              </ul>
+            </div>
+          ` : '') +
+          (r.expired.length ? `
+            <div>
+              <span style="color:#fbbf24; font-weight:700; font-size:11px; text-transform:uppercase;">Vencidos (${r.expired.length}):</span>
+              <ul style="margin:6px 0 0 0; padding:0 0 0 16px; color:#fbbf24; opacity:0.9; font-size:11px; line-height:1.4; max-height:100px; overflow-y:auto; border-left:2px solid rgba(251,191,36,0.2);">
+                ${r.expired.map(m => `<li style="margin-bottom:3px;">${escapeHtml(m)}</li>`).join('')}
+              </ul>
+            </div>
+          ` : '')
         }
           </div>
         </div>
