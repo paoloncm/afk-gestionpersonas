@@ -8,21 +8,16 @@
   const btnResetFilters = $("#btnResetFilters");
   const btnCompare = $("#btnCompare");
   const compareCount = $("#compareCount");
-  const btnNewCandidate = $("#btnNewCandidate");
   const btnGenerateTec02 = $("#btnGenerateTec02FromCandidates");
   const btnGenerateTec02A = $("#btnGenerateTec02AFromCandidates");
   const selectAllCandidates = $("#selectAllCandidates");
+  let btnNewCandidate, btnSyncDrive, modal, closeModalBtn, candidateForm;
 
   const kpiTotal = $("#kpi_total");
   const kpiPromNota = $("#kpi_prom_nota");
   const kpiPromExp = $("#kpi_prom_exp");
   const kpiPctN6 = $("#kpi_pct_n6");
   const topCandidatesEl = $("#topCandidates");
-
-  const btnSyncDrive = document.getElementById("btnSyncDrive");
-  const modal = document.getElementById("candidateModal");
-  const closeModalBtn = $(".close-modal");
-  const candidateForm = $("#candidateForm");
 
   let allCandidates = [];
   let filteredCandidates = [];
@@ -44,10 +39,20 @@
   }
 
   async function init() {
+    console.log("[candidates.supabase.js] init");
     if (!window.supabase) {
       setTimeout(init, 300);
       return;
     }
+
+    // Assign elements here to be sure
+    btnNewCandidate = $("#btnNewCandidate");
+    btnSyncDrive = $("#btnSyncDrive");
+    modal = $("#candidateModal");
+    closeModalBtn = $(".close-modal");
+    candidateForm = $("#candidateForm");
+
+    console.log("[candidates.supabase.js] elements:", { btnNewCandidate, btnSyncDrive, modal });
 
     bindEvents();
     await loadCandidates();
