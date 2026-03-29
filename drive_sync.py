@@ -72,9 +72,18 @@ class DriveSync:
         query = f"'{folder_id}' in parents and (mimeType = 'application/pdf' or mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') and trashed = false"
         try:
             results = self.service.files().list(
-                q=query, spaces='drive', fields='files(id, name, mimeType)').execute()
+                q=query, 
+                spaces='drive', 
+                fields='files(id, name, mimeType)',
+                supportsAllDrives=True,
+                includeItemsFromAllDrives=True
+            ).execute()
             files = results.get('files', [])
-            print(f"📊 Found {len(files)} files to process.")
+            if not files:
+                # One last try to see if ANY file exists at all (diagnostic)
+                print(f"📊 Query successful, but returned 0 files for folder {folder_id}.")
+            else:
+                print(f"📊 Found {len(files)} files to process.")
             return files
         except Exception as e:
             print(f"❌ Error listing files in Drive: {e}")
