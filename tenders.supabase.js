@@ -235,20 +235,63 @@
 
   async function runMatchmaking(tender) {
     $('#matchTitle').textContent = `Aptitud para: ${tender.name}`;
+    openModal(matchModal);
     
+    const select = $('#vacancySelector');
+    if (select) {
+        select.innerHTML = '<option value="">Cargando vacantes...</option>';
+        select.disabled = true;
+    }
+
+    // 0. Obtener vacantes de la licitación
+    const { data: vacancies, error: vErr } = await window.supabase.from('vacancies')
+        .select('*')
+        .eq('tender_id', tender.id)
+        .order('created_at', { ascending: true });
+        
+    let activeVacancies = [];
+    if (!vErr && vacancies && vacancies.length > 0) {
+        activeVacancies = vacancies;
+    } else {
+        // Fallback: Si no hay vacantes definidas, creamos una "Global" usando los requisitos de la licitación
+        activeVacancies = [{
+            id: 'global',
+            title: 'Perfil Global de la Licitación',
+            quantity: 1,
+            requirements: tender.requirements || []
+        }];
+    }
+    
+    if (select) {
+        select.innerHTML = '';
+        activeVacancies.forEach((v, index) => {
+            const opt = document.createElement('option');
+            opt.value = index;
+            opt.textContent = `${v.title} (${v.quantity} cupo${v.quantity > 1 ? 's' : ''})`;
+            select.appendChild(opt);
+        });
+        select.disabled = false;
+        select.onchange = () => evaluateVacancy(tender, activeVacancies[select.value]);
+    }
+    
+    // Evaluar la primera por defecto
+    evaluateVacancy(tender, activeVacancies[0]);
+  }
+
+  async function evaluateVacancy(tender, vacancy) {
     if (tabWorkers) tabWorkers.click();
     
-    if (matchBodyWorkers) matchBodyWorkers.innerHTML = '<p style="padding:20px">Calculando compatibilidad estricta de certificaciones...</p>';
-    if (matchBodyCandidates) matchBodyCandidates.innerHTML = '<p style="padding:20px">Iniciando búsqueda semántica en la Bóveda de Candidatos...</p>';
+    if (matchBodyWorkers) matchBodyWorkers.innerHTML = '<p style="padding:20px; color:var(--text);">Calculando compatibilidad estricta de certificaciones...</p>';
+    if (matchBodyCandidates) matchBodyCandidates.innerHTML = '<p style="padding:20px; color:var(--text);">Iniciando búsqueda semántica en la Bóveda de Candidatos...</p>';
     
-    openModal(matchModal);
+    const vacReqs = vacancy.requirements || [];
 
     try {
       // 1. Obtener todos los trabajadores
       const { data: workers, error: wErr } = await window.supabase.from('workers').select('*');
       if (wErr) throw wErr;
 
-      // 2. Obtener TODAS las credenciales y exámenes (unificamos fuentes para máxima cobertura)
+      // 2. Obtener TODAS las credenciales y exámenes
       const [
         { data: creds, error: cErr },
         { data: exams, error: eErr }
@@ -265,7 +308,6 @@
       const results = workers.map(w => {
         const wRutNormalized = normalize(w.rut);
         
-        // Unificamos registros de ambas tablas que pertenezcan a este trabajador
         const myDocs = [
           ...(creds || []).filter(c => c.worker_id === w.id || normalize(c.rut) === wRutNormalized),
           ...(exams || []).filter(e => normalize(e.rut) === wRutNormalized)
@@ -275,10 +317,9 @@
         const expired = [];
         const today = new Date();
 
-        tender.requirements.forEach(req => {
+        vacReqs.forEach(req => {
           const reqNorm = normalizeText(req);
           
-          // Buscamos si tiene algún documento que coincida con el requerimiento (por nombre o tipo)
           const found = myDocs.find(d => {
             const nameNorm = normalizeText(d.credential_name);
             const typeNorm = normalizeText(d.exam_type);
@@ -289,7 +330,6 @@
           if (!found) {
             missing.push(req);
           } else {
-            // Verificar vigencia si tiene fecha de expiración
             if (found.expiry_date && new Date(found.expiry_date) < today) {
               expired.push(req);
             }
@@ -298,12 +338,7 @@
 
         const isApto = missing.length === 0 && expired.length === 0;
 
-        return {
-          worker: w,
-          isApto,
-          missing,
-          expired
-        };
+        return { worker: w, isApto, missing, expired };
       });
 
       // 3. Renderizar resultados (Trabajadores Duros)
@@ -319,7 +354,7 @@
             </span>
           </div>
           <div class="t-col-status" style="flex: 1; font-size:12px;">
-            ${r.isApto ? '<div style="color:var(--primary); font-weight:700; height:100%; display:flex; align-items:center;">✓ Cumple todos los requisitos</div>' :
+            ${r.isApto ? '<div style="color:var(--ok); font-weight:700; height:100%; display:flex; align-items:center;">✓ Cumple todos los requisitos</div>' :
           (r.missing.length ? `
             <div style="margin-bottom:8px;">
               <span style="color:#f87171; font-weight:700; font-size:11px; text-transform:uppercase;">Faltan (${r.missing.length}):</span>
@@ -350,9 +385,9 @@
     
     try {
         const payload = {
-            tender_id: tender.id,
-            tender_name: tender.name || 'Servicio de Industria',
-            requirements: tender.requirements || []
+            tender_id: tender.id || 'global',
+            tender_name: (tender.name || 'Licitación') + ' - ' + vacancy.title,
+            requirements: vacReqs
         };
         
         const resp = await fetch('/api/match-tender-candidates', {
@@ -368,12 +403,11 @@
         const cands = data.matches || [];
         
         if (cands.length === 0) {
-            matchBodyCandidates.innerHTML = '<p style="padding:40px; color:var(--muted); text-align:center;">Ningún candidato supera el umbral del 40% de similitud de perfil con esta licitación.</p>';
+            matchBodyCandidates.innerHTML = '<p style="padding:40px; color:var(--muted); text-align:center;">Ningún candidato supera el umbral del 40% de similitud de perfil con esta vacante.</p>';
         } else {
             matchBodyCandidates.innerHTML = cands.map(c => {
                 const score = c.ai_match_score || 0;
                 
-                // Colors based on score
                 let color = "var(--primary)";
                 if (score >= 80) color = "var(--ok)";
                 else if (score >= 60) color = "var(--warning)";
@@ -393,7 +427,6 @@
                   <div class="t-col-score" style="flex: 0 0 100px; text-align:center; padding-top:6px;">
                     <div style="font-size:24px; font-weight:900; color:${color}; letter-spacing:-1px;">${score.toFixed(1)}%</div>
                     <div style="font-size:9px; color:var(--muted); text-transform:uppercase; margin-top:2px; font-weight:800; letter-spacing:0.5px;">AFINIDAD IA</div>
-                    <!-- ProgressBar -->
                     <div style="width:100%; height:4px; border-radius:2px; background:rgba(255,255,255,0.05); margin-top:6px; overflow:hidden;">
                         <div style="height:100%; width:${score}%; background:${color}; border-radius:2px; transition: width 1s ease-out;"></div>
                     </div>

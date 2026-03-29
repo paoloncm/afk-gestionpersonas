@@ -91,8 +91,12 @@
     <div id="matchModal" class="modal">
       <div class="modal__content" style="max-width:1000px; background:var(--bg-card); border:1px solid rgba(255,255,255,0.1);">
         <div class="modal__header" style="border-bottom:none; padding-bottom:5px;">
-          <h2 class="h1" id="matchTitle">Aptitud Licitación</h2>
-          <button class="close-modal">&times;</button>
+          <h2 class="h1" style="margin-bottom: 2px;" id="matchTitle">Aptitud Licitación</h2>
+          <div style="font-size:12px; color:var(--muted); margin-bottom:8px;">Selecciona la vacante a evaluar:</div>
+          <select id="vacancySelector" class="input" style="width:100%; max-width:400px; padding: 6px; font-size:13px; background:rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.1); color:var(--text); border-radius:4px;">
+              <option value="">Cargando vacantes...</option>
+          </select>
+          <button class="close-modal" style="position:absolute; top:15px; right:15px;">&times;</button>
         </div>
         <div style="padding:0 20px 10px; border-bottom:1px solid rgba(255,255,255,0.1); display:flex; gap:20px;">
            <button class="btn btn--mini" id="tabWorkers" style="background:transparent; color:var(--text); border-bottom:2px solid var(--primary); padding-bottom:8px; border-radius:0;">👷 Trabajadores (Cumplimiento Duros)</button>
