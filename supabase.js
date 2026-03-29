@@ -12,5 +12,23 @@
   window.db = client;
   window.supabase = client;
 
+  // Sistema de Notificaciones Global
+  window.notificar = function(msg, type = 'success') {
+    let container = document.querySelector('.toast-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.className = 'toast-container';
+      document.body.appendChild(container);
+    }
+    const toast = document.createElement('div');
+    toast.className = `toast toast--${type}`;
+    toast.textContent = msg;
+    container.appendChild(toast);
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      setTimeout(() => toast.remove(), 500);
+    }, 4000);
+  };
+
   console.log("[supabase.js] cliente inicializado");
 })();
