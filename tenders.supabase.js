@@ -339,6 +339,18 @@
 
   async function evaluate(tender, vacancy) {
     const rs = vacancy.requirements || [];
+    
+    // Check if Vacancy is already assigned
+    const isAssigned = !!vacancy.assigned_person_id;
+    const assignmentBanner = isAssigned ? `
+      <div class="stark-card" style="margin-bottom: 20px; padding: 20px; border: 2px solid var(--ok); background: rgba(34,211,238,0.05); text-align: center;">
+        <div style="color:var(--ok); font-weight:900; letter-spacing:2px; font-size:14px; margin-bottom:10px;">🛡️ VACANTE CUBIERTA OFICIALMENTE 🛡️</div>
+        <div style="font-size:24px; color:var(--text); font-weight:900; margin-bottom:5px;">${vacancy.assigned_person_name.toUpperCase()}</div>
+        <div style="color:var(--accent); font-family:monospace; margin-bottom:15px;">AFINIDAD TÁCTICA: ${vacancy.assigned_match_score}% | PROTOCOLO: ${vacancy.assigned_person_type.toUpperCase()}</div>
+        <button onclick="window.starkUnassign('${vacancy.id}')" class="btn btn--mini" style="border-color:var(--danger); color:var(--danger)">[ REVOCAR ASIGNACIÓN ]</button>
+      </div>
+    ` : '';
+
     try {
       const { data: ws } = await window.supabase.from('workers').select('*');
       const { data: cs } = await window.supabase.from('worker_credentials').select('*');
@@ -350,13 +362,16 @@
         return { w, score, miss };
       }).sort((a,b) => b.score - a.score);
 
-      matchBodyWorkers.innerHTML = scored.map(r => `
-        <div class="t-row stark-card" style="padding:15px; margin-bottom:8px;">
-          <div style="display:flex; justify-content:space-between;">
-            <strong style="color:var(--text);">${r.w.full_name}</strong>
-            <span style="font-family:monospace; color:var(--accent); font-weight:900;">${r.score}%</span>
+      matchBodyWorkers.innerHTML = assignmentBanner + scored.map(r => `
+        <div class="t-row stark-card" style="padding:15px; margin-bottom:8px; opacity: ${isAssigned ? '0.4' : '1'};">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <strong style="color:var(--text); display:block; margin-bottom:4px;">${r.w.full_name}</strong>
+              ${!isAssigned && vacancy.id !== 'global' ? `<button onclick="window.starkAssign('${vacancy.id}','${r.w.id}','${escapeHtml(r.w.full_name)}','AFK',${r.score})" class="btn btn--mini btn--primary" style="padding:2px 8px; font-size:10px;">[ ASIGNAR AFK ]</button>` : ''}
+            </div>
+            <span style="font-family:monospace; color:var(--accent); font-weight:900; font-size:16px;">${r.score}%</span>
           </div>
-          <div class="affinity-bar"><div class="affinity-fill" style="width:${r.score}%"></div></div>
+          <div class="affinity-bar" style="margin-top:10px;"><div class="affinity-fill" style="width:${r.score}%"></div></div>
           ${r.miss.length ? `<div style="font-size:9px; color:#f43f5e; margin-top:8px;">MISSING: ${r.miss.join(' | ')}</div>` : ''}
         </div>
       `).join('');
@@ -369,19 +384,69 @@
       });
       const iaData = await iaRes.json();
       const m = iaData.matches || [];
-      matchBodyCandidates.innerHTML = m.length ? m.map(c => `
-        <div class="t-row stark-card" style="padding:15px; margin-bottom:8px;">
+      
+      matchBodyCandidates.innerHTML = assignmentBanner + (m.length ? m.map(c => `
+        <div class="t-row stark-card" style="padding:15px; margin-bottom:8px; opacity: ${isAssigned ? '0.4' : '1'};">
           <div style="display:flex; justify-content:space-between; align-items:center;">
-             <strong>${c.nombre_completo}</strong>
-             <span style="color:var(--accent); font-weight:900;">${c.ai_match_score.toFixed(1)}%</span>
+             <div>
+               <strong style="color:var(--text); display:block; margin-bottom:4px;">${c.nombre_completo}</strong>
+               ${!isAssigned && vacancy.id !== 'global' ? `<button onclick="window.starkAssign('${vacancy.id}','${c.id}','${escapeHtml(c.nombre_completo)}','IA',${c.ai_match_score.toFixed(1)})" class="btn btn--mini btn--primary" style="padding:2px 8px; font-size:10px; border-color:var(--ok); color:var(--ok);">[ ASIGNAR EXTERNO IA ]</button>` : ''}
+             </div>
+             <span style="font-family:monospace; color:var(--accent); font-weight:900; font-size:16px;">${c.ai_match_score.toFixed(1)}%</span>
           </div>
-          <div class="affinity-bar"><div class="affinity-fill" style="width:${c.ai_match_score}%"></div></div>
+          <div class="affinity-bar" style="margin-top:10px;"><div class="affinity-fill" style="width:${c.ai_match_score}%"></div></div>
           <p style="font-size:10px; color:var(--muted); line-height:1.4; margin-top:10px;">${c.evaluacion_general}</p>
         </div>
-      `).join('') : '<p style="padding:30px; text-align:center; color:var(--muted);">No se detectaron perfiles compatibles.</p>';
+      `).join('') : '<p style="padding:30px; text-align:center; color:var(--muted);">No se detectaron perfiles compatibles.</p>');
 
     } catch (e) { console.error(e); }
   }
+
+  // --- STARK ASSIGNMENT PROTOCOL ---
+  window.starkAssign = async function(vacId, personId, personName, type, score) {
+      if(!confirm(`¿ASIGNAR OFICIALMENTE A ${personName.toUpperCase()} A ESTA VACANTE?`)) return;
+      $('#matchTitle').textContent = "ENCRIPTANDO ASIGNACIÓN...";
+      try {
+          const { error } = await window.supabase.from('vacancies').update({
+              assigned_person_id: personId,
+              assigned_person_name: personName,
+              assigned_person_type: type,
+              assigned_match_score: score
+          }).eq('id', vacId);
+          if (error) throw error;
+          window.notificar?.("PROTOCOLO DE ASIGNACIÓN: ÉXITO");
+          const tenderId = $('#tenderId').value || allTenders.find(t => t.id === document.querySelector('.btn-match[data-id]')?.dataset?.id)?.id;
+          if(tenderId) {
+             const t = allTenders.find(x => x.id === tenderId);
+             if(t) runMatchmaking(t); 
+             else loadTenders();
+          } else loadTenders(); closeModal(matchModal); 
+      } catch(err) {
+          alert("ERROR EN ASIGNACIÓN: Asegúrate de haber inyectado el script SQL en Supabase para habilitar las nuevas columnas.\nDetalle: " + err.message);
+          $('#matchTitle').textContent = "Aptitud Licitación";
+      }
+  };
+
+  window.starkUnassign = async function(vacId) {
+      if(!confirm("¿CONFIRMAS REVOCAR LA ASIGNACIÓN ACTUAL?")) return;
+      $('#matchTitle').textContent = "DESENCRIPTANDO...";
+      try {
+          const { error } = await window.supabase.from('vacancies').update({
+              assigned_person_id: null,
+              assigned_person_name: null,
+              assigned_person_type: null,
+              assigned_match_score: null
+          }).eq('id', vacId);
+          if (error) throw error;
+          window.notificar?.("ASIGNACIÓN REVOCADA");
+          const tenderId = $('#tenderId').value || allTenders.find(t => t.id === document.querySelector('.btn-match[data-id]')?.dataset?.id)?.id;
+          if(tenderId) {
+             const t = allTenders.find(x => x.id === tenderId);
+             if(t) runMatchmaking(t); 
+             else loadTenders();
+          } else loadTenders(); closeModal(matchModal);
+      } catch(err) { console.error(err); }
+  };
 
   function addReqInput(val = '') {
     const div = document.createElement('div');
