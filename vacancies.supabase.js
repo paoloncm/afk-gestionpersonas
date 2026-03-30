@@ -72,16 +72,41 @@
             card.className = 'card';
             card.style.cursor = 'default';
             
-            const candidatesCount = (v.candidates || []).length;
-            const candidatesHtml = (v.candidates || []).map(c => {
-                const stage = c.status || c.estado || 'Postulado';
-                return `
-                    <div style="display:flex; justify-content:space-between; font-size:12px; padding: 8px 0; border-bottom: 1px dashed rgba(255,255,255,0.05);">
-                        <a href="candidates.html?id=${c.id}" style="color:var(--primary); text-decoration:none; font-weight:600;">${c.nombre_completo}</a>
-                        <span class="tag" style="font-size:10px; padding: 2px 6px; background:rgba(255,255,255,0.05)">${stage}</span>
+            let shortlist = [];
+            try {
+                if (typeof v.shortlisted_candidates === 'string') shortlist = JSON.parse(v.shortlisted_candidates);
+                else if (Array.isArray(v.shortlisted_candidates)) shortlist = v.shortlisted_candidates;
+            } catch(e) {}
+
+            // Combine old candidates logic with the new pipeline approach
+            const oldCandidates = (v.candidates || []).map(c => ({
+                id: c.id,
+                name: c.nombre_completo,
+                type: 'AFK LEGACY',
+                score: 'N/A',
+                status: c.status || c.estado || 'Postulado'
+            }));
+
+            // Deduplicate logic just in case
+            const combinedList = [...oldCandidates, ...shortlist].reduce((acc, curr) => {
+                if(!acc.some(item => item.id === curr.id)) acc.push(curr);
+                return acc;
+            }, []);
+
+            const candidatesCount = combinedList.length;
+            const candidatesHtml = combinedList.map(c => `
+                <div style="display:flex; justify-content:space-between; font-size:12px; padding: 12px 8px; border-bottom: 1px dashed rgba(255,255,255,0.05); align-items:center;">
+                    <div style="display:flex; flex-direction:column; gap:4px;">
+                        <span style="color:var(--primary); font-weight:700;">${(c.name || '').toUpperCase()}</span>
+                        <span style="font-size:9px; color:var(--muted); opacity:0.8;">[ TIPO: ${c.type || 'AFK'} ]</span>
                     </div>
-                `;
-            }).join('');
+                    <div style="text-align:right;">
+                        <span class="tag" style="font-size:10px; padding: 4px 8px; background:rgba(34,211,238,0.1); border:1px solid rgba(34,211,238,0.3); color:var(--accent)">
+                            MATCH: ${c.score || '0'}%
+                        </span>
+                    </div>
+                </div>
+            `).join('');
 
             card.innerHTML = `
                 <div class="card__body">
