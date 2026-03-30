@@ -14,6 +14,14 @@
     .upload-zone { border: 2px dashed rgba(34, 211, 238, 0.3); padding: 40px; border-radius: 8px; cursor: pointer; transition: all 0.3s; }
     .upload-zone:hover { border-color: var(--accent); background: rgba(34, 211, 238, 0.05); }
     .intel-preview { display: none; margin-top: 20px; animation: fadeIn 0.5s ease; }
+    
+    /* Stark Combat HUD Styles */
+    .stark-hud { background: rgba(15, 23, 42, 0.8) !important; backdrop-filter: blur(12px); border: 1px solid rgba(34, 211, 238, 0.3) !important; box-shadow: 0 0 40px rgba(34, 211, 238, 0.1); }
+    .stark-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; transition: all 0.3s; }
+    .stark-card:hover { border-color: var(--accent); background: rgba(34, 211, 238, 0.05); transform: translateY(-2px); }
+    .affinity-bar { height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; margin-top: 8px; }
+    .affinity-fill { height: 100%; height: 100%; background: linear-gradient(90deg, var(--accent), var(--primary)); transition: width 1s ease-out; }
+    .vacancy-pill { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); font-weight: 800; }
   </style>
 </head>
 
@@ -116,6 +124,11 @@
               <button type="button" id="btnAddReq" class="btn btn--mini">+ Añadir Requisito</button>
             </div>
 
+            <div id="vacanciesWrapper" style="display:none; margin-top: 25px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
+              <label style="color:var(--accent); font-weight:800; font-size:12px; text-transform:uppercase; margin-bottom:15px; display:block;">Vacantes Detectadas en Proceso</label>
+              <div id="vacanciesList" style="display:flex; flex-direction:column; gap:12px;"></div>
+            </div>
+
             <button type="submit" class="btn btn--primary" style="width:100%; margin-top:20px;">Guardar Licitación</button>
           </form>
         </div>
@@ -124,7 +137,7 @@
 
     <!-- Modal Matchmaking (Resultados) -->
     <div id="matchModal" class="modal">
-      <div class="modal__content" style="max-width:1000px; background:var(--bg-card); border:1px solid rgba(255,255,255,0.1);">
+      <div class="modal__content stark-hud" style="max-width:1000px;">
         <div class="modal__header" style="border-bottom:none; padding-bottom:5px;">
           <h2 class="h1" style="margin-bottom: 2px;" id="matchTitle">Aptitud Licitación</h2>
           <div style="font-size:12px; color:var(--muted); margin-bottom:8px;">Selecciona la vacante a evaluar:</div>
