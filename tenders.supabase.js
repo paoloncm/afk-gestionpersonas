@@ -273,38 +273,47 @@
     const desc = $('#tenderDesc').value;
     const reqs = Array.from(document.querySelectorAll('.req-input')).map(i => i.value.trim()).filter(v => v);
 
-    const { data: tRes, error } = id ? 
+    const { data: tRes, error: tErr } = id ? 
         await window.supabase.from('tenders').update({ name, description: desc, requirements: reqs }).eq('id', id).select() :
         await window.supabase.from('tenders').insert({ name, description: desc, requirements: reqs }).select();
 
-    if (error) {
-        console.error("[Stark] Error guardando licitación principal:", error);
-        return window.notificar?.(error.message, "error");
+    if (tErr) {
+        console.error("[Stark] Error guardando licitación:", tErr);
+        alert("ERROR CRÍTICO AL GUARDAR LICITACIÓN: " + tErr.message);
+        return;
     }
     
-    const tId = id || (tRes && Array.isArray(tRes) && tRes[0] ? tRes[0].id : (tRes && tRes.id ? tRes.id : null));
-    console.log("[Stark] ID de licitación para vacantes:", tId);
+    // Captura ultra-robusta de ID
+    let tId = id;
+    if (!tId) {
+       const payload = Array.isArray(tRes) ? tRes[0] : tRes;
+       tId = payload?.id;
+    }
+    
+    console.log("[Stark] ID final para vinculación de vacantes:", tId);
 
     if (detectedVacancies.length > 0 && tId) {
-        console.log("[Stark] Sincronizando vacantes:", detectedVacancies.length);
-        // Limpiamos anteriores si es edición
-        if (id) {
-            await window.supabase.from('vacancies').delete().eq('tender_id', id);
-        }
+        console.log("[Stark] Iniciando inserción de vacantes para ID:", tId);
+        if (id) await window.supabase.from('vacancies').delete().eq('tender_id', id);
+        
         const vacData = detectedVacancies.map(v => ({ 
             tender_id: tId, 
             title: v.title, 
             requirements: v.requirements 
         }));
-        console.log("[Stark] Payload vacantes:", vacData);
+        
         const { error: vErr } = await window.supabase.from('vacancies').insert(vacData);
-        if (vErr) console.error("[Stark] ERROR INSERTANDO VACANTES:", vErr);
-        else console.log("[Stark] Vacantes guardadas exitosamente.");
+        if (vErr) {
+            console.error("[Stark] ERROR INSERTANDO VACANTES:", vErr);
+            alert("SISTEMA: No se pudieron vincular las vacantes. Error: " + vErr.message);
+        } else {
+            console.log("[Stark] Sincronización de vacantes exitosa.");
+        }
     } else {
-        console.warn("[Stark] No hay vacantes para guardar o tId es nulo:", { count: detectedVacancies.length, tId });
+        console.warn("[Stark] No se detectaron vacantes para guardar o tId falló.");
     }
     
-    window.notificar?.("PROTOCOLO FINALIZADO: SISTEMA SINCRONIZADO");
+    window.notificar?.("MISIÓN CUMPLIDA: SISTEMA SINCRONIZADO V7");
     closeModal(tenderModal);
     loadTenders();
   };
@@ -314,6 +323,9 @@
   async function runMatchmaking(tender) {
     $('#matchTitle').textContent = `OPERACIÓN_HUD: ${tender.name.toUpperCase()}`;
     openModal(matchModal);
+    
+    // Resetear a pestaña Workers por defecto solo al abrir el modal completo
+    if (tabWorkers) tabWorkers.click();
     
     matchBodyWorkers.innerHTML = '<div style="padding:40px; text-align:center;">SINTONIZANDO SEÑAL BIOMÉTRICA...</div>';
     
