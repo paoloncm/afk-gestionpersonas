@@ -26,6 +26,11 @@
     /* Loader Stark */
     .loader { width: 30px; height: 30px; border: 3px solid rgba(34,211,238,0.1); border-top: 3px solid var(--accent); border-radius: 50%; animation: spin 1s linear infinite; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    
+    /* Radar Effect V3 */
+    .radar-circle { width: 100px; height: 100px; border: 2px solid var(--accent); border-radius: 50%; position: relative; box-shadow: 0 0 20px rgba(34,211,238,0.5); }
+    .radar-circle::after { content:''; position:absolute; top:50%; left:50%; width:1px; height:50px; background:var(--accent); transform-origin: top; animation: radar-spin 2s linear infinite; }
+    @keyframes radar-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
   </style>
 </head>
 
@@ -63,10 +68,10 @@
       <div class="card" style="padding: 0;">
         <div class="table tenders">
           <div class="t-head tenders-head">
-            <div class="t-col-name">Licitación / Empresa</div>
-            <div class="t-col-desc">Descripción</div>
-            <div class="t-col-reqs">Requisitos Mínimos</div>
-            <div class="t-col-actions" style="text-align:right;">Acciones</div>
+            <div class="t-col-name" style="flex: 0 0 25%;">Licitación / Empresa</div>
+            <div class="t-col-desc" style="flex: 0 0 35%;">Descripción Estratégica</div>
+            <div class="t-col-reqs" style="flex: 1;">Requisitos Detectados</div>
+            <div class="t-col-actions" style="flex: 0 0 150px; text-align:right;">Comando</div>
           </div>
           <div id="tendersBody" style="display:flex; flex-direction:column;">
             <div style="padding: 40px; text-align: center; color: var(--muted);">Cargando licitaciones...</div>
@@ -78,6 +83,12 @@
     <!-- Modal Nueva Licitación -->
     <div id="tenderModal" class="modal">
       <div class="modal__content" style="max-width:600px">
+        <!-- Scanner Overlay Stark V3 (Animación) -->
+        <div id="scannerOverlay" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.9); z-index:100; display:flex; flex-direction:column; align-items:center; justify-content:center; backdrop-filter:blur(8px); border-radius:12px;">
+            <div class="radar-circle"></div>
+            <div style="font-family:'Courier New', monospace; color:var(--accent); margin-top:20px; font-weight:800; letter-spacing:2px; text-shadow: 0 0 10px var(--accent);" id="radarText">INICIANDO ESCANEO TÁCTICO...</div>
+            <div id="radarLog" style="font-size:10px; color:var(--muted); margin-top:10px; font-family:monospace;">READY_FOR_DATA_INJECTION...</div>
+        </div>
         <div class="modal__header">
           <h2 class="h1">Configurar Licitación</h2>
           <button class="close-modal">&times;</button>
