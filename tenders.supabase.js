@@ -1,4 +1,4 @@
-// tenders.supabase.js - Lógica Stark Intelligence V3: Reconstrucción Total
+// tenders.supabase.js - Lógica Stark Intelligence V8: RECONSTRUCCIÓN NIVEL GOD
 (function () {
   const $ = (s) => document.querySelector(s);
   
@@ -122,18 +122,17 @@
     (t.requirements || []).forEach(r => addReqInput(r));
     if (!t.requirements?.length) addReqInput();
     
-    // Carga de vacantes
     detectedVacancies = [];
     window.supabase.from('vacancies').select('*').eq('tender_id', t.id).then(({data}) => {
         detectedVacancies = data || [];
         renderDetectedVacancies();
     });
-    
     openModal(tenderModal);
   };
 
   async function deleteTender(id) {
     if (!confirm('¿DESACTIVAR PROYECTO?')) return;
+    await window.supabase.from('vacancies').delete().eq('tender_id', id);
     await window.supabase.from('tenders').delete().eq('id', id);
     loadTenders();
   }
@@ -150,7 +149,6 @@
       renderDetectedVacancies();
       addReqInput();
       uploadZone.style.display = 'block';
-      $('#scanningState').style.display = 'none';
       intelPreview.style.display = 'none';
       openModal(tenderModal);
     };
@@ -159,7 +157,6 @@
   if (uploadZone && pdfInput) {
     uploadZone.onclick = () => pdfInput.click();
     pdfInput.onchange = (e) => { if(e.target.files[0]) handleStarkScan(e.target.files[0]); };
-    
     uploadZone.ondragover = (e) => { e.preventDefault(); uploadZone.style.borderColor = 'var(--accent)'; };
     uploadZone.ondragleave = () => { uploadZone.style.borderColor = 'rgba(34,211,238,0.3)'; };
     uploadZone.ondrop = (e) => { e.preventDefault(); if(e.dataTransfer.files[0]) handleStarkScan(e.dataTransfer.files[0]); };
@@ -197,12 +194,21 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-            message: `EXTRAE VACANTES Y REQUISITOS (ESTRICTO JSON):
-            1. Resumen breve (max 300 chars).
-            2. Lista de vacantes, cucha una con "title" y array de "requirements".
-            
-            FORMATO: {"description": "...", "vacancies": [{"title": "...", "requirements": ["..."]}]}
-            TEXTO: ${text.substring(0, 4800)}` 
+             message: `ACTÚA COMO JARVIS (STARK INDUSTRIES):
+             Analiza este texto de licitación y extrae la JERARQUÍA OPERATIVA.
+             1. Resumen Ejecutivo (max 250 chars).
+             2. Lista de Roles/Vacantes Críticas. Para cada una, extrae sus REQUISITOS TÉCNICOS ESPECÍFICOS (certificaciones, años exp, etc).
+             
+             FORMATO OBLIGATORIO (JSON ESTRICTO):
+             {
+               "description": "...",
+               "vacancies": [
+                 { "title": "Nombre del Cargo", "requirements": ["Req 1", "Req 2"] }
+               ]
+             }
+             
+             TEXTO A ANALIZAR:
+             ${text.substring(0, 5000)}` 
         })
      });
      const data = await res.json();
@@ -283,37 +289,33 @@
         return;
     }
     
-    // Captura ultra-robusta de ID
     let tId = id;
     if (!tId) {
-       const payload = Array.isArray(tRes) ? tRes[0] : tRes;
-       tId = payload?.id;
+       const resData = Array.isArray(tRes) ? tRes[0] : tRes;
+       tId = resData?.id; 
     }
     
-    console.log("[Stark] ID final para vinculación de vacantes:", tId);
-
-    if (detectedVacancies.length > 0 && tId) {
-        console.log("[Stark] Iniciando inserción de vacantes para ID:", tId);
+    if (!tId) {
+        console.error("[Stark] Fallo catastrófico de ID.", tRes);
+        alert("ERROR: No se detectó ID de licitación.");
+        return;
+    }
+    
+    if (detectedVacancies.length > 0) {
         if (id) await window.supabase.from('vacancies').delete().eq('tender_id', id);
-        
         const vacData = detectedVacancies.map(v => ({ 
             tender_id: tId, 
             title: v.title, 
             requirements: v.requirements 
         }));
-        
         const { error: vErr } = await window.supabase.from('vacancies').insert(vacData);
         if (vErr) {
             console.error("[Stark] ERROR INSERTANDO VACANTES:", vErr);
-            alert("SISTEMA: No se pudieron vincular las vacantes. Error: " + vErr.message);
-        } else {
-            console.log("[Stark] Sincronización de vacantes exitosa.");
+            alert("ALERTA: Vacantes fallaron: " + vErr.message);
         }
-    } else {
-        console.warn("[Stark] No se detectaron vacantes para guardar o tId falló.");
     }
     
-    window.notificar?.("MISIÓN CUMPLIDA: SISTEMA SINCRONIZADO V7");
+    window.notificar?.("MISIÓN CUMPLIDA [V8]: SISTEMA SINCRONIZADO AL 100%");
     closeModal(tenderModal);
     loadTenders();
   };
@@ -323,8 +325,6 @@
   async function runMatchmaking(tender) {
     $('#matchTitle').textContent = `OPERACIÓN_HUD: ${tender.name.toUpperCase()}`;
     openModal(matchModal);
-    
-    // Resetear a pestaña Workers por defecto solo al abrir el modal completo
     if (tabWorkers) tabWorkers.click();
     
     matchBodyWorkers.innerHTML = '<div style="padding:40px; text-align:center;">SINTONIZANDO SEÑAL BIOMÉTRICA...</div>';
@@ -338,9 +338,7 @@
   }
 
   async function evaluate(tender, vacancy) {
-    // Ya no forzamos el click de tabWorkers para permitir navegación persistente
     const rs = vacancy.requirements || [];
-    
     try {
       const { data: ws } = await window.supabase.from('workers').select('*');
       const { data: cs } = await window.supabase.from('worker_credentials').select('*');
@@ -363,7 +361,6 @@
         </div>
       `).join('');
 
-      // IA CANDIDATES
       matchBodyCandidates.innerHTML = '<div style="padding:40px; text-align:center;">TRACKING EXTERNAL AGENTS...</div>';
       const iaRes = await fetch('/api/match-tender-candidates', {
         method: 'POST',
@@ -402,24 +399,17 @@
       reader.onerror = reject;
       reader.readAsArrayBuffer(file);
     });
-    
     const pdfjsLib = window.pdfjsLib;
     if (!pdfjsLib) throw new Error("Fibras de PDF.js no cargadas en el sistema.");
-    
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-    
     const loadingTask = pdfjsLib.getDocument({ data: ab, disableWorker: true });
     const pdf = await loadingTask.promise;
-    console.log("[Scanner] PDF Cargado. Páginas:", pdf.numPages);
-    
     let t = "";
     for (let i = 1; i <= Math.min(pdf.numPages, 10); i++) {
-       console.log(`[Scanner] Decodificando página ${i}...`);
        const p = await pdf.getPage(i);
        const c = await p.getTextContent();
        t += c.items.map(item => item.str).join(" ") + "\n";
     }
-    console.log("[Scanner] Extracción finalizada. Longitud del texto:", t.length);
     return t;
   }
 
