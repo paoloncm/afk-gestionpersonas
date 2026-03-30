@@ -41,6 +41,26 @@
     b.onclick = () => { closeModal(tenderModal); closeModal(matchModal); };
   });
 
+  // Tab Switch HUD
+  if (tabWorkers && tabCandidates) {
+    tabWorkers.onclick = () => {
+        matchBodyWorkers.style.display = 'block';
+        matchBodyCandidates.style.display = 'none';
+        tabWorkers.style.color = 'var(--accent)';
+        tabWorkers.style.borderBottom = '2px solid var(--accent)';
+        tabCandidates.style.color = 'var(--muted)';
+        tabCandidates.style.borderBottom = '2px solid transparent';
+    };
+    tabCandidates.onclick = () => {
+        matchBodyWorkers.style.display = 'none';
+        matchBodyCandidates.style.display = 'block';
+        tabCandidates.style.color = 'var(--accent)';
+        tabCandidates.style.borderBottom = '2px solid var(--accent)';
+        tabWorkers.style.color = 'var(--muted)';
+        tabWorkers.style.borderBottom = '2px solid transparent';
+    };
+  }
+
   // --- DASHBOARD TACTICAL VIEW ---
 
   async function loadTenders() {
@@ -262,11 +282,12 @@
         return window.notificar?.(error.message, "error");
     }
     
-    const tId = id || (tRes && tRes[0] ? tRes[0].id : null);
+    const tId = id || (tRes && Array.isArray(tRes) && tRes[0] ? tRes[0].id : (tRes && tRes.id ? tRes.id : null));
     console.log("[Stark] ID de licitación para vacantes:", tId);
 
     if (detectedVacancies.length > 0 && tId) {
         console.log("[Stark] Sincronizando vacantes:", detectedVacancies.length);
+        // Limpiamos anteriores si es edición
         if (id) {
             await window.supabase.from('vacancies').delete().eq('tender_id', id);
         }
@@ -275,8 +296,10 @@
             title: v.title, 
             requirements: v.requirements 
         }));
-        const vRes = await window.supabase.from('vacancies').insert(vacData);
-        if (vRes.error) console.error("[Stark] Error guardando vacantes:", vRes.error);
+        console.log("[Stark] Payload vacantes:", vacData);
+        const { error: vErr } = await window.supabase.from('vacancies').insert(vacData);
+        if (vErr) console.error("[Stark] ERROR INSERTANDO VACANTES:", vErr);
+        else console.log("[Stark] Vacantes guardadas exitosamente.");
     } else {
         console.warn("[Stark] No hay vacantes para guardar o tId es nulo:", { count: detectedVacancies.length, tId });
     }
@@ -303,7 +326,7 @@
   }
 
   async function evaluate(tender, vacancy) {
-    if (tabWorkers) tabWorkers.click();
+    // Ya no forzamos el click de tabWorkers para permitir navegación persistente
     const rs = vacancy.requirements || [];
     
     try {
