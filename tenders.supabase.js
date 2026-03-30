@@ -1,24 +1,78 @@
 // tenders.supabase.js - Lógica para gestión de licitaciones y evaluación de trabajadores
-
 (function () {
   const $ = (s) => document.querySelector(s);
+  
+  // Elementos UI principales
   const tendersList = $('#tendersList');
   const tenderModal = $('#tenderModal');
   const tenderForm = $('#tenderForm');
   const reqContainer = $('#reqContainer');
   const matchModal = $('#matchModal');
-  
-  // New tab elements
-  const tabWorkers = $('#tabWorkers');
-  const tabCandidates = $('#tabCandidates');
-  const matchBodyWorkers = $('#matchBodyWorkers') || $('#matchBody'); // Fallback if HTML wasn't patched properly
-  const matchBodyCandidates = $('#matchBodyCandidates');
-
   const tenderIdInput = $('#tenderId');
   const tenderNameInput = $('#tenderName');
   const tenderDescInput = $('#tenderDesc');
+  const tendersBody = $('#tendersBody');
+  const searchInput = $('#searchTender');
 
-  // Set up Tabs
+  // Elementos de Matchmaking y Tabs
+  const tabWorkers = $('#tabWorkers');
+  const tabCandidates = $('#tabCandidates');
+  const matchBodyWorkers = $('#matchBodyWorkers') || $('#matchBody');
+  const matchBodyCandidates = $('#matchBodyCandidates');
+  const vacancySelector = $('#vacancySelector');
+
+  // Elementos del Scanner IA (JARVIS)
+  const pdfInput = $('#pdfInput');
+  const uploadZone = $('#uploadZone');
+  const scanningState = $('#scanningState');
+  const intelPreview = $('#intelPreview');
+  const intelReqs = $('#intelReqs');
+  const scanLog = $('#scanLog');
+  const intelDesc = $('#intelDesc');
+
+  let allTenders = [];
+  let extractedText = "";
+
+  // --- NAVEGACIÓN Y MODALES ---
+
+  function openModal(m) { if(m) m.classList.add('is-open'); }
+  function closeModal(m) { if(m) m.classList.remove('is-open'); }
+
+  document.querySelectorAll('.close-modal').forEach(b => {
+    b.onclick = () => { closeModal(tenderModal); closeModal(matchModal); };
+  });
+
+  const btnNewTender = $('#btnNewTender');
+  if (btnNewTender) {
+    btnNewTender.onclick = () => {
+      tenderIdInput.value = '';
+      tenderForm.reset();
+      reqContainer.innerHTML = '';
+      addReqInput();
+      // Reset scanner UI
+      if (uploadZone) uploadZone.style.display = 'block';
+      if (scanningState) scanningState.style.display = 'none';
+      if (intelPreview) intelPreview.style.display = 'none';
+      openModal(tenderModal);
+    };
+  }
+
+  const btnAddReq = $('#btnAddReq');
+  if (btnAddReq) btnAddReq.onclick = () => addReqInput();
+
+  function addReqInput(val = '') {
+    const div = document.createElement('div');
+    div.className = 'grid-2';
+    div.style.gap = '8px';
+    div.innerHTML = `
+      <input class="input req-input" value="${val}" placeholder="Ej: Altura Física" required>
+      <button type="button" class="btn btn--mini btn-del-req" style="color:#f87171">X</button>
+    `;
+    div.querySelector('.btn-del-req').onclick = () => div.remove();
+    if (reqContainer) reqContainer.appendChild(div);
+  }
+
+  // Set up Tabs Matchmaking
   if (tabWorkers && tabCandidates) {
     tabWorkers.onclick = () => {
       tabWorkers.style.color = "var(--text)";
@@ -39,54 +93,16 @@
     };
   }
 
-  function normalizeText(text) {
-    if (!text) return '';
-    return text.toString()
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .trim();
-  }
-
-  // --- GESTIÓN DE INTERFAZ ---
-
-  function openModal(m) { m.classList.add('is-open'); }
-  function closeModal(m) { m.classList.remove('is-open'); }
-
-  document.querySelectorAll('.close-modal').forEach(b => {
-    b.onclick = () => { closeModal(tenderModal); closeModal(matchModal); };
-  });
-
-  $('#btnNewTender').onclick = () => {
-    tenderIdInput.value = '';
-    tenderForm.reset();
-    reqContainer.innerHTML = '';
-    addReqInput();
-    openModal(tenderModal);
-  };
-
-  $('#btnAddReq').onclick = () => addReqInput();
-
-  function addReqInput(val = '') {
-    const div = document.createElement('div');
-    div.className = 'grid-2';
-    div.style.gap = '8px';
-    div.innerHTML = `
-      <input class="input req-input" value="${val}" placeholder="Ej: Altura Física" required>
-      <button type="button" class="btn btn--mini btn-del-req" style="color:#f87171">X</button>
-    `;
-    div.querySelector('.btn-del-req').onclick = () => div.remove();
-    reqContainer.appendChild(div);
-  }
-
-  const tendersBody = $('#tendersBody');
-  const searchInput = $('#searchTender');
-  let allTenders = [];
-
-  // --- LÓGICA DE BASE DE DATOS ---
+  // --- LÓGICA DE DATOS (Tenders) ---
 
   async function loadTenders() {
     try {
+      if (!window.supabase || typeof window.supabase.from !== 'function') {
+        console.error("Supabase client not ready");
+        setTimeout(loadTenders, 500); // Reintentar si no está listo
+        return;
+      }
+
       if (tendersBody) {
         tendersBody.innerHTML = Array(3).fill(0).map(() => `
           <div class="t-row" style="padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.05);">
@@ -99,16 +115,16 @@
 
       const { data, error } = await window.supabase
         .from('tenders')
-      .select('*')
-      .order('created_at', { ascending: false });
+        .select('*')
+        .order('created_at', { ascending: false });
 
-    if (error) {
-      tendersBody.innerHTML = `<div style="padding: 40px; text-align: center; color: var(--danger);">${error.message}</div>`;
-      return;
-    }
+      if (error) {
+        if (tendersBody) tendersBody.innerHTML = `<div style="padding: 40px; text-align: center; color: var(--danger);">${error.message}</div>`;
+        return;
+      }
 
-    allTenders = data || [];
-    renderTenders();
+      allTenders = data || [];
+      renderTenders();
     } catch (err) {
       console.error('Error cargando licitaciones:', err);
       if (tendersBody) {
@@ -118,6 +134,7 @@
   }
 
   function renderTenders() {
+    if (!tendersBody) return;
     const searchTerm = searchInput ? searchInput.value.toLowerCase() : "";
     
     const filteredTenders = allTenders.filter(t => {
@@ -143,8 +160,8 @@
           ${escapeHtml(t.description || 'Sin descripción')}
         </div>
         <div class="t-col-reqs" style="display: flex; gap: 4px; flex-wrap: wrap;">
-          ${t.requirements.slice(0, 3).map(r => `<span class="badge" style="background:rgba(255,255,255,0.1)">${escapeHtml(r)}</span>`).join('')}
-          ${t.requirements.length > 3 ? `<span class="badge" style="background:rgba(255,255,255,0.05)">+${t.requirements.length - 3}</span>` : ''}
+          ${(t.requirements || []).slice(0, 3).map(r => `<span class="badge" style="background:rgba(255,255,255,0.1)">${escapeHtml(r)}</span>`).join('')}
+          ${(t.requirements || []).length > 3 ? `<span class="badge" style="background:rgba(255,255,255,0.05)">+${t.requirements.length - 3}</span>` : ''}
         </div>
         <div class="t-col-actions" style="text-align: right; display: flex; gap: 6px; justify-content: flex-end;">
           <button class="btn btn--mini btn--primary btn-match" data-id="${t.id}">Evaluar</button>
@@ -184,6 +201,15 @@
          .replace(/'/g, "&#039;");
   }
 
+  function normalizeText(text) {
+    if (!text) return '';
+    return text.toString()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim();
+  }
+
   async function deleteTender(id) {
     if (!confirm('¿Estás seguro de eliminar esta licitación?')) return;
     const { error } = await window.supabase.from('tenders').delete().eq('id', id);
@@ -195,6 +221,7 @@
   }
 
   function editTender(tender) {
+    if (!tenderIdInput) return;
     tenderIdInput.value = tender.id;
     tenderNameInput.value = tender.name;
     tenderDescInput.value = tender.description || '';
@@ -207,272 +234,39 @@
     openModal(tenderModal);
   }
 
-  tenderForm.onsubmit = async (e) => {
-    e.preventDefault();
-    const id = tenderIdInput.value;
-    const name = tenderNameInput.value;
-    const description = tenderDescInput.value;
-    const reqs = Array.from(document.querySelectorAll('.req-input')).map(i => i.value.trim()).filter(v => v);
+  if (tenderForm) {
+    tenderForm.onsubmit = async (e) => {
+        e.preventDefault();
+        const id = tenderIdInput.value;
+        const name = tenderNameInput.value;
+        const description = tenderDescInput.value;
+        const reqs = Array.from(document.querySelectorAll('.req-input')).map(i => i.value.trim()).filter(v => v);
 
-    let res;
-    if (id) {
-      res = await window.supabase.from('tenders').update({
-        name, description, requirements: reqs
-      }).eq('id', id);
-    } else {
-      res = await window.supabase.from('tenders').insert({
-        name, description, requirements: reqs
-      });
-    }
-
-    if (res.error) window.notificar?.(res.error.message, 'error');
-    else {
-      window.notificar?.('Cambios guardados correctamente', 'success');
-      closeModal(tenderModal);
-      loadTenders();
-    }
-  };
-
-  async function runMatchmaking(tender) {
-    $('#matchTitle').textContent = `Aptitud para: ${tender.name}`;
-    openModal(matchModal);
-    
-    const select = $('#vacancySelector');
-    if (select) {
-        select.innerHTML = '<option value="">Cargando vacantes...</option>';
-        select.disabled = true;
-    }
-
-    // 0. Obtener vacantes de la licitación
-    const { data: vacancies, error: vErr } = await window.supabase.from('vacancies')
-        .select('*')
-        .eq('tender_id', tender.id)
-        .order('created_at', { ascending: true });
-        
-    let activeVacancies = [];
-    if (!vErr && vacancies && vacancies.length > 0) {
-        activeVacancies = vacancies;
-    } else {
-        // Fallback: Si no hay vacantes definidas, creamos una "Global" usando los requisitos de la licitación
-        activeVacancies = [{
-            id: 'global',
-            title: 'Perfil Global de la Licitación',
-            quantity: 1,
-            requirements: tender.requirements || []
-        }];
-    }
-    
-    if (select) {
-        select.innerHTML = '';
-        activeVacancies.forEach((v, index) => {
-            const opt = document.createElement('option');
-            opt.value = index;
-            opt.textContent = `${v.title} (${v.quantity} cupo${v.quantity > 1 ? 's' : ''})`;
-            select.appendChild(opt);
-        });
-        select.disabled = false;
-        select.onchange = () => evaluateVacancy(tender, activeVacancies[select.value]);
-    }
-    
-    // Evaluar la primera por defecto
-    evaluateVacancy(tender, activeVacancies[0]);
-  }
-
-  async function evaluateVacancy(tender, vacancy) {
-    if (tabWorkers) tabWorkers.click();
-    
-    if (matchBodyWorkers) matchBodyWorkers.innerHTML = '<p style="padding:20px; color:var(--text);">Calculando compatibilidad estricta de certificaciones...</p>';
-    if (matchBodyCandidates) matchBodyCandidates.innerHTML = '<p style="padding:20px; color:var(--text);">Iniciando búsqueda semántica en la Bóveda de Candidatos...</p>';
-    
-    const vacReqs = vacancy.requirements || [];
-
-    try {
-      // 1. Obtener todos los trabajadores
-      const { data: workers, error: wErr } = await window.supabase.from('workers').select('*');
-      if (wErr) throw wErr;
-
-      // 2. Obtener TODAS las credenciales y exámenes
-      const [
-        { data: creds, error: cErr },
-        { data: exams, error: eErr }
-      ] = await Promise.all([
-        window.supabase.from('worker_credentials').select('*'),
-        window.supabase.from('medical_exam_records').select('*')
-      ]);
-
-      if (cErr) throw cErr;
-      if (eErr) throw eErr;
-
-      const normalize = (r) => String(r || "").replace(/[^0-9kK]/g, "").toUpperCase();
-
-      const results = workers.map(w => {
-        const wRutNormalized = normalize(w.rut);
-        
-        const myDocs = [
-          ...(creds || []).filter(c => c.worker_id === w.id || normalize(c.rut) === wRutNormalized),
-          ...(exams || []).filter(e => normalize(e.rut) === wRutNormalized)
-        ];
-
-        const missing = [];
-        const expired = [];
-        const today = new Date();
-
-        vacReqs.forEach(req => {
-          const reqNorm = normalizeText(req);
-          
-          const found = myDocs.find(d => {
-            const nameNorm = normalizeText(d.credential_name);
-            const typeNorm = normalizeText(d.exam_type);
-            const catNorm = normalizeText(d.credential_category);
-            return nameNorm.includes(reqNorm) || typeNorm.includes(reqNorm) || catNorm.includes(reqNorm);
-          });
-
-          if (!found) {
-            missing.push(req);
-          } else {
-            if (found.expiry_date && new Date(found.expiry_date) < today) {
-              expired.push(req);
-            }
-          }
-        });
-
-        const isApto = missing.length === 0 && expired.length === 0;
-
-        return { worker: w, isApto, missing, expired };
-      });
-
-      // 3. Renderizar resultados (Trabajadores Duros)
-      matchBodyWorkers.innerHTML = results.map(r => `
-        <div class="t-row" style="display: flex; padding: 16px; border-bottom: 1px solid rgba(255,255,255,0.05); align-items: stretch; gap: 15px;">
-          <div class="t-col-name" style="flex: 0 0 200px;">
-            <strong style="display:block; margin-bottom:4px;">${r.worker.full_name}</strong>
-            <span style="font-size:11px; color:var(--muted)">${r.worker.rut}</span>
-          </div>
-          <div class="t-col-prof" style="flex: 0 0 100px; display:flex; align-items:start;">
-            <span class="badge ${r.isApto ? 'badge--success' : 'badge--danger'}" style="margin-top:2px;">
-              ${r.isApto ? 'APTO' : 'NO APTO'}
-            </span>
-          </div>
-          <div class="t-col-status" style="flex: 1; font-size:12px;">
-            ${r.isApto ? '<div style="color:var(--ok); font-weight:700; height:100%; display:flex; align-items:center;">✓ Cumple todos los requisitos</div>' :
-          (r.missing.length ? `
-            <div style="margin-bottom:8px;">
-              <span style="color:#f87171; font-weight:700; font-size:11px; text-transform:uppercase;">Faltan (${r.missing.length}):</span>
-              <ul style="margin:6px 0 0 0; padding:0 0 0 16px; color:#f87171; opacity:0.9; font-size:11px; line-height:1.4; max-height:150px; overflow-y:auto; border-left:2px solid rgba(248,113,113,0.2);">
-                ${r.missing.map(m => `<li style="margin-bottom:3px;">${escapeHtml(m)}</li>`).join('')}
-              </ul>
-            </div>
-          ` : '') +
-          (r.expired.length ? `
-            <div>
-              <span style="color:#fbbf24; font-weight:700; font-size:11px; text-transform:uppercase;">Vencidos (${r.expired.length}):</span>
-              <ul style="margin:6px 0 0 0; padding:0 0 0 16px; color:#fbbf24; opacity:0.9; font-size:11px; line-height:1.4; max-height:100px; overflow-y:auto; border-left:2px solid rgba(251,191,36,0.2);">
-                ${r.expired.map(m => `<li style="margin-bottom:3px;">${escapeHtml(m)}</li>`).join('')}
-              </ul>
-            </div>
-          ` : '')
-        }
-          </div>
-        </div>
-      `).join('');
-
-    } catch (err) {
-      matchBodyWorkers.innerHTML = `<p class="error">Error: ${err.message}</p>`;
-    }
-    
-    // --- 4. BÚSQUEDA SEMÁNTICA "TONY STARK" (Candidates) ---
-    if (!matchBodyCandidates) return;
-    
-    try {
-        const payload = {
-            tender_id: tender.id || 'global',
-            tender_name: (tender.name || 'Licitación') + ' - ' + vacancy.title,
-            requirements: vacReqs
-        };
-        
-        const resp = await fetch('/api/match-tender-candidates', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(payload)
-        });
-        
-        const data = await resp.json();
-        
-        if (!data.ok) throw new Error(data.detail);
-        
-        const cands = data.matches || [];
-        
-        if (cands.length === 0) {
-            matchBodyCandidates.innerHTML = '<p style="padding:40px; color:var(--muted); text-align:center;">Ningún candidato supera el umbral del 40% de similitud de perfil con esta vacante.</p>';
+        let res;
+        if (id) {
+        res = await window.supabase.from('tenders').update({
+            name, description, requirements: reqs
+        }).eq('id', id);
         } else {
-            matchBodyCandidates.innerHTML = cands.map(c => {
-                const score = c.ai_match_score || 0;
-                
-                let color = "var(--primary)";
-                if (score >= 80) color = "var(--ok)";
-                else if (score >= 60) color = "var(--warning)";
-                else color = "var(--danger)";
-                
-                return `
-                <div class="t-row" style="display: flex; padding: 18px; border-bottom: 1px solid rgba(255,255,255,0.05); align-items: start; gap: 20px;">
-                  <div class="t-col-name" style="flex: 0 0 250px;">
-                    <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
-                        <div style="width:28px; height:28px; border-radius:6px; background:rgba(103,232,249,0.1); border:1px solid rgba(103,232,249,0.2); display:grid; place-items:center; font-size:14px;">🕵️</div>
-                        <a href="candidate.html?id=${c.id}" target="_blank" style="color:var(--text); font-weight:700; text-decoration:none;">${escapeHtml(c.nombre_completo || 'Desconocido')}</a>
-                    </div>
-                    <div style="font-size:12px; color:var(--muted); opacity:0.8;">${escapeHtml(c.rut || '')}</div>
-                    <div style="font-size:12px; color:var(--primary); margin-top:2px;">${escapeHtml(c.profesion || '')}</div>
-                  </div>
-                  
-                  <div class="t-col-score" style="flex: 0 0 100px; text-align:center; padding-top:6px;">
-                    <div style="font-size:24px; font-weight:900; color:${color}; letter-spacing:-1px;">${score.toFixed(1)}%</div>
-                    <div style="font-size:9px; color:var(--muted); text-transform:uppercase; margin-top:2px; font-weight:800; letter-spacing:0.5px;">AFINIDAD IA</div>
-                    <div style="width:100%; height:4px; border-radius:2px; background:rgba(255,255,255,0.05); margin-top:6px; overflow:hidden;">
-                        <div style="height:100%; width:${score}%; background:${color}; border-radius:2px; transition: width 1s ease-out;"></div>
-                    </div>
-                  </div>
-                  
-                  <div class="t-col-desc" style="flex: 1; font-size:12.5px; color:rgba(255,255,255,0.85); line-height:1.5;">
-                    <div style="display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden; border-left: 2px solid rgba(255,255,255,0.1); padding-left:12px;">
-                        ${escapeHtml(c.evaluacion_general || "El candidato aún no posee resumen general de sus aptitudes.")}
-                    </div>
-                    <div style="margin-top:6px; margin-left:14px;">
-                        <span class="badge" style="background:rgba(255,255,255,0.05); font-size:10px;">${escapeHtml(c.status || 'Postulado')}</span>
-                    </div>
-                  </div>
-                  
-                </div>
-              `}).join('');
+        res = await window.supabase.from('tenders').insert({
+            name, description, requirements: reqs
+        });
         }
-        
-    } catch (err) {
-        matchBodyCandidates.innerHTML = `<p class="error" style="padding:20px; color:#f87171;">Hubo un error contactando el oráculo semántico de JARVIS: ${err.message}</p>`;
-    }
+
+        if (res.error) window.notificar?.(res.error.message, 'error');
+        else {
+        window.notificar?.('Cambios guardados correctamente', 'success');
+        closeModal(tenderModal);
+        loadTenders();
+        }
+    };
   }
 
-  document.addEventListener('DOMContentLoaded', () => {
-    loadTenders();
-  });
+  // --- SCANNERR IA (JARVIS) ---
 
-})();
-  const smartModal = $('#smartModal');
-  const pdfInput = $('#pdfInput');
-  const uploadZone = $('#uploadZone');
-  const scanningState = $('#scanningState');
-  const intelPreview = $('#intelPreview');
-  const intelReqs = $('#intelReqs');
-  const scanLog = $('#scanLog');
-
-  let extractedText = "";
-
-  if ($('#btnSmartTender')) {
-    $('#btnSmartTender').onclick = () => openModal(smartModal);
-  }
-
-  if (uploadZone) {
+  if (uploadZone && pdfInput) {
     uploadZone.onclick = () => pdfInput.click();
 
-    // Drag & Drop JARVIS (Igual que en documentos.html)
     ['dragenter', 'dragover'].forEach(ev => uploadZone.addEventListener(ev, e => {
       e.preventDefault();
       uploadZone.style.border = '2px dashed var(--accent)';
@@ -487,9 +281,7 @@
        const file = e.dataTransfer.files[0];
        if (file) handleJarvisFile(file);
     });
-  }
 
-  if (pdfInput) {
     pdfInput.onchange = (e) => {
       const file = e.target.files[0];
       if (file) handleJarvisFile(file);
@@ -501,10 +293,9 @@
        return window.notificar?.("Por favor, sube un archivo PDF para análisis JARVIS", "warning");
     }
 
-    uploadZone.style.display = 'none';
-    scanningState.style.display = 'block';
-    intelPreview.style.display = 'none';
-    const intelDesc = $('#intelDesc');
+    if (uploadZone) uploadZone.style.display = 'none';
+    if (scanningState) scanningState.style.display = 'block';
+    if (intelPreview) intelPreview.style.display = 'none';
 
     try {
       updateScanLog("JARVIS Core v7.5: Iniciando Protocolo de Análisis...");
@@ -525,14 +316,14 @@
       
       renderDetectedReqs(aiData.vacancies || []);
       
-      scanningState.style.display = 'none';
-      intelPreview.style.display = 'block';
+      if (scanningState) scanningState.style.display = 'none';
+      if (intelPreview) intelPreview.style.display = 'block';
       updateScanLog("Análisis Estratégico Completado.");
     } catch (err) {
       console.error(err);
       window.notificar?.("Error en JARVIS Engine: " + err.message, "error");
-      uploadZone.style.display = 'block';
-      scanningState.style.display = 'none';
+      if (uploadZone) uploadZone.style.display = 'block';
+      if (scanningState) scanningState.style.display = 'none';
     }
   }
 
@@ -545,7 +336,7 @@
            body: JSON.stringify({
               message: `Analiza esta licitación y extrae una ESTRUCTURA JERÁRQUICA DE VACANTES:
               1) Un resumen técnico/estratégico (max 300 caracteres). 
-              2) Una lista de VACANTES, donde cada vacante tiene un T├ìTULO y una lista de REQUISITOS específicos.
+              2) Una lista de VACANTES, donde cada vacante tiene un TÍTULO y una lista de REQUISITOS específicos.
               
               IMPORTANTE: Agrupa los requisitos técnicos y operativos bajo su vacante correspondiente.
               Responde estrictamente en formato JSON: 
@@ -573,7 +364,6 @@
            } catch(e) { console.warn("JSON Parse err", e); }
         }
 
-        // Respaldo heurístico si la IA no entregó vacantes estructuradas
         if (!finalData.vacancies?.length) {
            const legacyReqs = await detectRequirementsHeuristic(text);
            finalData.vacancies = [{ title: "Perfiles Detectados", requirements: legacyReqs.map(r => r.label) }];
@@ -602,7 +392,6 @@
     const pdfjsLib = window['pdfjs-dist/build/pdf'];
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-    // DISABLE WORKER: To avoid "Storage Blocked" errors in some browsers
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer, disableWorker: true }).promise;
     let fullText = "";
     for (let i = 1; i <= Math.min(pdf.numPages, 5); i++) {
@@ -632,6 +421,7 @@
   }
 
   function renderDetectedReqs(vacancies) {
+    if (!intelReqs) return;
     intelReqs.innerHTML = vacancies.map((v, vIdx) => `
       <div class="card" style="padding:15px; border:1px solid rgba(34,211,238,0.2); background:rgba(255,255,255,0.02); margin-bottom:12px;">
          <div style="font-size:14px; font-weight:800; color:var(--accent); margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
@@ -649,11 +439,10 @@
       </div>
     `).join('');
   }
-
+
   const btnImportIntel = $('#btnImportIntel');
   if (btnImportIntel) {
     btnImportIntel.onclick = () => {
-      // Recolectar vacantes con sus requisitos seleccionados
       const vCards = Array.from(document.querySelectorAll('.vacancy-group-check:checked')).map(vc => {
         const vIdx = vc.dataset.vidx;
         const title = vc.closest('.card').querySelector('span').textContent.replace('✅ ', '');
@@ -661,18 +450,15 @@
         return { title, requirements };
       }).filter(v => v.requirements.length > 0);
 
-      const description = $('#intelDesc')?.value || "";
+      const description = intelDesc?.value || "";
       
-      tenderIdInput.value = '';
-      tenderForm.reset();
-      tenderNameInput.value = "Licitación Detectada " + new Date().toLocaleDateString();
-      tenderDescInput.value = description;
+      if (tenderIdInput) tenderIdInput.value = '';
+      if (tenderForm) tenderForm.reset();
+      if (tenderNameInput) tenderNameInput.value = "Licitación Detectada " + new Date().toLocaleDateString();
+      if (tenderDescInput) tenderDescInput.value = description;
       
-      reqContainer.innerHTML = '';
+      if (reqContainer) reqContainer.innerHTML = '';
       
-      // NIVEL GOD: Almacenamos la estructura jerárquica
-      // Para retrocompatibilidad y visualización, creamos inputs especiales si es necesario,
-      // pero el guardado usará el JSON de vCards.
       vCards.forEach(v => {
         v.requirements.forEach(r => {
            addReqInput(`[${v.title}] ${r}`);
@@ -680,3 +466,154 @@
       });
     };
   }
+
+  // --- MATCHMAKING PER-VACANCY ---
+
+  async function runMatchmaking(tender) {
+    if ($('#matchTitle')) $('#matchTitle').textContent = `Aptitud para: ${tender.name}`;
+    openModal(matchModal);
+    
+    if (vacancySelector) {
+        vacancySelector.innerHTML = '<option value="">Cargando vacantes...</option>';
+        vacancySelector.disabled = true;
+    }
+
+    const { data: vacancies, error: vErr } = await window.supabase.from('vacancies')
+        .select('*')
+        .eq('tender_id', tender.id)
+        .order('created_at', { ascending: true });
+        
+    let activeVacancies = [];
+    if (!vErr && vacancies && vacancies.length > 0) {
+        activeVacancies = vacancies;
+    } else {
+        activeVacancies = [{
+            id: 'global',
+            title: 'Perfil Global de la Licitación',
+            quantity: 1,
+            requirements: tender.requirements || []
+        }];
+    }
+    
+    if (vacancySelector) {
+        vacancySelector.innerHTML = '';
+        activeVacancies.forEach((v, index) => {
+            const opt = document.createElement('option');
+            opt.value = index;
+            opt.textContent = `${v.title} (${v.quantity} cupo${v.quantity > 1 ? 's' : ''})`;
+            vacancySelector.appendChild(opt);
+        });
+        vacancySelector.disabled = false;
+        vacancySelector.onchange = () => evaluateVacancy(tender, activeVacancies[vacancySelector.value]);
+    }
+    
+    evaluateVacancy(tender, activeVacancies[0]);
+  }
+
+  async function evaluateVacancy(tender, vacancy) {
+    if (tabWorkers) tabWorkers.click();
+    
+    if (matchBodyWorkers) matchBodyWorkers.innerHTML = '<p style="padding:20px; color:var(--text);">Calculando compatibilidad estricta...</p>';
+    if (matchBodyCandidates) matchBodyCandidates.innerHTML = '<p style="padding:20px; color:var(--text);">Iniciando búsqueda semántica...</p>';
+    
+    const vacReqs = vacancy.requirements || [];
+
+    try {
+      const { data: workers, error: wErr } = await window.supabase.from('workers').select('*');
+      if (wErr) throw wErr;
+
+      const [ { data: creds }, { data: exams } ] = await Promise.all([
+        window.supabase.from('worker_credentials').select('*'),
+        window.supabase.from('medical_exam_records').select('*')
+      ]);
+
+      const normalize = (r) => String(r || "").replace(/[^0-9kK]/g, "").toUpperCase();
+
+      const results = workers.map(w => {
+        const wRutNormalized = normalize(w.rut);
+        const myDocs = [
+          ...(creds || []).filter(c => c.worker_id === w.id || normalize(c.rut) === wRutNormalized),
+          ...(exams || []).filter(e => normalize(e.rut) === wRutNormalized)
+        ];
+        const missing = [];
+        const expired = [];
+        const today = new Date();
+
+        vacReqs.forEach(req => {
+          const reqNorm = normalizeText(req);
+          const found = myDocs.find(d => {
+            const nameNorm = normalizeText(d.credential_name);
+            const typeNorm = normalizeText(d.exam_type);
+            const catNorm = normalizeText(d.credential_category);
+            return nameNorm.includes(reqNorm) || typeNorm.includes(reqNorm) || catNorm.includes(reqNorm);
+          });
+          if (!found) missing.push(req);
+          else if (found.expiry_date && new Date(found.expiry_date) < today) expired.push(req);
+        });
+
+        return { worker: w, isApto: (missing.length === 0 && expired.length === 0), missing, expired };
+      });
+
+      if (matchBodyWorkers) {
+          matchBodyWorkers.innerHTML = results.map(r => `
+            <div class="t-row" style="display: flex; padding: 16px; border-bottom: 1px solid rgba(255,255,255,0.05); align-items: stretch; gap: 15px;">
+              <div class="t-col-name" style="flex: 0 0 200px;">
+                <strong style="display:block; margin-bottom:4px;">${r.worker.full_name}</strong>
+                <span style="font-size:11px; color:var(--muted)">${r.worker.rut}</span>
+              </div>
+              <div class="t-col-prof" style="flex: 0 0 100px; display:flex; align-items:start;">
+                <span class="badge ${r.isApto ? 'badge--success' : 'badge--danger'}" style="margin-top:2px;">
+                  ${r.isApto ? 'APTO' : 'NO APTO'}
+                </span>
+              </div>
+              <div class="t-col-status" style="flex: 1; font-size:12px;">
+                ${r.isApto ? '✓ Cumple requisitos' : (r.missing.length ? 'Faltan: ' + r.missing.join(', ') : '')}
+              </div>
+            </div>
+          `).join('');
+      }
+
+    } catch (err) {
+      if (matchBodyWorkers) matchBodyWorkers.innerHTML = `<p class="error">Error: ${err.message}</p>`;
+    }
+    
+    // IA Matching
+    if (!matchBodyCandidates) return;
+    try {
+        const resp = await fetch('/api/match-tender-candidates', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                tender_id: tender.id || 'global',
+                tender_name: (tender.name || 'Licitación') + ' - ' + vacancy.title,
+                requirements: vacReqs
+            })
+        });
+        const data = await resp.json();
+        if (!data.ok) throw new Error(data.detail);
+        const cands = data.matches || [];
+        
+        if (cands.length === 0) {
+            matchBodyCandidates.innerHTML = '<p style="padding:40px; color:var(--muted); text-align:center;">Ningún candidato supera el umbral.</p>';
+        } else {
+            matchBodyCandidates.innerHTML = cands.map(c => `
+                <div class="t-row" style="display: flex; padding: 18px; border-bottom: 1px solid rgba(255,255,255,0.05); align-items: start; gap: 20px;">
+                  <div style="flex: 0 0 250px;">
+                    <a href="candidate.html?id=${c.id}" target="_blank" style="color:var(--text); font-weight:700;">${escapeHtml(c.nombre_completo)}</a>
+                    <div style="font-size:11px; color:var(--primary);">${c.ai_match_score.toFixed(1)}% AFINIDAD</div>
+                  </div>
+                  <div style="flex: 1; font-size:12px; color:var(--muted);">${escapeHtml(c.evaluacion_general || 'Sin resumen')}</div>
+                </div>
+            `).join('');
+        }
+    } catch (err) {
+        matchBodyCandidates.innerHTML = `<p class="error">Error Match IA: ${err.message}</p>`;
+    }
+  }
+
+  // INITIAL LOAD
+  document.addEventListener('DOMContentLoaded', () => {
+    loadTenders();
+  });
+
+})();
