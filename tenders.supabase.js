@@ -260,12 +260,12 @@
     if (!vacanciesList) return;
     vacanciesWrapper.style.display = detectedVacancies.length ? 'block' : 'none';
     vacanciesList.innerHTML = detectedVacancies.map((v, i) => `
-      <div class="stark-card" style="padding:10px; margin-bottom:8px; border-left: 2px solid var(--accent); display:flex; justify-content:space-between; align-items:center;">
-        <div>
-          <div class="vacancy-pill" style="font-size:9px;">${v.title}</div>
-          <div style="font-size:9px; color:var(--muted); margin-top:4px;">REQ_COUNT: ${v.requirements.length}</div>
+      <div class="stark-card" style="padding:15px; margin-bottom:12px; border-left: 3px solid var(--accent); position:relative;">
+        <button type="button" class="btn btn--mini" style="position:absolute; top:10px; right:10px; color:var(--danger); font-weight:800;" onclick="window.remV(${i})">X</button>
+        <div class="vacancy-pill" style="font-size:11px; font-weight:900; letter-spacing:1px;">[ ${v.title.toUpperCase()} ]</div>
+        <div style="font-size:10px; color:var(--muted); margin-top:10px; display:flex; flex-wrap:wrap; gap:6px;">
+          ${v.requirements.map(r => `<span style="background:rgba(34,211,238,0.1); border:1px solid rgba(34,211,238,0.3); padding:3px 8px; border-radius:12px; color:var(--text);">${r}</span>`).join('')}
         </div>
-        <button type="button" class="btn btn--mini" style="color:var(--danger)" onclick="window.remV(${i})">×</button>
       </div>
     `).join('');
   }

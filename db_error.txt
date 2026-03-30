@@ -1,0 +1,1 @@
+VACANCIES COLUMNS: ['id', 'title', 'requirements', 'sla_days', 'status', 'created_at']
