@@ -36,6 +36,7 @@
 
   let allTenders = [];
   let detectedVacancies = [];
+  let currentScanVacancies = []; // Almacén temporal para el preview
 
   // --- NAVEGACIÓN Y MODALES ---
 
@@ -249,6 +250,24 @@
 
   if (uploadZone && pdfInput) {
     uploadZone.onclick = () => pdfInput.click();
+
+    ['dragenter', 'dragover'].forEach(ev => uploadZone.addEventListener(ev, e => {
+      e.preventDefault();
+      uploadZone.style.borderColor = 'var(--accent)';
+      uploadZone.style.background = 'rgba(34,211,238,0.1)';
+    }));
+
+    ['dragleave', 'drop'].forEach(ev => uploadZone.addEventListener(ev, e => {
+      e.preventDefault();
+      uploadZone.style.borderColor = 'rgba(34,211,238,0.3)';
+      uploadZone.style.background = 'rgba(255,255,255,0.02)';
+    }));
+
+    uploadZone.addEventListener('drop', e => {
+      const file = e.dataTransfer.files[0];
+      if (file) handleJarvisFile(file);
+    });
+
     pdfInput.onchange = (e) => { const file = e.target.files[0]; if (file) handleJarvisFile(file); };
   }
 
@@ -264,8 +283,9 @@
       updateScanLog("Decodificando Requisitos con JARVIS...");
       const aiData = await analyzeTenderDeepAI(text);
       
+      currentScanVacancies = aiData.vacancies || [];
       if (intelDesc) intelDesc.value = aiData.description;
-      renderScanPreview(aiData.vacancies || []);
+      renderScanPreview(currentScanVacancies);
       
       if (scanningState) scanningState.style.display = 'none';
       if (intelPreview) intelPreview.style.display = 'block';
@@ -293,17 +313,12 @@
 
   if ($('#btnImportIntel')) {
     $('#btnImportIntel').onclick = () => {
-        // En lugar de meter todo a requirements de tender, llenamos detectedVacancies
         const selected = Array.from(document.querySelectorAll('.scan-v-check:checked')).map(chk => {
-            const vIdx = chk.dataset.vidx;
-            // Re-obtener los datos del preview (esto es simplificado, en un app real usaríamos el objeto original)
-            const card = chk.closest('.stark-card');
-            const title = card.querySelector('span').textContent;
-            const requirements = Array.from(card.querySelectorAll('.badge')).map(b => b.textContent);
-            return { title, requirements, quantity: 1 };
-        });
+            const vIdx = parseInt(chk.dataset.vidx);
+            return currentScanVacancies[vIdx];
+        }).filter(v => v);
 
-        detectedVacancies = selected;
+        detectedVacancies = [...detectedVacancies, ...selected];
         renderDetectedVacancies();
         
         if (intelDesc && tenderDescInput) tenderDescInput.value = intelDesc.value;
@@ -338,21 +353,52 @@
 
   async function analyzeTenderDeepAI(text) {
      const WEBHOOK = 'https://primary-production-aa252.up.railway.app/webhook/a35e75ae-9003-493b-a00e-8edd8bd2b12a';
-     const res = await fetch(WEBHOOK, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: `Extrae vacantes y requisitos: ${text.substring(0, 4000)}` })
-     });
-     const data = await res.json();
-     let payload = Array.isArray(data) ? data[0] : data;
-     let textResp = payload.output || payload.text || payload.reply || "";
-     let finalData = { description: "", vacancies: [] };
      try {
-       const start = textResp.indexOf('{');
-       const end = textResp.lastIndexOf('}') + 1;
-       finalData = JSON.parse(textResp.substring(start, end));
-     } catch(e) { console.error("Parse fail", e); }
-     return finalData;
+        const res = await fetch(WEBHOOK, {
+           method: 'POST',
+           headers: { 'Content-Type': 'application/json' },
+           body: JSON.stringify({
+              message: `Analiza esta licitación y extrae una ESTRUCTURA JERÁRQUICA DE VACANTES:
+              1) Un resumen técnico/estratégico (max 400 caracteres). 
+              2) Una lista de VACANTES, donde cada vacante tiene un TÍTULO y una lista de REQUISITOS específicos (mínimo 3 reqs por vacante).
+              
+              IMPORTANTE: Agrupa los requisitos técnicos y operativos bajo su vacante correspondiente.
+              Responde estrictamente en formato JSON: 
+              {
+                "description": "...", 
+                "vacancies": [
+                  {"title": "Nombre Vacante 1", "requirements": ["Req 1", "Req 2"]},
+                  {"title": "Nombre Vacante 2", "requirements": ["Req 3", "Req 4"]}
+                ]
+              }
+              Texto: ${text.substring(0, 4500)}`,
+              meta: { task: "tender_hierarchical_extraction", version: "Stark-v3" }
+           })
+        });
+        const data = await res.json();
+        let payload = Array.isArray(data) ? data[0] : data;
+        let textResp = payload.output || payload.text || payload.reply || "";
+        let finalData = { description: "", vacancies: [] };
+
+        if (typeof textResp === 'string' && textResp.includes('{')) {
+          try {
+            const start = textResp.indexOf('{');
+            const end = textResp.lastIndexOf('}') + 1;
+            finalData = JSON.parse(textResp.substring(start, end));
+          } catch(e) { console.warn("JSON Parse err", e); }
+        }
+
+        if (!finalData.vacancies?.length) {
+           finalData.vacancies = [{ title: "Perfil General Detetado", requirements: ["Requisito base extraído"] }];
+        }
+
+        return {
+           description: finalData.description || "Licitación analizada por JARVIS Engine v8.0.",
+           vacancies: finalData.vacancies || []
+        };
+     } catch (e) {
+        throw new Error("Conexión con núcleo de IA interrumpida. " + e.message);
+     }
   }
 
   async function extractTextFromPDF(file) {
