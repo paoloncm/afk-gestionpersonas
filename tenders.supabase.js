@@ -389,7 +389,10 @@
       reader.readAsArrayBuffer(file);
     });
 
-    const pdfjsLib = window['pdfjs-dist/build/pdf'];
+    // Use window.pdfjsLib directly from the CDN
+    const pdfjsLib = window['pdfjs-dist/build/pdf'] || window.pdfjsLib;
+    if (!pdfjsLib) throw new Error("Motor PDF.js no cargado. Reintenta en unos segundos.");
+    
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer, disableWorker: true }).promise;
