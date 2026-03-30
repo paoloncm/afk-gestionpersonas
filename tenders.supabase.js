@@ -455,3 +455,226 @@
   });
 
 })();
+\n\n  const smartModal = $('#smartModal');
+  const pdfInput = $('#pdfInput');
+  const uploadZone = $('#uploadZone');
+  const scanningState = $('#scanningState');
+  const intelPreview = $('#intelPreview');
+  const intelReqs = $('#intelReqs');
+  const scanLog = $('#scanLog');
+
+  let extractedText = "";
+
+  if ($('#btnSmartTender')) {
+    $('#btnSmartTender').onclick = () => openModal(smartModal);
+  }
+
+  if (uploadZone) {
+    uploadZone.onclick = () => pdfInput.click();
+
+    // Drag & Drop JARVIS (Igual que en documentos.html)
+    ['dragenter', 'dragover'].forEach(ev => uploadZone.addEventListener(ev, e => {
+      e.preventDefault();
+      uploadZone.style.border = '2px dashed var(--accent)';
+      uploadZone.style.background = 'rgba(34,211,238,0.1)';
+    }));
+    ['dragleave', 'drop'].forEach(ev => uploadZone.addEventListener(ev, e => {
+      e.preventDefault();
+      uploadZone.style.border = '1px dashed rgba(34,211,238,0.3)';
+      uploadZone.style.background = 'rgba(255,255,255,0.02)';
+    }));
+    uploadZone.addEventListener('drop', e => {
+       const file = e.dataTransfer.files[0];
+       if (file) handleJarvisFile(file);
+    });
+  }
+
+  if (pdfInput) {
+    pdfInput.onchange = (e) => {
+      const file = e.target.files[0];
+      if (file) handleJarvisFile(file);
+    };
+  }
+
+  async function handleJarvisFile(file) {
+    if (!file || !file.name.toLowerCase().endsWith('.pdf')) {
+       return window.notificar?.("Por favor, sube un archivo PDF para an├ílisis JARVIS", "warning");
+    }
+
+    uploadZone.style.display = 'none';
+    scanningState.style.display = 'block';
+    intelPreview.style.display = 'none';
+    const intelDesc = $('#intelDesc');
+
+    try {
+      updateScanLog("JARVIS Core v7.5: Iniciando Protocolo de An├ílisis...");
+      await new Promise(r => setTimeout(r, 600));
+      
+      const text = await extractTextFromPDF(file);
+      extractedText = text;
+      
+      updateScanLog("[Protocolo Stark] Fase 1: Escaneo Estructural...");
+      await new Promise(r => setTimeout(r, 800));
+      
+      updateScanLog("[Protocolo Stark] Fase 2: An├ílisis Sem├íntico Deep-IA...");
+      const aiData = await analyzeTenderDeepAI(text);
+      
+      if (intelDesc && aiData.description) {
+         intelDesc.value = aiData.description;
+      }
+      
+      renderDetectedReqs(aiData.vacancies || []);
+      
+      scanningState.style.display = 'none';
+      intelPreview.style.display = 'block';
+      updateScanLog("An├ílisis Estrat├®gico Completado.");
+    } catch (err) {
+      console.error(err);
+      window.notificar?.("Error en JARVIS Engine: " + err.message, "error");
+      uploadZone.style.display = 'block';
+      scanningState.style.display = 'none';
+    }
+  }
+
+  async function analyzeTenderDeepAI(text) {
+     const WEBHOOK = 'https://primary-production-aa252.up.railway.app/webhook/a35e75ae-9003-493b-a00e-8edd8bd2b12a';
+     try {
+        const res = await fetch(WEBHOOK, {
+           method: 'POST',
+           headers: { 'Content-Type': 'application/json' },
+           body: JSON.stringify({
+              message: `Analiza esta licitaci├│n y extrae una ESTRUCTURA JER├üRQUICA DE VACANTES:
+              1) Un resumen t├®cnico/estrat├®gico (max 300 caracteres). 
+              2) Una lista de VACANTES, donde cada vacante tiene un T├ìTULO y una lista de REQUISITOS espec├¡ficos.
+              
+              IMPORTANTE: Agrupa los requisitos t├®cnicos y operativos bajo su vacante correspondiente.
+              Responde estrictamente en formato JSON: 
+              {
+                "description": "...", 
+                "vacancies": [
+                  {"title": "Nombre Vacante 1", "requirements": ["Req 1", "Req 2"]},
+                  {"title": "Nombre Vacante 2", "requirements": ["Req 3", "Req 4"]}
+                ]
+              }
+              Texto: ${text.substring(0, 4000)}`,
+              meta: { task: "tender_hierarchical_extraction", context: "Nivel God Industrias Stark" }
+           })
+        });
+        const data = await res.json();
+        let payload = Array.isArray(data) ? data[0] : data;
+        let finalData = { description: "", vacancies: [] };
+
+        const textResp = payload.output || payload.text || payload.reply || "";
+        if (typeof textResp === 'string' && textResp.includes('{')) {
+           try {
+              const start = textResp.indexOf('{');
+              const end = textResp.lastIndexOf('}') + 1;
+              finalData = JSON.parse(textResp.substring(start, end));
+           } catch(e) { console.warn("JSON Parse err", e); }
+        }
+
+        // Respaldo heur├¡stico si la IA no entreg├│ vacantes estructuradas
+        if (!finalData.vacancies?.length) {
+           const legacyReqs = await detectRequirementsHeuristic(text);
+           finalData.vacancies = [{ title: "Perfiles Detectados", requirements: legacyReqs.map(r => r.label) }];
+        }
+
+        return {
+           description: finalData.description || "",
+           vacancies: finalData.vacancies || []
+        };
+     } catch (e) {
+        return {
+           description: "Error de conexi├│n con el n├║cleo JARVIS. Se activ├│ el respaldo local.",
+           vacancies: [{ title: "Respaldo Local", requirements: (await detectRequirementsHeuristic(text)).map(r => r.label) }]
+        };
+     }
+  }
+
+  async function extractTextFromPDF(file) {
+    const reader = new FileReader();
+    const arrayBuffer = await new Promise((resolve, reject) => {
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsArrayBuffer(file);
+    });
+
+    const pdfjsLib = window['pdfjs-dist/build/pdf'];
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+    // DISABLE WORKER: To avoid "Storage Blocked" errors in some browsers
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer, disableWorker: true }).promise;
+    let fullText = "";
+    for (let i = 1; i <= Math.min(pdf.numPages, 5); i++) {
+       updateScanLog(`Analizando p├ígina ${i} de ${pdf.numPages}...`);
+       const page = await pdf.getPage(i);
+       const content = await page.getTextContent();
+       fullText += content.items.map(item => item.str).join(" ") + "\n";
+    }
+    return fullText;
+  }
+
+  function updateScanLog(msg) { if (scanLog) scanLog.textContent = `> ${msg}`; }
+
+  function detectRequirementsHeuristic(text) {
+    const clean = normalizeText(text);
+    const catalog = [
+      { id: 'altura', label: 'Altura F├¡sica (>1.8m)', keywords: ['altura', 'desnivel', 'caida', '1.80'] },
+      { id: 'psico', label: 'Psicosensom├®trico Riguroso', keywords: ['psico', 'sensometrico', 'conductores', 'vifp'] },
+      { id: 'lic_b', label: 'Licencia Clase B', keywords: ['licencia', 'clase b', 'vehiculo liviano'] },
+      { id: 'lic_a2', label: 'Licencia Profesional A2', keywords: ['clase a2', 'ambulancia', 'transporte'] },
+      { id: 'confinado', label: 'Espacios Confinados', keywords: ['confinado', 'silice', 'tunel'] },
+      { id: 'ruido', label: 'Protocolo Prexor (Ruido)', keywords: ['ruido', 'auditivo', 'prexor'] },
+      { id: 'fuego', label: 'Combate Incendios (OS10)', keywords: ['fuego', 'incendio', 'extintor', 'os10'] },
+      { id: 'primeros_aux', label: 'Primeros Auxilios', keywords: ['auxilios', 'reanimacion', 'rcp'] }
+    ];
+    return catalog.filter(c => c.keywords.some(k => clean.includes(k)));
+  }
+
+  function renderDetectedReqs(vacancies) {
+    intelReqs.innerHTML = vacancies.map((v, vIdx) => `
+      <div class="card" style="padding:15px; border:1px solid rgba(34,211,238,0.2); background:rgba(255,255,255,0.02); margin-bottom:12px;">
+         <div style="font-size:14px; font-weight:800; color:var(--accent); margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+            <span>­ƒøí´©Å ${v.title}</span>
+            <input type="checkbox" checked class="vacancy-group-check" data-vidx="${vIdx}">
+         </div>
+         <div style="display:flex; flex-wrap:wrap; gap:6px;">
+            ${(v.requirements || []).map((r, rIdx) => `
+               <div class="badge badge--dark" style="font-size:11px; display:flex; align-items:center; gap:5px;">
+                  ${r}
+                  <input type="checkbox" checked class="intel-check" data-vidx="${vIdx}" data-ridx="${rIdx}" data-label="${r}">
+               </div>
+            `).join('')}
+         </div>
+      </div>
+    `).join('');
+  }
+\n\n
+  const btnImportIntel = $('#btnImportIntel');
+  if (btnImportIntel) {
+    btnImportIntel.onclick = () => {
+      // Recolectar vacantes con sus requisitos seleccionados
+      const vCards = Array.from(document.querySelectorAll('.vacancy-group-check:checked')).map(vc => {
+        const vIdx = vc.dataset.vidx;
+        const title = vc.closest('.card').querySelector('span').textContent.replace('­ƒøí´©Å ', '');
+        const requirements = Array.from(document.querySelectorAll(`.intel-check[data-vidx="${vIdx}"]:checked`)).map(i => i.dataset.label);
+        return { title, requirements };
+      }).filter(v => v.requirements.length > 0);
+
+      const description = $('#intelDesc')?.value || "";
+      
+      tenderIdInput.value = '';
+      tenderForm.reset();
+      tenderNameInput.value = "Licitaci├│n Detectada " + new Date().toLocaleDateString();
+      tenderDescInput.value = description;
+      
+      reqContainer.innerHTML = '';
+      
+      // NIVEL GOD: Almacenamos la estructura jer├írquica
+      // Para retrocompatibilidad y visualizaci├│n, creamos inputs especiales si es necesario,
+      // pero el guardado usar├í el JSON de vCards.
+      vCards.forEach(v => {
+        v.requirements.forEach(r => {
+           addReqInput(`[${v.title}] ${r}`);
+        });
+      });
