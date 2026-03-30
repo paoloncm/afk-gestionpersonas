@@ -134,13 +134,36 @@
       </div>
 
       <div id="chatBody" class="chatbot__body"></div>
+    </div>
+  </div>
 
-      <div class="chatbot__input">
-        <input id="chatInput" type="text" placeholder="Escribe aqu�">
-        <button id="chatSend" class="btn btn--primary" type="button">Enviar</button>
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="auth.js"></script>
+  <script src="tenders.supabase.js"></script>
+
+  <!-- Chatbot -->
+  <div class="chatbot" id="chatbot">
+    <div class="chatbot-header" id="chatbotHeader">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <div class="status-dot"></div>
+        <strong>AFK Chat Assistant</strong>
       </div>
-    </aside>
+      <div style="display:flex; gap:10px; align-items:center;">
+        <button id="chatbotClearBtn" class="btn btn--mini" style="background:var(--danger);">Borrar BD</button>
+        <button id="chatbotToggleBtn" style="background:none; border:none; color:white; font-size:18px; cursor:pointer;">&minus;</button>
+      </div>
+    </div>
+    <div class="chatbot-body" id="chatbotBody">
+      <div class="chat-message ai">Hola, soy JARVIS de AFK. Estoy listo para analizar licitaciones y trabajadores. ¿En qué te puedo ayudar?</div>
+    </div>
+    <div class="chatbot-footer">
+      <input type="text" id="chatInput" placeholder="Pregunta algo (ej. vencimientos próximos)..." />
+      <button id="chatSendBtn" class="btn" style="padding:8px 15px">Enviar</button>
+    </div>
+  </div>
+  <button id="chatbotFab" class="chatbot-fab">✨</button>
+
   <script defer src="chat.js?v=5.0"></script>
 </body>
 </html>
-
