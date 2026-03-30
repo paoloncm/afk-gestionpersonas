@@ -46,7 +46,7 @@
   async function loadTenders() {
     try {
       if (!window.supabase || typeof window.supabase.from !== 'function') {
-        process.stdout.write("[Stark] DB Link logic failed, retrying...");
+        console.warn("[Stark] DB Link logic failed, retrying...");
         return setTimeout(loadTenders, 500);
       }
       if (tendersBody) tendersBody.innerHTML = '<div style="padding:40px; text-align:center;">SINCRONIZANDO NÚCLEO...</div>';
@@ -247,6 +247,7 @@
 
   tenderForm.onsubmit = async (e) => {
     e.preventDefault();
+    console.log("[Stark] Iniciando proceso de guardado...");
     const id = $('#tenderId').value;
     const name = $('#tenderName').value;
     const desc = $('#tenderDesc').value;
@@ -256,16 +257,31 @@
         await window.supabase.from('tenders').update({ name, description: desc, requirements: reqs }).eq('id', id).select() :
         await window.supabase.from('tenders').insert({ name, description: desc, requirements: reqs }).select();
 
-    if (error) return window.notificar?.(error.message, "error");
-    const tId = id || (tRes && tRes[0] ? tRes[0].id : null);
-
-    if (detectedVacancies.length && tId) {
-        if (id) await window.supabase.from('vacancies').delete().eq('tender_id', id);
-        const vacData = detectedVacancies.map(v => ({ tender_id: tId, title: v.title, requirements: v.requirements }));
-        await window.supabase.from('vacancies').insert(vacData);
+    if (error) {
+        console.error("[Stark] Error guardando licitación principal:", error);
+        return window.notificar?.(error.message, "error");
     }
     
-    window.notificar?.("SISTEMA ACTUALIZADO");
+    const tId = id || (tRes && tRes[0] ? tRes[0].id : null);
+    console.log("[Stark] ID de licitación para vacantes:", tId);
+
+    if (detectedVacancies.length > 0 && tId) {
+        console.log("[Stark] Sincronizando vacantes:", detectedVacancies.length);
+        if (id) {
+            await window.supabase.from('vacancies').delete().eq('tender_id', id);
+        }
+        const vacData = detectedVacancies.map(v => ({ 
+            tender_id: tId, 
+            title: v.title, 
+            requirements: v.requirements 
+        }));
+        const vRes = await window.supabase.from('vacancies').insert(vacData);
+        if (vRes.error) console.error("[Stark] Error guardando vacantes:", vRes.error);
+    } else {
+        console.warn("[Stark] No hay vacantes para guardar o tId es nulo:", { count: detectedVacancies.length, tId });
+    }
+    
+    window.notificar?.("PROTOCOLO FINALIZADO: SISTEMA SINCRONIZADO");
     closeModal(tenderModal);
     loadTenders();
   };
@@ -344,17 +360,31 @@
   }
 
   async function extractTextFromPDF(file) {
+    console.log("[Scanner] Iniciando extracción de texto para:", file.name);
     const reader = new FileReader();
-    const ab = await new Promise(r => { reader.onload = () => r(reader.result); reader.readAsArrayBuffer(file); });
+    const ab = await new Promise((resolve, reject) => {
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsArrayBuffer(file);
+    });
+    
     const pdfjsLib = window.pdfjsLib;
+    if (!pdfjsLib) throw new Error("Fibras de PDF.js no cargadas en el sistema.");
+    
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-    const pdf = await pdfjsLib.getDocument({ data: ab, disableWorker: true }).promise;
+    
+    const loadingTask = pdfjsLib.getDocument({ data: ab, disableWorker: true });
+    const pdf = await loadingTask.promise;
+    console.log("[Scanner] PDF Cargado. Páginas:", pdf.numPages);
+    
     let t = "";
-    for (let i = 1; i <= Math.min(pdf.numPages, 5); i++) {
+    for (let i = 1; i <= Math.min(pdf.numPages, 10); i++) {
+       console.log(`[Scanner] Decodificando página ${i}...`);
        const p = await pdf.getPage(i);
        const c = await p.getTextContent();
        t += c.items.map(item => item.str).join(" ") + "\n";
     }
+    console.log("[Scanner] Extracción finalizada. Longitud del texto:", t.length);
     return t;
   }
 
