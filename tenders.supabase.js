@@ -340,14 +340,35 @@
   async function evaluate(tender, vacancy) {
     const rs = vacancy.requirements || [];
     
-    // Check if Vacancy is already assigned
-    const isAssigned = !!vacancy.assigned_person_id;
-    const assignmentBanner = isAssigned ? `
-      <div class="stark-card" style="margin-bottom: 20px; padding: 20px; border: 2px solid var(--ok); background: rgba(34,211,238,0.05); text-align: center;">
-        <div style="color:var(--ok); font-weight:900; letter-spacing:2px; font-size:14px; margin-bottom:10px;">🛡️ VACANTE CUBIERTA OFICIALMENTE 🛡️</div>
-        <div style="font-size:24px; color:var(--text); font-weight:900; margin-bottom:5px;">${vacancy.assigned_person_name.toUpperCase()}</div>
-        <div style="color:var(--accent); font-family:monospace; margin-bottom:15px;">AFINIDAD TÁCTICA: ${vacancy.assigned_match_score}% | PROTOCOLO: ${vacancy.assigned_person_type.toUpperCase()}</div>
-        <button onclick="window.starkUnassign('${vacancy.id}')" class="btn btn--mini" style="border-color:var(--danger); color:var(--danger)">[ REVOCAR ASIGNACIÓN ]</button>
+    // Check if Vacancy has shortlisted candidates
+    let shortlist = [];
+    try {
+        if (typeof vacancy.shortlisted_candidates === 'string') {
+            shortlist = JSON.parse(vacancy.shortlisted_candidates);
+        } else if (Array.isArray(vacancy.shortlisted_candidates)) {
+            shortlist = vacancy.shortlisted_candidates;
+        }
+    } catch(e) {}
+
+    const shortlistHTML = shortlist.length > 0 ? `
+      <div class="stark-card" style="margin-bottom: 20px; padding: 15px; border: 1px solid var(--accent); background: rgba(34,211,238,0.05);">
+        <div style="color:var(--accent); font-weight:800; font-size:12px; margin-bottom:10px; text-transform:uppercase;">
+           ⚡ CANDIDATOS EN PROCESO DE SELECCIÓN (${shortlist.length})
+        </div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          ${shortlist.map((c, idx) => `
+            <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.3); padding:8px 12px; border-radius:4px; border-left:2px solid var(--accent);">
+               <div>
+                 <strong style="color:var(--text); font-size:12px;">${c.name.toUpperCase()}</strong>
+                 <span style="font-size:10px; color:var(--muted); margin-left:8px;">[ ${c.type} ]</span>
+               </div>
+               <div style="display:flex; align-items:center; gap:10px;">
+                 <span style="color:var(--accent); font-family:monospace; font-size:12px; font-weight:bold;">${c.score}%</span>
+                 <button onclick="window.starkRemoveShortlist('${vacancy.id}', '${c.id}')" class="btn btn--mini" style="color:var(--danger); font-size:10px; padding:2px 6px;">X</button>
+               </div>
+            </div>
+          `).join('')}
+        </div>
       </div>
     ` : '';
 
@@ -362,19 +383,21 @@
         return { w, score, miss };
       }).sort((a,b) => b.score - a.score);
 
-      matchBodyWorkers.innerHTML = assignmentBanner + scored.map(r => `
-        <div class="t-row stark-card" style="padding:15px; margin-bottom:8px; opacity: ${isAssigned ? '0.4' : '1'};">
+      matchBodyWorkers.innerHTML = shortlistHTML + scored.map(r => {
+        const isPreselected = shortlist.some(s => s.id === r.w.id);
+        return `
+        <div class="t-row stark-card" style="padding:15px; margin-bottom:8px; border: ${isPreselected ? '1px solid var(--accent)' : '1px solid rgba(255,255,255,0.05)'};">
           <div style="display:flex; justify-content:space-between; align-items:center;">
             <div>
               <strong style="color:var(--text); display:block; margin-bottom:4px;">${r.w.full_name}</strong>
-              ${!isAssigned && vacancy.id !== 'global' ? `<button onclick="window.starkAssign('${vacancy.id}','${r.w.id}','${escapeHtml(r.w.full_name)}','AFK',${r.score})" class="btn btn--mini btn--primary" style="padding:2px 8px; font-size:10px;">[ ASIGNAR AFK ]</button>` : ''}
+              ${!isPreselected && vacancy.id !== 'global' ? `<button onclick="window.starkShortlist('${vacancy.id}','${r.w.id}','${escapeHtml(r.w.full_name)}','AFK',${r.score})" class="btn btn--mini btn--primary" style="padding:4px 8px; font-size:10px;">+ PRESELECCIONAR</button>` : `<span style="font-size:9px; color:var(--accent); font-weight:bold;">[ EN PROCESO ]</span>`}
             </div>
             <span style="font-family:monospace; color:var(--accent); font-weight:900; font-size:16px;">${r.score}%</span>
           </div>
           <div class="affinity-bar" style="margin-top:10px;"><div class="affinity-fill" style="width:${r.score}%"></div></div>
           ${r.miss.length ? `<div style="font-size:9px; color:#f43f5e; margin-top:8px;">MISSING: ${r.miss.join(' | ')}</div>` : ''}
         </div>
-      `).join('');
+      `}).join('');
 
       matchBodyCandidates.innerHTML = '<div style="padding:40px; text-align:center;">TRACKING EXTERNAL AGENTS...</div>';
       const iaRes = await fetch('/api/match-tender-candidates', {
@@ -385,65 +408,69 @@
       const iaData = await iaRes.json();
       const m = iaData.matches || [];
       
-      matchBodyCandidates.innerHTML = assignmentBanner + (m.length ? m.map(c => `
-        <div class="t-row stark-card" style="padding:15px; margin-bottom:8px; opacity: ${isAssigned ? '0.4' : '1'};">
+      matchBodyCandidates.innerHTML = shortlistHTML + (m.length ? m.map(c => {
+        const isPreselected = shortlist.some(s => s.id === c.id);
+        return `
+        <div class="t-row stark-card" style="padding:15px; margin-bottom:8px; border: ${isPreselected ? '1px solid var(--accent)' : '1px solid rgba(255,255,255,0.05)'};">
           <div style="display:flex; justify-content:space-between; align-items:center;">
              <div>
                <strong style="color:var(--text); display:block; margin-bottom:4px;">${c.nombre_completo}</strong>
-               ${!isAssigned && vacancy.id !== 'global' ? `<button onclick="window.starkAssign('${vacancy.id}','${c.id}','${escapeHtml(c.nombre_completo)}','IA',${c.ai_match_score.toFixed(1)})" class="btn btn--mini btn--primary" style="padding:2px 8px; font-size:10px; border-color:var(--ok); color:var(--ok);">[ ASIGNAR EXTERNO IA ]</button>` : ''}
+               ${!isPreselected && vacancy.id !== 'global' ? `<button onclick="window.starkShortlist('${vacancy.id}','${c.id}','${escapeHtml(c.nombre_completo)}','IA EXTERNO',${c.ai_match_score.toFixed(1)})" class="btn btn--mini btn--primary" style="padding:4px 8px; font-size:10px;">+ PRESELECCIONAR</button>` : `<span style="font-size:9px; color:var(--accent); font-weight:bold;">[ EN PROCESO ]</span>`}
              </div>
              <span style="font-family:monospace; color:var(--accent); font-weight:900; font-size:16px;">${c.ai_match_score.toFixed(1)}%</span>
           </div>
           <div class="affinity-bar" style="margin-top:10px;"><div class="affinity-fill" style="width:${c.ai_match_score}%"></div></div>
           <p style="font-size:10px; color:var(--muted); line-height:1.4; margin-top:10px;">${c.evaluacion_general}</p>
         </div>
-      `).join('') : '<p style="padding:30px; text-align:center; color:var(--muted);">No se detectaron perfiles compatibles.</p>');
+      `}).join('') : '<p style="padding:30px; text-align:center; color:var(--muted);">No se detectaron perfiles compatibles.</p>');
 
     } catch (e) { console.error(e); }
   }
 
-  // --- STARK ASSIGNMENT PROTOCOL ---
-  window.starkAssign = async function(vacId, personId, personName, type, score) {
-      if(!confirm(`¿ASIGNAR OFICIALMENTE A ${personName.toUpperCase()} A ESTA VACANTE?`)) return;
-      $('#matchTitle').textContent = "ENCRIPTANDO ASIGNACIÓN...";
+  // --- STARK PIPELINE PROTOCOL ---
+  window.starkShortlist = async function(vacId, personId, personName, type, score) {
+      $('#matchTitle').textContent = "AÑADIENDO A SELECCIÓN...";
       try {
-          const { error } = await window.supabase.from('vacancies').update({
-              assigned_person_id: personId,
-              assigned_person_name: personName,
-              assigned_person_type: type,
-              assigned_match_score: score
-          }).eq('id', vacId);
-          if (error) throw error;
-          window.notificar?.("PROTOCOLO DE ASIGNACIÓN: ÉXITO");
+          const { data: vCurrent } = await window.supabase.from('vacancies').select('shortlisted_candidates').eq('id', vacId).single();
+          let currentList = [];
+          if(vCurrent && vCurrent.shortlisted_candidates) {
+              if (typeof vCurrent.shortlisted_candidates === 'string') currentList = JSON.parse(vCurrent.shortlisted_candidates);
+              else currentList = vCurrent.shortlisted_candidates;
+          }
+          if(!currentList.some(c => c.id === personId)) {
+              currentList.push({ id: personId, name: personName, type: type, score: score, added_at: new Date().toISOString() });
+              const { error } = await window.supabase.from('vacancies').update({ shortlisted_candidates: currentList }).eq('id', vacId);
+              if (error) throw error;
+              window.notificar?.(`[ ${personName.toUpperCase()} ] EN PROCESO DE SELECCIÓN`);
+          }
           const tenderId = $('#tenderId').value || allTenders.find(t => t.id === document.querySelector('.btn-match[data-id]')?.dataset?.id)?.id;
           if(tenderId) {
              const t = allTenders.find(x => x.id === tenderId);
-             if(t) runMatchmaking(t); 
-             else loadTenders();
+             if(t) runMatchmaking(t); else loadTenders();
           } else loadTenders(); closeModal(matchModal); 
       } catch(err) {
-          alert("ERROR EN ASIGNACIÓN: Asegúrate de haber inyectado el script SQL en Supabase para habilitar las nuevas columnas.\nDetalle: " + err.message);
+          alert("ERROR: Ejecuta el script SQL para añadir la columna 'shortlisted_candidates'.\nDetalle: " + err.message);
           $('#matchTitle').textContent = "Aptitud Licitación";
       }
   };
 
-  window.starkUnassign = async function(vacId) {
-      if(!confirm("¿CONFIRMAS REVOCAR LA ASIGNACIÓN ACTUAL?")) return;
-      $('#matchTitle').textContent = "DESENCRIPTANDO...";
+  window.starkRemoveShortlist = async function(vacId, personId) {
+      $('#matchTitle').textContent = "REMOVIENDO...";
       try {
-          const { error } = await window.supabase.from('vacancies').update({
-              assigned_person_id: null,
-              assigned_person_name: null,
-              assigned_person_type: null,
-              assigned_match_score: null
-          }).eq('id', vacId);
-          if (error) throw error;
-          window.notificar?.("ASIGNACIÓN REVOCADA");
+          const { data: vCurrent } = await window.supabase.from('vacancies').select('shortlisted_candidates').eq('id', vacId).single();
+          let currentList = [];
+          if(vCurrent && vCurrent.shortlisted_candidates) {
+              if (typeof vCurrent.shortlisted_candidates === 'string') currentList = JSON.parse(vCurrent.shortlisted_candidates);
+              else currentList = vCurrent.shortlisted_candidates;
+          }
+          currentList = currentList.filter(c => c.id !== personId);
+          await window.supabase.from('vacancies').update({ shortlisted_candidates: currentList }).eq('id', vacId);
+          window.notificar?.("CANDIDATO DESCARTADO DE LA SELECCIÓN");
+          
           const tenderId = $('#tenderId').value || allTenders.find(t => t.id === document.querySelector('.btn-match[data-id]')?.dataset?.id)?.id;
           if(tenderId) {
              const t = allTenders.find(x => x.id === tenderId);
-             if(t) runMatchmaking(t); 
-             else loadTenders();
+             if(t) runMatchmaking(t); else loadTenders();
           } else loadTenders(); closeModal(matchModal);
       } catch(err) { console.error(err); }
   };
