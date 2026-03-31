@@ -445,14 +445,31 @@
 
       matchBodyCandidates.innerHTML = '<div style="padding:40px; text-align:center;">SCANNING VECTOR SPACE...</div>';
       
-      const [candRes, queryVector] = await Promise.all([
-          window.supabase.from('candidates').select('id, nombre_completo, profesion, evaluacion_general, experiencia_general, cv_embedding'),
-          getEmbedding(`${vacancy.title} ${rs.join(' ')}`)
-      ]);
-      const candidates = candRes.data || [];
-      console.log(`[Stark] BBDD Vectorial: ${candidates.length} perfiles localizados.`);
+      // Stark Optimization: Session Cache & Fast Fallback
+      if (!window._starkCache) window._starkCache = {};
+      const cacheKey = `v_${vacancy.id}_${rs.join('_')}`;
+
+      let queryVector = window._starkCache[cacheKey] || null;
+      let usedFallback = false;
+
+      if (!queryVector) {
+          try {
+              // 3s Timeout for Vector Search
+              queryVector = await Promise.race([
+                  getEmbedding(`${vacancy.title} ${rs.join(' ')}`),
+                  new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), 3000))
+              ]);
+              if (queryVector) window._starkCache[cacheKey] = queryVector;
+          } catch (te) {
+              console.warn("[Stark] Vector Latency Spike - Rapid Keyword Fallback Active.");
+              usedFallback = true;
+          }
+      }
+
+      const { data: candidates } = await window.supabase.from('candidates').select('id, nombre_completo, profesion, evaluacion_general, experiencia_general, cv_embedding');
+      console.log(`[Stark] BBDD Matcher: ${candidates?.length || 0} perfiles localizados.`);
       
-      const m = candidates.map(c => {
+      const m = (candidates || []).map(c => {
          // Vector Similarity (60% weight)
          let semanticScore = 0;
          if (queryVector && c.cv_embedding) {
@@ -465,15 +482,20 @@
          const t = normalizeText(vacancy.title || "");
          const tWords = t.split(' ').filter(w => w.length > 3);
          const wordMatchCount = tWords.filter(w => p.includes(w)).length;
+         
+         // Guarantees: Exact Title match = 70. Partial word match = 40.
          const matchTitle = (p.includes(t) || t.includes(p)) ? 70 : (tWords.length ? (wordMatchCount / tWords.length) * 40 : 0);
          
          const evalMatch = rs.filter(r => normalizeText(c.evaluacion_general + (c.experiencia_general || "")).includes(normalizeText(r))).length;
          const bonus = rs.length ? (evalMatch / rs.length) * 30 : 0;
+         
          const keywordScore = Math.min(100, matchTitle + bonus);
 
          // Final Stark Score (Hybrid)
+         // If Vector fails, Keyword score is boosted to 100% weight
          const finalScore = queryVector ? (semanticScore * 0.7 + keywordScore * 0.3) : keywordScore;
-         return { ...c, ai_match_score: finalScore, isVector: !!queryVector };
+         
+         return { ...c, ai_match_score: finalScore, isVector: !!queryVector && !usedFallback };
       }).sort((a,b) => b.ai_match_score - a.ai_match_score);
       
       matchBodyCandidates.innerHTML = shortlistHTML + (m.length ? m.map(c => {
