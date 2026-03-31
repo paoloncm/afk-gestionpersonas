@@ -124,9 +124,9 @@
     if (!t.requirements?.length) addReqInput();
     
     detectedVacancies = [];
-    window.supabase.from('vacancies').select('*').eq('tender_id', t.id).then(({data}) => {
+    window.supabase.from('vacancies').select('*').eq('tender_id', t.id).then(async ({data}) => {
         detectedVacancies = data || [];
-        renderDetectedVacancies();
+        await renderDetectedVacancies();
     });
     openModal(tenderModal);
   };
@@ -142,12 +142,12 @@
 
   const btnNewTender = $('#btnNewTender');
   if (btnNewTender) {
-    btnNewTender.onclick = () => {
+    btnNewTender.onclick = async () => {
       $('#tenderId').value = '';
       tenderForm.reset();
       reqContainer.innerHTML = '';
       detectedVacancies = [];
-      renderDetectedVacancies();
+      await renderDetectedVacancies();
       addReqInput();
       uploadZone.style.display = 'block';
       intelPreview.style.display = 'none';
@@ -243,12 +243,12 @@
   }
 
   if ($('#btnImportIntel')) {
-    $('#btnImportIntel').onclick = () => {
+    $('#btnImportIntel').onclick = async () => {
       const selectedIndices = Array.from(document.querySelectorAll('.scan-v-check:checked')).map(c => parseInt(c.dataset.vidx));
       const chosen = selectedIndices.map(idx => currentScanVacancies[idx]).filter(v => v);
 
       detectedVacancies = [...detectedVacancies, ...chosen];
-      renderDetectedVacancies();
+      await renderDetectedVacancies();
       
       if (intelDesc && $('#tenderDesc')) $('#tenderDesc').value = intelDesc.value;
       intelPreview.style.display = 'none';
@@ -257,20 +257,61 @@
     };
   }
 
-  function renderDetectedVacancies() {
+  async function renderDetectedVacancies() {
     if (!vacanciesList) return;
     vacanciesWrapper.style.display = detectedVacancies.length ? 'block' : 'none';
-    vacanciesList.innerHTML = detectedVacancies.map((v, i) => `
-      <div class="stark-card" style="padding:15px; margin-bottom:12px; border-left: 3px solid var(--accent); position:relative;">
-        <button type="button" class="btn btn--mini" style="position:absolute; top:10px; right:10px; color:var(--danger); font-weight:800;" onclick="window.remV(${i})">X</button>
-        <div class="vacancy-pill" style="font-size:11px; font-weight:900; letter-spacing:1px;">[ ${v.title.toUpperCase()} ]</div>
-        <div style="font-size:10px; color:var(--muted); margin-top:10px; display:flex; flex-wrap:wrap; gap:6px;">
-          ${v.requirements.map(r => `<span style="background:rgba(34,211,238,0.1); border:1px solid rgba(34,211,238,0.3); padding:3px 8px; border-radius:12px; color:var(--text);">${r}</span>`).join('')}
+    
+    // Fetch once to calculate stats
+    const { data: ws } = await window.supabase.from('workers').select('*');
+    const { data: cs } = await window.supabase.from('candidates').select('*');
+    const { data: creds } = await window.supabase.from('worker_credentials').select('*');
+
+    vacanciesList.innerHTML = detectedVacancies.map((v, i) => {
+      const rs = v.requirements || [];
+      
+      // Calculate Stats logic
+      const workerScores = (ws || []).map(w => {
+        const wCs = (creds || []).filter(c => c.worker_id === w.id);
+        const miss = rs.filter(r => !wCs.some(c => normalizeText(c.credential_name).includes(normalizeText(r))));
+        return rs.length ? Math.round(((rs.length - miss.length) / rs.length) * 100) : 0;
+      });
+
+      const candidateScores = (cs || []).map(c => {
+         const p = normalizeText(c.profesion || "");
+         const t = normalizeText(v.title || "");
+         const matchTitle = p.includes(t) || t.includes(p) ? 70 : 0;
+         const evalMatch = rs.filter(r => normalizeText(c.evaluacion_general || "").includes(normalizeText(r))).length;
+         const bonus = rs.length ? (evalMatch / rs.length) * 30 : 0;
+         return Math.min(100, matchTitle + bonus);
+      });
+
+      const allScores = [...workerScores, ...candidateScores];
+      const itemsAbove50 = allScores.filter(s => s >= 50).length;
+      const bestScore = allScores.length ? Math.max(...allScores) : 0;
+
+      return `
+      <div class="stark-card" style="padding:15px; margin-bottom:12px; border-left: 3px solid var(--accent); position:relative; display:flex; justify-content:space-between; align-items:center;">
+        <button type="button" class="btn btn--mini" style="position:absolute; top:2px; right:2px; color:var(--danger); font-weight:800; background:none; border:none;" onclick="window.remV(${i})">×</button>
+        <div style="flex:1;">
+            <div class="vacancy-pill" style="font-size:11px; font-weight:900; letter-spacing:1px; margin-bottom:8px;">[ ${v.title.toUpperCase()} ]</div>
+            <div style="font-size:10px; color:var(--muted); display:flex; flex-wrap:wrap; gap:4px;">
+              ${v.requirements.map(r => `<span style="background:rgba(34,211,238,0.05); border:1px solid rgba(34,211,238,0.2); padding:2px 6px; border-radius:4px; color:rgba(255,255,255,0.7);">${r}</span>`).join('')}
+            </div>
+        </div>
+        <div style="text-align:right; min-width:100px;">
+            <div style="display:flex; flex-direction:column; align-items:center;">
+                <svg width="40" height="40" viewBox="0 0 36 36" style="transform: rotate(-90deg);">
+                    <circle cx="18" cy="18" r="16" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="3"></circle>
+                    <circle cx="18" cy="18" r="16" fill="none" stroke="var(--accent)" stroke-width="3" stroke-dasharray="${bestScore}, 100" stroke-linecap="round"></circle>
+                    <text x="18" y="20.5" fill="var(--accent)" font-size="8" font-weight="900" text-anchor="middle" transform="rotate(90 18 18)" style="font-family:monospace;">${Math.round(bestScore)}%</text>
+                </svg>
+                <div style="font-size:9px; color:var(--muted); margin-top:4px;">${itemsAbove50} personas</div>
+            </div>
         </div>
       </div>
-    `).join('');
+    `}).join('');
   }
-  window.remV = (i) => { detectedVacancies.splice(i, 1); renderDetectedVacancies(); };
+  window.remV = async (i) => { detectedVacancies.splice(i, 1); await renderDetectedVacancies(); };
 
   tenderForm.onsubmit = async (e) => {
     e.preventDefault();
@@ -401,27 +442,33 @@
       `}).join('');
 
       matchBodyCandidates.innerHTML = '<div style="padding:40px; text-align:center;">TRACKING EXTERNAL AGENTS...</div>';
-      const iaRes = await fetch('/api/match-tender-candidates', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ tender_id: vacancy.id, tender_name: vacancy.title, requirements: rs })
-      });
-      const iaData = await iaRes.json();
-      const m = iaData.matches || [];
+      
+      const { data: candidates } = await window.supabase.from('candidates').select('*');
+      
+      const m = (candidates || []).map(c => {
+         const p = normalizeText(c.profesion || "");
+         const t = normalizeText(vacancy.title || "");
+         const matchTitle = p.includes(t) || t.includes(p) ? 70 : 0;
+         const evalMatch = rs.filter(r => normalizeText(c.evaluacion_general || "").includes(normalizeText(r))).length;
+         const bonus = rs.length ? (evalMatch / rs.length) * 30 : 0;
+         const score = Math.min(100, matchTitle + bonus);
+         return { ...c, ai_match_score: score };
+      }).filter(c => c.ai_match_score > 0).sort((a,b) => b.ai_match_score - a.ai_match_score);
       
       matchBodyCandidates.innerHTML = shortlistHTML + (m.length ? m.map(c => {
         const isPreselected = shortlist.some(s => s.id === c.id);
+        const scoreVal = c.ai_match_score || 0;
         return `
         <div class="t-row stark-card" style="padding:15px; margin-bottom:8px; cursor:pointer; border: ${isPreselected ? '1px solid var(--accent)' : '1px solid rgba(255,255,255,0.05)'};" onclick="window.openPersonProfile('${c.id}', 'IA EXTERNO')">
           <div style="display:flex; justify-content:space-between; align-items:center;">
              <div>
                <strong style="color:var(--text); display:block; margin-bottom:4px;">${c.nombre_completo}</strong>
-               ${!isPreselected && vacancy.id !== 'global' ? `<button onclick="event.stopPropagation(); window.starkShortlist('${vacancy.id}','${c.id}','${escapeHtml(c.nombre_completo)}','IA EXTERNO',${c.ai_match_score.toFixed(1)})" class="btn btn--mini btn--primary" style="padding:4px 8px; font-size:10px;">+ PRESELECCIONAR</button>` : `<span style="font-size:9px; color:var(--accent); font-weight:bold;">[ EN PROCESO ]</span>`}
+               ${!isPreselected && vacancy.id !== 'global' ? `<button onclick="event.stopPropagation(); window.starkShortlist('${vacancy.id}','${c.id}','${escapeHtml(c.nombre_completo)}','IA EXTERNO',${scoreVal.toFixed(1)})" class="btn btn--mini btn--primary" style="padding:4px 8px; font-size:10px;">+ PRESELECCIONAR</button>` : `<span style="font-size:9px; color:var(--accent); font-weight:bold;">[ EN PROCESO ]</span>`}
              </div>
-             <span style="font-family:monospace; color:var(--accent); font-weight:900; font-size:16px;">${c.ai_match_score.toFixed(1)}%</span>
+             <span style="font-family:monospace; color:var(--accent); font-weight:900; font-size:16px;">${scoreVal.toFixed(1)}%</span>
           </div>
-          <div class="affinity-bar" style="margin-top:10px;"><div class="affinity-fill" style="width:${c.ai_match_score}%"></div></div>
-          <p style="font-size:10px; color:var(--muted); line-height:1.4; margin-top:10px;">${c.evaluacion_general}</p>
+          <div class="affinity-bar" style="margin-top:10px;"><div class="affinity-fill" style="width:${scoreVal}%"></div></div>
+          <p style="font-size:10px; color:var(--muted); line-height:1.4; margin-top:10px;">${c.evaluacion_general || 'Evaluación técnica pendiente.'}</p>
         </div>
       `}).join('') : '<p style="padding:30px; text-align:center; color:var(--muted);">No se detectaron perfiles compatibles.</p>');
 
