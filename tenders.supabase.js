@@ -454,10 +454,10 @@
 
       if (!queryVector) {
           try {
-              // 3s Timeout for Vector Search
+              // 5s Timeout for Vector Search
               queryVector = await Promise.race([
                   getEmbedding(`${vacancy.title} ${rs.join(' ')}`),
-                  new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), 3000))
+                  new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), 5000))
               ]);
               if (queryVector) window._starkCache[cacheKey] = queryVector;
           } catch (te) {
@@ -488,18 +488,25 @@
          let titleScore = 0;
          if (tClean && pClean) {
             if (pClean.includes(tClean) || tClean.includes(pClean)) {
-                titleScore = 70; // High confidence for direct substring
+                titleScore = 70; // Direct match
             } else if (tWords.length > 0) {
                 const matches = tWords.filter(w => pClean.includes(w)).length;
                 titleScore = (matches / tWords.length) * 50; 
             }
          }
 
-         // 3. Requirement Match (BONUS)
+         // 3. Requirement Match (BONUS - Keyword Based)
          let reqScore = 0;
          if (rsClean.length > 0) {
-             const reqMatches = rsClean.filter(r => evClean.includes(r)).length;
-             reqScore = (reqMatches / rsClean.length) * 30;
+             let totalMatchPct = 0;
+             rsClean.forEach(req => {
+                 const reqKeywords = req.split(/\s+/).filter(w => w.length >= 3);
+                 if (reqKeywords.length > 0) {
+                     const hits = reqKeywords.filter(kw => evClean.includes(kw)).length;
+                     totalMatchPct += (hits / reqKeywords.length);
+                 }
+             });
+             reqScore = (totalMatchPct / rsClean.length) * 35; // 35% Weight for specialized reqs
          }
 
          const keywordTotal = Math.min(100, titleScore + reqScore);
