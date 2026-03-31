@@ -149,7 +149,7 @@ class AFKProcessor:
             "otras_experiencias", "evaluacion_general", "experiencia_total",
             "experiencia_en_empresa_actual", "exp_cargo_actual", "exp_proy_similares",
             "cargo_a_desempenar", "nota", "ranking", "status", "vacancy_id",
-            "match_score", "match_explicacion", "onboarding_progress", "source",
+            "match_score", "onboarding_progress", "source",
             "antecedentes_academicos", "direccion", "cv_full_text", "cv_embedding"
         }
         
