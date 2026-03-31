@@ -2094,3 +2094,14 @@ input[type="checkbox"] {
   color: #94a3b8;
 }
 
+/* Custom Scrollbar for Stark Intelligence */
+.stark-summary-content::-webkit-scrollbar {
+  width: 4px;
+}
+.stark-summary-content::-webkit-scrollbar-track {
+  background: rgba(0,0,0,0.2);
+}
+.stark-summary-content::-webkit-scrollbar-thumb {
+  background: var(--accent);
+  border-radius: 10px;
+}

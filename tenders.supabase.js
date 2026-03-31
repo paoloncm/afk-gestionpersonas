@@ -7,6 +7,7 @@
   const tenderForm = $('#tenderForm');
   const reqContainer = $('#reqContainer');
   const matchModal = $('#matchModal');
+  const personProfileModal = $('#personProfileModal');
   const tendersBody = $('#tendersBody');
   const searchInput = $('#searchTender');
 
@@ -38,7 +39,7 @@
   const closeModal = (m) => m?.classList.remove('is-open');
 
   document.querySelectorAll('.close-modal').forEach(b => {
-    b.onclick = () => { closeModal(tenderModal); closeModal(matchModal); };
+    b.onclick = () => { closeModal(tenderModal); closeModal(matchModal); closeModal(personProfileModal); };
   });
 
   // Tab Switch HUD
@@ -386,11 +387,11 @@
       matchBodyWorkers.innerHTML = shortlistHTML + scored.map(r => {
         const isPreselected = shortlist.some(s => s.id === r.w.id);
         return `
-        <div class="t-row stark-card" style="padding:15px; margin-bottom:8px; border: ${isPreselected ? '1px solid var(--accent)' : '1px solid rgba(255,255,255,0.05)'};">
+        <div class="t-row stark-card" style="padding:15px; margin-bottom:8px; cursor:pointer; border: ${isPreselected ? '1px solid var(--accent)' : '1px solid rgba(255,255,255,0.05)'};" onclick="window.openPersonProfile('${r.w.id}', 'AFK')">
           <div style="display:flex; justify-content:space-between; align-items:center;">
             <div>
               <strong style="color:var(--text); display:block; margin-bottom:4px;">${r.w.full_name}</strong>
-              ${!isPreselected && vacancy.id !== 'global' ? `<button onclick="window.starkShortlist('${vacancy.id}','${r.w.id}','${escapeHtml(r.w.full_name)}','AFK',${r.score})" class="btn btn--mini btn--primary" style="padding:4px 8px; font-size:10px;">+ PRESELECCIONAR</button>` : `<span style="font-size:9px; color:var(--accent); font-weight:bold;">[ EN PROCESO ]</span>`}
+              ${!isPreselected && vacancy.id !== 'global' ? `<button onclick="event.stopPropagation(); window.starkShortlist('${vacancy.id}','${r.w.id}','${escapeHtml(r.w.full_name)}','AFK',${r.score})" class="btn btn--mini btn--primary" style="padding:4px 8px; font-size:10px;">+ PRESELECCIONAR</button>` : `<span style="font-size:9px; color:var(--accent); font-weight:bold;">[ EN PROCESO ]</span>`}
             </div>
             <span style="font-family:monospace; color:var(--accent); font-weight:900; font-size:16px;">${r.score}%</span>
           </div>
@@ -411,11 +412,11 @@
       matchBodyCandidates.innerHTML = shortlistHTML + (m.length ? m.map(c => {
         const isPreselected = shortlist.some(s => s.id === c.id);
         return `
-        <div class="t-row stark-card" style="padding:15px; margin-bottom:8px; border: ${isPreselected ? '1px solid var(--accent)' : '1px solid rgba(255,255,255,0.05)'};">
+        <div class="t-row stark-card" style="padding:15px; margin-bottom:8px; cursor:pointer; border: ${isPreselected ? '1px solid var(--accent)' : '1px solid rgba(255,255,255,0.05)'};" onclick="window.openPersonProfile('${c.id}', 'IA EXTERNO')">
           <div style="display:flex; justify-content:space-between; align-items:center;">
              <div>
                <strong style="color:var(--text); display:block; margin-bottom:4px;">${c.nombre_completo}</strong>
-               ${!isPreselected && vacancy.id !== 'global' ? `<button onclick="window.starkShortlist('${vacancy.id}','${c.id}','${escapeHtml(c.nombre_completo)}','IA EXTERNO',${c.ai_match_score.toFixed(1)})" class="btn btn--mini btn--primary" style="padding:4px 8px; font-size:10px;">+ PRESELECCIONAR</button>` : `<span style="font-size:9px; color:var(--accent); font-weight:bold;">[ EN PROCESO ]</span>`}
+               ${!isPreselected && vacancy.id !== 'global' ? `<button onclick="event.stopPropagation(); window.starkShortlist('${vacancy.id}','${c.id}','${escapeHtml(c.nombre_completo)}','IA EXTERNO',${c.ai_match_score.toFixed(1)})" class="btn btn--mini btn--primary" style="padding:4px 8px; font-size:10px;">+ PRESELECCIONAR</button>` : `<span style="font-size:9px; color:var(--accent); font-weight:bold;">[ EN PROCESO ]</span>`}
              </div>
              <span style="font-family:monospace; color:var(--accent); font-weight:900; font-size:16px;">${c.ai_match_score.toFixed(1)}%</span>
           </div>
@@ -504,6 +505,58 @@
     }
     return t;
   }
+
+  // --- STARK BIOMETRIC PROTOCOL ---
+  window.openPersonProfile = async function(id, type) {
+      openModal(personProfileModal);
+      $('#profileScanner').style.display = 'flex';
+      
+      try {
+          let person = null;
+          if (type === 'AFK') {
+              const { data } = await window.supabase.from('workers').select('*').eq('id', id).single();
+              person = data;
+              if (person) {
+                  $('#profileType').textContent = '[ AFK OPERATIVE ]';
+                  $('#profileName').textContent = person.full_name.toUpperCase();
+                  $('#profileRut').textContent = person.rut || '-';
+                  $('#profileProfession').textContent = person.position || 'Operativo AFK';
+                  $('#profileCompany').textContent = person.company_name || 'AFK RRHH';
+                  $('#profileEmail').textContent = person.email || '-';
+                  $('#profilePhone').textContent = person.phone || '-';
+                  $('#profileCvSummary').innerHTML = `<p style="color:var(--muted); font-style:italic;">Accediendo a base de datos de cumplimiento AFK... No se detecta resumen de CV IA para este operario activo. Sin embargo, su estatus es: ${person.status}.</p>`;
+                  $('#profileAcademic').textContent = person.academic_info || 'Información académica no centralizada.';
+                  $('#profileStatus').textContent = `● ${person.status || 'HABILITADO'}`;
+                  $('#profileStatus').style.color = (person.status === 'Bloqueado') ? 'var(--danger)' : 'var(--ok)';
+                  $('#profileEditBtn').onclick = () => window.location.href = `worker.html?id=${id}`;
+              }
+          } else {
+              const { data } = await window.supabase.from('candidates').select('*').eq('id', id).single();
+              person = data;
+              if (person) {
+                  $('#profileType').textContent = '[ IA EXTERNAL CANDIDATE ]';
+                  $('#profileName').textContent = person.nombre_completo.toUpperCase();
+                  $('#profileRut').textContent = person.rut || '-';
+                  $('#profileProfession').textContent = person.profesion || 'Candidato Externo';
+                  $('#profileCompany').textContent = 'FUERZA EXTERNA';
+                  $('#profileEmail').textContent = person.correo || '-';
+                  $('#profilePhone').textContent = person.telefono || '-';
+                  $('#profileCvSummary').innerHTML = `
+                      <div style="color:var(--accent); font-weight:800; margin-bottom:10px;">EVALUACIÓN IA:</div>
+                      <p>${person.evaluacion_general || 'Sin evaluación detallada.'}</p>
+                      <div style="color:var(--accent); font-weight:800; margin:15px 0 10px;">RESUMEN DE EXPERIENCIA:</div>
+                      <p>${person.experiencia_general || 'Pendiente de análisis exhaustivo.'}</p>
+                  `;
+                  $('#profileAcademic').textContent = person.antecedentes_academicos || 'No se detectaron registros educativos.';
+                  $('#profileStatus').textContent = `● ÍNDICE DE MÉRITO: ${person.nota || '5.0'}`;
+                  $('#profileStatus').style.color = 'var(--accent)';
+                  $('#profileEditBtn').onclick = () => window.location.href = `candidate.html?id=${id}`;
+              }
+          }
+      } catch (err) { console.error(err); }
+      
+      setTimeout(() => { $('#profileScanner').style.display = 'none'; }, 800);
+  };
 
   const escapeHtml = (u) => (u||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
   const normalizeText = (t) => (t||"").toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim();
