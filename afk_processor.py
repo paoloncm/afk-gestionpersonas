@@ -42,6 +42,8 @@ class CandidateCV(BaseModel):
     evaluacion_general: str = Field("", description="A professional 3-paragraph tactical summary: 1. Value Proposition, 2. Technical Mastery, 3. Operational Fit. Use bullet points if needed.")
     match_score: float = Field(80.0, description="A merit index from 0 to 100 based on seniority, certifications, and technical specialized skills.")
     match_explicacion: str = Field("", description="A clear, professional justification for the match_score, highlighting technical gaps or strengths.")
+    nota: float = Field(1.0, description="Numerical grade from 1.0 to 7.0 (Chilean scale). Based on 30% seniority, 40% certifications, 30% project complexity.")
+    ranking: int = Field(50, description="A strategic ranking from 1 to 100 representing the candidate's competitiveness in the industrial sector.")
 
 # --- Core Processor ---
 
@@ -80,15 +82,15 @@ class AFKProcessor:
     def process_cv_with_ai(self, text: str) -> CandidateCV:
         system_prompt = (
             "You are JARVIS (Just A Rather Very Intelligent System), an elite HR Tactical Analyst. "
-            "Your objective is to perform a SPLENDID, EXHAUSTIVE, and PROFESSIONAL extraction of intelligence from the provided CV. "
+            "Your objective is to perform a SPLENDID, EXHAUSTIVE, and PROFESSIONAL extraction and JUDGMENT of intelligence from the provided CV. "
             "TONE: Formal, tactical, and efficient. Use high-precision terminology. "
             "CRITICAL 'NO REDUCTION' POLICY: "
             "1. NEVER summarize or omit past work experiences. Extract the FULL professional timeline. "
-            "2. If the candidate has 20 years of experience across 10 jobs, list ALL of them in 'experiencia_general' and 'especifica'. "
-            "3. 'software_que_domina': Generate a detailed inventory of every tool, ERP (SAP, Maximo), or technical software mentioned. "
-            "4. 'evaluacion_general': Synthesize a high-fidelity 3-paragraph summary: Value Proposition, Technical mastery, and Operational aptitude. "
-            "5. 'match_explicacion': Provide a brilliant, professional justification for the match score. "
-            "6. Ensure 'experiencia_total' is the mathematical sum of all periods in the CV."
+            "2. 'software_que_domina': Generate a detailed inventory of every tool, ERP (SAP, Maximo), or technical software mentioned. "
+            "3. 'evaluacion_general': Synthesize a high-fidelity 3-paragraph summary: Value Proposition, Technical mastery, and Operational aptitude. "
+            "4. 'nota' (1.0-7.0): Grade the candidate. A 7.0 requires 15+ years of experience and expert certifications. A 4.0 is a basic qualified candidate. "
+            "5. 'ranking' (1-100): Position them against a top-tier industrial benchmark. "
+            "6. 'match_explicacion': Provide a brilliant, professional justification for the nota and ranking."
         )
         
         # Define the tool/function based on the Pydantic model
