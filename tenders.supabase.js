@@ -443,18 +443,37 @@
         </div>
       `}).join('') : '<p style="padding:30px; text-align:center; color:var(--muted); font-size:12px;">No se detectaron operarios AFK para este perfil.</p>');
 
-      matchBodyCandidates.innerHTML = '<div style="padding:40px; text-align:center;">TRACKING EXTERNAL AGENTS...</div>';
-      const { data: candidates } = await window.supabase.from('candidates').select('*');
-      console.log(`[Stark] Candidatos Totales: ${candidates?.length || 0}`);
+      matchBodyCandidates.innerHTML = '<div style="padding:40px; text-align:center;">SCANNING VECTOR SPACE...</div>';
       
-      const m = (candidates || []).map(c => {
+      const [candRes, queryVector] = await Promise.all([
+          window.supabase.from('candidates').select('id, nombre_completo, profesion, evaluacion_general, experiencia_general, cv_embedding'),
+          getEmbedding(`${vacancy.title} ${rs.join(' ')}`)
+      ]);
+      const candidates = candRes.data || [];
+      console.log(`[Stark] BBDD Vectorial: ${candidates.length} perfiles localizados.`);
+      
+      const m = candidates.map(c => {
+         // Vector Similarity (60% weight)
+         let semanticScore = 0;
+         if (queryVector && c.cv_embedding) {
+            const vCand = (typeof c.cv_embedding === 'string') ? JSON.parse(c.cv_embedding) : c.cv_embedding;
+            semanticScore = cosineSimilarity(queryVector, vCand) * 100;
+         }
+
+         // Stark Keyword Match (40% weight)
          const p = normalizeText(c.profesion || "");
          const t = normalizeText(vacancy.title || "");
-         const matchTitle = p.includes(t) || t.includes(p) ? 70 : 0;
-         const evalMatch = rs.filter(r => normalizeText(c.evaluacion_general || "").includes(normalizeText(r))).length;
+         const tWords = t.split(' ').filter(w => w.length > 3);
+         const wordMatchCount = tWords.filter(w => p.includes(w)).length;
+         const matchTitle = (p.includes(t) || t.includes(p)) ? 70 : (tWords.length ? (wordMatchCount / tWords.length) * 40 : 0);
+         
+         const evalMatch = rs.filter(r => normalizeText(c.evaluacion_general + (c.experiencia_general || "")).includes(normalizeText(r))).length;
          const bonus = rs.length ? (evalMatch / rs.length) * 30 : 0;
-         const score = Math.min(100, matchTitle + bonus);
-         return { ...c, ai_match_score: score };
+         const keywordScore = Math.min(100, matchTitle + bonus);
+
+         // Final Stark Score (Hybrid)
+         const finalScore = queryVector ? (semanticScore * 0.7 + keywordScore * 0.3) : keywordScore;
+         return { ...c, ai_match_score: finalScore, isVector: !!queryVector };
       }).sort((a,b) => b.ai_match_score - a.ai_match_score);
       
       matchBodyCandidates.innerHTML = shortlistHTML + (m.length ? m.map(c => {
@@ -464,19 +483,22 @@
         <div class="t-row stark-card" style="padding:15px; margin-bottom:8px; cursor:pointer; border: ${isPreselected ? '1px solid var(--accent)' : '1px solid rgba(255,255,255,0.05)'};" onclick="window.openPersonProfile('${c.id}', 'IA EXTERNO')">
           <div style="display:flex; justify-content:space-between; align-items:center;">
              <div>
-               <strong style="color:var(--text); display:block; margin-bottom:4px;">${c.nombre_completo}</strong>
-               ${!isPreselected && vacancy.id !== 'global' ? `<button onclick="event.stopPropagation(); window.starkShortlist('${vacancy.id}','${c.id}','${escapeHtml(c.nombre_completo)}','IA EXTERNO',${scoreVal.toFixed(1)})" class="btn btn--mini btn--primary" style="padding:4px 8px; font-size:10px;">+ PRESELECCIONAR</button>` : `<span style="font-size:9px; color:var(--accent); font-weight:bold;">[ EN PROCESO ]</span>`}
+               <div style="display:flex; align-items:center; gap:8px;">
+                 <strong style="color:var(--text);">${c.nombre_completo}</strong>
+                 ${c.isVector ? '<span style="font-size:8px; color:var(--accent); background:rgba(34,211,238,0.1); padding:1px 4px; border-radius:2px; border:1px solid rgba(34,211,238,0.3);">VECTOR_INTEL</span>' : ''}
+               </div>
+               ${!isPreselected && vacancy.id !== 'global' ? `<button onclick="event.stopPropagation(); window.starkShortlist('${vacancy.id}','${c.id}','${escapeHtml(c.nombre_completo)}','IA EXTERNO',${scoreVal.toFixed(1)})" class="btn btn--mini btn--primary" style="padding:4px 8px; font-size:10px; margin-top:5px;">+ PRESELECCIONAR</button>` : `<span style="font-size:9px; color:var(--accent); font-weight:bold;">[ EN PROCESO ]</span>`}
              </div>
              <span style="font-family:monospace; color:var(--accent); font-weight:900; font-size:16px;">${scoreVal.toFixed(1)}%</span>
           </div>
           <div class="affinity-bar" style="margin-top:10px;"><div class="affinity-fill" style="width:${scoreVal}%"></div></div>
-          <p style="font-size:10px; color:var(--muted); line-height:1.4; margin-top:10px;">${c.evaluacion_general || 'Evaluación técnica pendiente.'}</p>
+          <p style="font-size:10px; color:var(--muted); line-height:1.4; margin-top:10px;">${c.evaluacion_general ? c.evaluacion_general.substring(0, 150) + '...' : 'Análisis táctico completado.'}</p>
         </div>
-      `}).join('') : '<p style="padding:40px; text-align:center; color:var(--muted); font-size:12px;">JARVIS: No se detectaron perfiles compatibles en el mercado externo.<br><small>Sugerencia: Ampliar los criterios de búsqueda o revisar etiquetas del CV.</small></p>');
+      `}).join('') : '<p style="padding:40px; text-align:center; color:var(--muted); font-size:12px;">JARVIS: Sin perfiles en el mercado externo.<br><small>Sugerencia: Ampliar criterios.</small></p>');
 
     } catch (e) { 
-        console.error("[Stark] Fallo en Evaluación Táctica:", e);
-        window.notificar?.("Error en el motor de matchmaking.", "error");
+        console.error("[Stark] Fallo en Evaluación:", e);
+        window.notificar?.("Error en motor matchmaking.", "error");
     }
   }
 
@@ -618,6 +640,39 @@
            }, 800);
        }
   };
+
+  // --- VECTOR SEARCH CORE (STARK V12) ---
+  async function getEmbedding(text) {
+    const WEBHOOK = 'https://primary-production-aa252.up.railway.app/webhook/a35e75ae-9003-493b-a00e-8edd8bd2b12a';
+    try {
+      const res = await fetch(WEBHOOK, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: `VECTORIZE: ${text}` })
+      });
+      const data = await res.json();
+      const payload = Array.isArray(data) ? data[0] : data;
+      const raw = payload.output || payload.text || payload.reply || "";
+      
+      // Detect 1536-dim vector in JSON or raw
+      if (Array.isArray(payload.embedding)) return payload.embedding;
+      const sIdx = raw.indexOf('[');
+      const eIdx = raw.lastIndexOf(']') + 1;
+      if (sIdx !== -1) return JSON.parse(raw.substring(sIdx, eIdx));
+      return null;
+    } catch (e) { console.warn("[Vector Engine] Error vectorizing:", e); return null; }
+  }
+
+  function cosineSimilarity(v1, v2) {
+    if (!v1 || !v2 || v1.length !== v2.length) return 0;
+    let dot = 0, mA = 0, mB = 0;
+    for (let i = 0; i < v1.length; i++) {
+       dot += v1[i] * v2[i];
+       mA += v1[i] * v1[i];
+       mB += v2[i] * v2[i];
+    }
+    return dot / (Math.sqrt(mA) * Math.sqrt(mB));
+  }
 
   const escapeHtml = (u) => (u||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
   const normalizeText = (t) => (t||"").toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim();
