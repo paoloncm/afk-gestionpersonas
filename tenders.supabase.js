@@ -473,29 +473,32 @@
          // Vector Similarity (60% weight)
          let semanticScore = 0;
          if (queryVector && c.cv_embedding) {
-            const vCand = (typeof c.cv_embedding === 'string') ? JSON.parse(c.cv_embedding) : c.cv_embedding;
-            semanticScore = cosineSimilarity(queryVector, vCand) * 100;
+            try {
+                const vCand = (typeof c.cv_embedding === 'string') ? JSON.parse(c.cv_embedding) : c.cv_embedding;
+                if (Array.isArray(vCand)) semanticScore = cosineSimilarity(queryVector, vCand) * 100;
+            } catch(ve) { console.warn("Err vector cand:", c.nombre_completo); }
          }
 
          // Stark Keyword Match (40% weight)
          const p = normalizeText(c.profesion || "");
          const t = normalizeText(vacancy.title || "");
-         const tWords = t.split(' ').filter(w => w.length > 3);
+         
+         // IMPROVED: Word-by-word match (minimum 3 chars)
+         const tWords = t.split(/[\s\-_,]+/).filter(w => w.length >= 3);
          const wordMatchCount = tWords.filter(w => p.includes(w)).length;
          
-         // Guarantees: Exact Title match = 70. Partial word match = 40.
+         // Scoring: Exact=70, partial=scaled up to 40
          const matchTitle = (p.includes(t) || t.includes(p)) ? 70 : (tWords.length ? (wordMatchCount / tWords.length) * 40 : 0);
          
-         const evalMatch = rs.filter(r => normalizeText(c.evaluacion_general + (c.experiencia_general || "")).includes(normalizeText(r))).length;
+         const evalMatch = rs.filter(r => normalizeText((c.evaluacion_general || "") + " " + (c.experiencia_general || "")).includes(normalizeText(r))).length;
          const bonus = rs.length ? (evalMatch / rs.length) * 30 : 0;
          
          const keywordScore = Math.min(100, matchTitle + bonus);
 
          // Final Stark Score (Hybrid)
-         // If Vector fails, Keyword score is boosted to 100% weight
-         const finalScore = queryVector ? (semanticScore * 0.7 + keywordScore * 0.3) : keywordScore;
+         const finalScore = (queryVector && semanticScore > 0) ? (semanticScore * 0.7 + keywordScore * 0.3) : keywordScore;
          
-         return { ...c, ai_match_score: finalScore, isVector: !!queryVector && !usedFallback };
+         return { ...c, ai_match_score: finalScore, isVector: !!queryVector && semanticScore > 0 };
       }).sort((a,b) => b.ai_match_score - a.ai_match_score);
       
       matchBodyCandidates.innerHTML = shortlistHTML + (m.length ? m.map(c => {
