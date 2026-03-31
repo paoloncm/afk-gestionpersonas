@@ -392,21 +392,21 @@
         }
     } catch(e) {}
 
-    const shortlistHTML = shortlist.length > 0 ? `
+     const shortlistHTML = shortlist.length > 0 ? `
       <div class="stark-card" style="margin-bottom: 20px; padding: 15px; border: 1px solid var(--accent); background: rgba(34,211,238,0.05);">
         <div style="color:var(--accent); font-weight:800; font-size:12px; margin-bottom:10px; text-transform:uppercase;">
            ⚡ CANDIDATOS EN PROCESO DE SELECCIÓN (${shortlist.length})
         </div>
         <div style="display:flex; flex-direction:column; gap:8px;">
           ${shortlist.map((c, idx) => `
-            <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.3); padding:8px 12px; border-radius:4px; border-left:2px solid var(--accent);">
+            <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.3); padding:8px 12px; border-radius:4px; border-left:2px solid var(--accent); cursor:pointer;" onclick="window.openPersonProfile('${c.id}', '${c.type}')">
                <div>
                  <strong style="color:var(--text); font-size:12px;">${c.name.toUpperCase()}</strong>
                  <span style="font-size:10px; color:var(--muted); margin-left:8px;">[ ${c.type} ]</span>
                </div>
                <div style="display:flex; align-items:center; gap:10px;">
                  <span style="color:var(--accent); font-family:monospace; font-size:12px; font-weight:bold;">${c.score}%</span>
-                 <button onclick="window.starkRemoveShortlist('${vacancy.id}', '${c.id}')" class="btn btn--mini" style="color:var(--danger); font-size:10px; padding:2px 6px;">X</button>
+                 <button onclick="event.stopPropagation(); window.starkRemoveShortlist('${vacancy.id}', '${c.id}')" class="btn btn--mini" style="color:var(--danger); font-size:10px; padding:2px 6px;">X</button>
                </div>
             </div>
           `).join('')}
@@ -415,8 +415,10 @@
     ` : '';
 
     try {
+      console.log(`[Stark] Iniciando Match: Vacante="${vacancy.title}" Reqs=[${rs.join(', ')}]`);
       const { data: ws } = await window.supabase.from('workers').select('*');
       const { data: cs } = await window.supabase.from('worker_credentials').select('*');
+      console.log(`[Stark] Datos Recuperados: Workers=${ws?.length || 0} Credentials=${cs?.length || 0}`);
       
       const scored = (ws || []).map(w => {
         const wCs = (cs || []).filter(c => c.worker_id === w.id);
@@ -442,8 +444,8 @@
       `}).join('') : '<p style="padding:30px; text-align:center; color:var(--muted); font-size:12px;">No se detectaron operarios AFK para este perfil.</p>');
 
       matchBodyCandidates.innerHTML = '<div style="padding:40px; text-align:center;">TRACKING EXTERNAL AGENTS...</div>';
-      
       const { data: candidates } = await window.supabase.from('candidates').select('*');
+      console.log(`[Stark] Candidatos Totales: ${candidates?.length || 0}`);
       
       const m = (candidates || []).map(c => {
          const p = normalizeText(c.profesion || "");
@@ -453,7 +455,7 @@
          const bonus = rs.length ? (evalMatch / rs.length) * 30 : 0;
          const score = Math.min(100, matchTitle + bonus);
          return { ...c, ai_match_score: score };
-      }).filter(c => c.ai_match_score > 0).sort((a,b) => b.ai_match_score - a.ai_match_score);
+      }).sort((a,b) => b.ai_match_score - a.ai_match_score);
       
       matchBodyCandidates.innerHTML = shortlistHTML + (m.length ? m.map(c => {
         const isPreselected = shortlist.some(s => s.id === c.id);
@@ -470,9 +472,12 @@
           <div class="affinity-bar" style="margin-top:10px;"><div class="affinity-fill" style="width:${scoreVal}%"></div></div>
           <p style="font-size:10px; color:var(--muted); line-height:1.4; margin-top:10px;">${c.evaluacion_general || 'Evaluación técnica pendiente.'}</p>
         </div>
-      `}).join('') : '<p style="padding:30px; text-align:center; color:var(--muted);">No se detectaron perfiles compatibles.</p>');
+      `}).join('') : '<p style="padding:40px; text-align:center; color:var(--muted); font-size:12px;">JARVIS: No se detectaron perfiles compatibles en el mercado externo.<br><small>Sugerencia: Ampliar los criterios de búsqueda o revisar etiquetas del CV.</small></p>');
 
-    } catch (e) { console.error(e); }
+    } catch (e) { 
+        console.error("[Stark] Fallo en Evaluación Táctica:", e);
+        window.notificar?.("Error en el motor de matchmaking.", "error");
+    }
   }
 
   // --- STARK PIPELINE PROTOCOL ---
@@ -604,13 +609,15 @@
                    $('#profileEditBtn').onclick = () => window.location.href = `candidate.html?id=${id}`;
                }
            }
-       } catch (err) { console.error(err); }
-       
-       setTimeout(() => { 
-           const scanner = $('#profileScanner');
-           if (scanner) scanner.style.display = 'none'; 
-       }, 800);
-   };
+       } catch (err) { 
+           console.error("[Stark] Biometric Sync Error:", err); 
+       } finally {
+           setTimeout(() => { 
+                const scanner = $('#profileScanner');
+                if (scanner) scanner.style.display = 'none'; 
+           }, 800);
+       }
+  };
 
   const escapeHtml = (u) => (u||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
   const normalizeText = (t) => (t||"").toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim();
