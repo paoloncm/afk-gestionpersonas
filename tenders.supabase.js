@@ -470,35 +470,64 @@
       console.log(`[Stark] BBDD Matcher: ${candidates?.length || 0} perfiles localizados.`);
       
       const m = (candidates || []).map(c => {
-         // Vector Similarity (60% weight)
+         // --- START STARK SCORING PROTOCOL ---
+         let finalScore = 0;
+         let isVectorMatch = false;
+
+         // 1. Text Normalization (Aggressive)
+         const clean = (t) => (t||"").toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9 ]/g, " ").trim();
+         
+         const pClean = clean(c.profesion || "");
+         const tClean = clean(vacancy.title || "");
+         const evClean = clean((c.evaluacion_general || "") + " " + (c.experiencia_general || ""));
+         
+         const tWords = tClean.split(/\s+/).filter(w => w.length >= 3);
+         const rsClean = rs.map(r => clean(r));
+
+         // 2. Keyword Match (TITLE)
+         let titleScore = 0;
+         if (tClean && pClean) {
+            if (pClean.includes(tClean) || tClean.includes(pClean)) {
+                titleScore = 70; // High confidence for direct substring
+            } else if (tWords.length > 0) {
+                const matches = tWords.filter(w => pClean.includes(w)).length;
+                titleScore = (matches / tWords.length) * 50; 
+            }
+         }
+
+         // 3. Requirement Match (BONUS)
+         let reqScore = 0;
+         if (rsClean.length > 0) {
+             const reqMatches = rsClean.filter(r => evClean.includes(r)).length;
+             reqScore = (reqMatches / rsClean.length) * 30;
+         }
+
+         const keywordTotal = Math.min(100, titleScore + reqScore);
+
+         // 4. Vector Match (INTELLIGENCE)
          let semanticScore = 0;
          if (queryVector && c.cv_embedding) {
             try {
                 const vCand = (typeof c.cv_embedding === 'string') ? JSON.parse(c.cv_embedding) : c.cv_embedding;
-                if (Array.isArray(vCand)) semanticScore = cosineSimilarity(queryVector, vCand) * 100;
-            } catch(ve) { console.warn("Err vector cand:", c.nombre_completo); }
+                if (Array.isArray(vCand) && vCand.length === queryVector.length) {
+                    semanticScore = cosineSimilarity(queryVector, vCand) * 100;
+                    if (semanticScore > 10) isVectorMatch = true; 
+                }
+            } catch(e) {}
          }
 
-         // Stark Keyword Match (40% weight)
-         const p = normalizeText(c.profesion || "");
-         const t = normalizeText(vacancy.title || "");
-         
-         // IMPROVED: Word-by-word match (minimum 3 chars)
-         const tWords = t.split(/[\s\-_,]+/).filter(w => w.length >= 3);
-         const wordMatchCount = tWords.filter(w => p.includes(w)).length;
-         
-         // Scoring: Exact=70, partial=scaled up to 40
-         const matchTitle = (p.includes(t) || t.includes(p)) ? 70 : (tWords.length ? (wordMatchCount / tWords.length) * 40 : 0);
-         
-         const evalMatch = rs.filter(r => normalizeText((c.evaluacion_general || "") + " " + (c.experiencia_general || "")).includes(normalizeText(r))).length;
-         const bonus = rs.length ? (evalMatch / rs.length) * 30 : 0;
-         
-         const keywordScore = Math.min(100, matchTitle + bonus);
+         // 5. Final Hybrid Blend
+         // If we have vectors, 70/30. If not, 100% keyword.
+         if (isVectorMatch) {
+             finalScore = (semanticScore * 0.7) + (keywordTotal * 0.3);
+         } else {
+             finalScore = keywordTotal;
+         }
 
-         // Final Stark Score (Hybrid)
-         const finalScore = (queryVector && semanticScore > 0) ? (semanticScore * 0.7 + keywordScore * 0.3) : keywordScore;
-         
-         return { ...c, ai_match_score: finalScore, isVector: !!queryVector && semanticScore > 0 };
+         // Security Fallback: If title contains a direct word from vacancy, ensure at least 15%
+         if (finalScore < 15 && tWords.some(w => pClean.includes(w))) finalScore = 15;
+
+         return { ...c, ai_match_score: finalScore, isVector: isVectorMatch };
       }).sort((a,b) => b.ai_match_score - a.ai_match_score);
       
       matchBodyCandidates.innerHTML = shortlistHTML + (m.length ? m.map(c => {
