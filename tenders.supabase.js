@@ -425,7 +425,7 @@
         return { w, score, miss };
       }).sort((a,b) => b.score - a.score);
 
-      matchBodyWorkers.innerHTML = shortlistHTML + scored.map(r => {
+      matchBodyWorkers.innerHTML = shortlistHTML + (scored.length ? scored.map(r => {
         const isPreselected = shortlist.some(s => s.id === r.w.id);
         return `
         <div class="t-row stark-card" style="padding:15px; margin-bottom:8px; cursor:pointer; border: ${isPreselected ? '1px solid var(--accent)' : '1px solid rgba(255,255,255,0.05)'};" onclick="window.openPersonProfile('${r.w.id}', 'AFK')">
@@ -439,7 +439,7 @@
           <div class="affinity-bar" style="margin-top:10px;"><div class="affinity-fill" style="width:${r.score}%"></div></div>
           ${r.miss.length ? `<div style="font-size:9px; color:#f43f5e; margin-top:8px;">MISSING: ${r.miss.join(' | ')}</div>` : ''}
         </div>
-      `}).join('');
+      `}).join('') : '<p style="padding:30px; text-align:center; color:var(--muted); font-size:12px;">No se detectaron operarios AFK para este perfil.</p>');
 
       matchBodyCandidates.innerHTML = '<div style="padding:40px; text-align:center;">TRACKING EXTERNAL AGENTS...</div>';
       
@@ -572,38 +572,45 @@
                   $('#profileEmail').textContent = person.email || '-';
                   $('#profilePhone').textContent = person.phone || '-';
                   $('#profileCvSummary').innerHTML = `<p style="color:var(--muted); font-style:italic;">Accediendo a base de datos de cumplimiento AFK... No se detecta resumen de CV IA para este operario activo. Sin embargo, su estatus es: ${person.status}.</p>`;
-                  $('#profileAcademic').textContent = person.academic_info || 'Información académica no centralizada.';
-                  $('#profileStatus').textContent = `● ${person.status || 'HABILITADO'}`;
-                  $('#profileStatus').style.color = (person.status === 'Bloqueado') ? 'var(--danger)' : 'var(--ok)';
-                  $('#profileEditBtn').onclick = () => window.location.href = `worker.html?id=${id}`;
-              }
-          } else {
-              const { data } = await window.supabase.from('candidates').select('*').eq('id', id).single();
-              person = data;
-              if (person) {
-                  $('#profileType').textContent = '[ IA EXTERNAL CANDIDATE ]';
-                  $('#profileName').textContent = person.nombre_completo.toUpperCase();
-                  $('#profileRut').textContent = person.rut || '-';
-                  $('#profileProfession').textContent = person.profesion || 'Candidato Externo';
-                  $('#profileCompany').textContent = 'FUERZA EXTERNA';
-                  $('#profileEmail').textContent = person.correo || '-';
-                  $('#profilePhone').textContent = person.telefono || '-';
-                  $('#profileCvSummary').innerHTML = `
-                      <div style="color:var(--accent); font-weight:800; margin-bottom:10px;">EVALUACIÓN IA:</div>
-                      <p>${person.evaluacion_general || 'Sin evaluación detallada.'}</p>
-                      <div style="color:var(--accent); font-weight:800; margin:15px 0 10px;">RESUMEN DE EXPERIENCIA:</div>
-                      <p>${person.experiencia_general || 'Pendiente de análisis exhaustivo.'}</p>
-                  `;
-                  $('#profileAcademic').textContent = person.antecedentes_academicos || 'No se detectaron registros educativos.';
-                  $('#profileStatus').textContent = `● ÍNDICE DE MÉRITO: ${person.nota || '5.0'}`;
-                  $('#profileStatus').style.color = 'var(--accent)';
-                  $('#profileEditBtn').onclick = () => window.location.href = `candidate.html?id=${id}`;
-              }
-          }
-      } catch (err) { console.error(err); }
-      
-      setTimeout(() => { $('#profileScanner').style.display = 'none'; }, 800);
-  };
+                   $('#profileAcademic').textContent = person.academic_info || 'Información académica no centralizada.';
+                   $('#profileStatus').textContent = `● ${person.status || 'HABILITADO'}`;
+                   $('#profileStatus').style.color = (person.status === 'Bloqueado') ? 'var(--danger)' : 'var(--ok)';
+                   const expEl = $('#profileExp');
+                   if (expEl) expEl.textContent = (person.experiencia_total || '0') + ' años';
+                   $('#profileEditBtn').onclick = () => window.location.href = `worker.html?id=${id}`;
+               }
+           } else {
+               const { data } = await window.supabase.from('candidates').select('*').eq('id', id).single();
+               person = data;
+               if (person) {
+                   $('#profileType').textContent = '[ IA EXTERNAL CANDIDATE ]';
+                   $('#profileName').textContent = (person.nombre_completo || 'SIN NOMBRE').toUpperCase();
+                   $('#profileRut').textContent = person.rut || '-';
+                   $('#profileProfession').textContent = person.profesion || 'Candidato Externo';
+                   $('#profileCompany').textContent = 'FUERZA EXTERNA';
+                   $('#profileEmail').textContent = person.correo || '-';
+                   $('#profilePhone').textContent = person.telefono || '-';
+                   const expEl = $('#profileExp');
+                   if (expEl) expEl.textContent = (person.experiencia_total || '0') + ' años';
+                   $('#profileCvSummary').innerHTML = `
+                       <div style="color:var(--accent); font-weight:800; margin-bottom:10px;">EVALUACIÓN IA:</div>
+                       <p>${person.evaluacion_general || 'Sin evaluación detallada.'}</p>
+                       <div style="color:var(--accent); font-weight:800; margin:15px 0 10px;">RESUMEN DE EXPERIENCIA:</div>
+                       <p>${person.experiencia_general || 'Pendiente de análisis exhaustivo.'}</p>
+                   `;
+                   $('#profileAcademic').textContent = person.antecedentes_academicos || 'No se detectaron registros educativos.';
+                   $('#profileStatus').textContent = `● ÍNDICE DE MÉRITO: ${person.nota || '5.0'}`;
+                   $('#profileStatus').style.color = 'var(--accent)';
+                   $('#profileEditBtn').onclick = () => window.location.href = `candidate.html?id=${id}`;
+               }
+           }
+       } catch (err) { console.error(err); }
+       
+       setTimeout(() => { 
+           const scanner = $('#profileScanner');
+           if (scanner) scanner.style.display = 'none'; 
+       }, 800);
+   };
 
   const escapeHtml = (u) => (u||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
   const normalizeText = (t) => (t||"").toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim();
