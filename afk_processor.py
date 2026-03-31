@@ -39,9 +39,9 @@ class CandidateCV(BaseModel):
     experiencia_especifica: str = Field("", description="Draft of Specific Experience for TEC-02-A report")
     otras_experiencias: str = Field("", description="Other relevant experiences or certifications")
     
-    evaluacion_general: str = Field("", description="A professional 3-sentence summary highlighting the candidate's value proposition for industrial roles")
-    match_score: float = Field(80.0, description="A score from 0 to 100 representing how well the candidate matches a generic high-level industrial role")
-    match_explicacion: str = Field("", description="A short explanation of why the candidate received the match_score")
+    evaluacion_general: str = Field("", description="A professional 3-paragraph tactical summary: 1. Value Proposition, 2. Technical Mastery, 3. Operational Fit. Use bullet points if needed.")
+    match_score: float = Field(80.0, description="A merit index from 0 to 100 based on seniority, certifications, and technical specialized skills.")
+    match_explicacion: str = Field("", description="A clear, professional justification for the match_score, highlighting technical gaps or strengths.")
 
 # --- Core Processor ---
 
@@ -79,12 +79,15 @@ class AFKProcessor:
 
     def process_cv_with_ai(self, text: str) -> CandidateCV:
         system_prompt = (
-            "You are JARVIS, an expert HR Intelligence agent. Extract structured data from the CV text provided. "
-            "BE EXHAUSTIVE: Ensure EVERY field is populated if the information exists anywhere in the text. "
-            "Never leave a field null if the data can be inferred or extracted. "
-            "For 'software_que_domina', list all tools explicitly. "
-            "For 'experiencia', concisely describe the most recent role. "
-            "For 'ultima_exp_laboral_empresa', 'cargo', and 'periodo', accurately extract the details of the latest job."
+            "You are JARVIS (Just A Rather Very Intelligent System), an elite HR Tactical Analyst. "
+            "Your objective is to perform an EXHAUSTIVE and PROFESSIONAL extraction of intelligence from the provided CV. "
+            "TONE: Formal, tactical, and efficient. Use high-precision terminology (e.g., 'Mastery', 'Operational Readiness', 'Strategic Fit'). "
+            "CRITICAL INSTRUCTIONS: "
+            "1. NEVER leave a field empty if the data can be inferred. "
+            "2. 'software_que_domina': Generate a detailed inventory of every tool, ERP (SAP, Maximo), or technical software mentioned. "
+            "3. 'evaluacion_general': Synthesize a high-fidelity 3-paragraph summary. Focus on tangible achievements and certifications. "
+            "4. 'experiencia_total': Be precise. Sum up all professional years correctly. "
+            "5. If certifications like NFPA, OSHA, or SEC are mentioned, highlight them prominently in 'especifica' or 'otras_experiencias'."
         )
         
         # Define the tool/function based on the Pydantic model
