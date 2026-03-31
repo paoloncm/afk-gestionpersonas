@@ -80,14 +80,15 @@ class AFKProcessor:
     def process_cv_with_ai(self, text: str) -> CandidateCV:
         system_prompt = (
             "You are JARVIS (Just A Rather Very Intelligent System), an elite HR Tactical Analyst. "
-            "Your objective is to perform an EXHAUSTIVE and PROFESSIONAL extraction of intelligence from the provided CV. "
-            "TONE: Formal, tactical, and efficient. Use high-precision terminology (e.g., 'Mastery', 'Operational Readiness', 'Strategic Fit'). "
-            "CRITICAL INSTRUCTIONS: "
-            "1. NEVER leave a field empty if the data can be inferred. "
-            "2. 'software_que_domina': Generate a detailed inventory of every tool, ERP (SAP, Maximo), or technical software mentioned. "
-            "3. 'evaluacion_general': Synthesize a high-fidelity 3-paragraph summary. Focus on tangible achievements and certifications. "
-            "4. 'experiencia_total': Be precise. Sum up all professional years correctly. "
-            "5. If certifications like NFPA, OSHA, or SEC are mentioned, highlight them prominently in 'especifica' or 'otras_experiencias'."
+            "Your objective is to perform a SPLENDID, EXHAUSTIVE, and PROFESSIONAL extraction of intelligence from the provided CV. "
+            "TONE: Formal, tactical, and efficient. Use high-precision terminology. "
+            "CRITICAL 'NO REDUCTION' POLICY: "
+            "1. NEVER summarize or omit past work experiences. Extract the FULL professional timeline. "
+            "2. If the candidate has 20 years of experience across 10 jobs, list ALL of them in 'experiencia_general' and 'especifica'. "
+            "3. 'software_que_domina': Generate a detailed inventory of every tool, ERP (SAP, Maximo), or technical software mentioned. "
+            "4. 'evaluacion_general': Synthesize a high-fidelity 3-paragraph summary: Value Proposition, Technical mastery, and Operational aptitude. "
+            "5. 'match_explicacion': Provide a brilliant, professional justification for the match score. "
+            "6. Ensure 'experiencia_total' is the mathematical sum of all periods in the CV."
         )
         
         # Define the tool/function based on the Pydantic model
@@ -142,13 +143,14 @@ class AFKProcessor:
         
         # 2. Build payload using ONLY columns that exist in the candidates table
         EXISTING_DB_COLUMNS = {
-            "nombre_completo", "rut", "fecha_nacimiento", "profesion", "correo", "telefono", "direccion",
-            "cargo", "ultima_exp_laboral_empresa", "periodo", "software_que_domina", "experiencia",
-            "cargo_a_desempenar", "experiencia_total", "experiencia_en_empresa_actual",
-            "exp_cargo_actual", "exp_proy_similares", "antecedentes_academicos",
-            "experiencia_general", "experiencia_especifica", "otras_experiencias",
-            "evaluacion_general", "match_score", "status",
-            "cv_full_text", "cv_embedding"
+            "nombre_completo", "rut", "fecha_nacimiento", "correo", "telefono", 
+            "profesion", "experiencia", "software_que_domina", "ultima_exp_laboral_empresa",
+            "cargo", "periodo", "experiencia_general", "experiencia_especifica",
+            "otras_experiencias", "evaluacion_general", "experiencia_total",
+            "experiencia_en_empresa_actual", "exp_cargo_actual", "exp_proy_similares",
+            "cargo_a_desempenar", "nota", "ranking", "status", "vacancy_id",
+            "match_score", "match_explicacion", "onboarding_progress", "source",
+            "antecedentes_academicos", "direccion", "cv_full_text", "cv_embedding"
         }
         
         raw = cv_data.model_dump()
