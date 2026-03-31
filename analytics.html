@@ -7,8 +7,10 @@
 
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 </head>
 
 <body>
@@ -115,10 +117,10 @@
             <p id="insight_age" class="text-muted" style="font-size:11px; margin-top:12px; font-style:italic;"></p>
           </div>
         </div>
-        <div class="card">
+        <div class="card" style="grid-column: span 2;">
           <div class="card__body">
-            <h4 style="margin:0 0 15px; font-size:14px; font-weight:900; color:var(--muted); text-transform:uppercase;">Distribución Geográfica</h4>
-            <div style="height:220px;"><canvas id="chart_geo_dist"></canvas></div>
+            <h4 style="margin:0 0 15px; font-size:14px; font-weight:900; color:var(--muted); text-transform:uppercase;">Geolocalización Táctica de Candidatos</h4>
+            <div id="map_candidates" style="height:220px; width:100%;"></div>
           </div>
         </div>
         <div class="card">

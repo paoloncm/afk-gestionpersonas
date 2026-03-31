@@ -11,6 +11,33 @@
   let allExams = [];
   let allVacancies = [];
   let filteredData = [];
+  let mapInstance = null;
+  let markersLayer = null;
+
+  // --- TACTICAL MESH (GEO COORDS CHILE) ---
+  const TacticalMesh = {
+    "SANTIAGO": [-33.4489, -70.6693],
+    "STGO": [-33.4489, -70.6693],
+    "PUENTE ALTO": [-33.6117, -70.5758],
+    "MAIPU": [-33.5111, -70.7525],
+    "SAN BERNARDO": [-33.5913, -70.7042],
+    "VIÑA DEL MAR": [-33.0245, -71.5518],
+    "VALPARAISO": [-33.0472, -71.6127],
+    "CONCEPCION": [-36.8201, -73.0447],
+    "LA SERENA": [-29.9027, -71.2519],
+    "ANTOFAGASTA": [-23.6509, -70.3975],
+    "CALAMA": [-22.4544, -68.9294],
+    "COPIAPO": [-27.3668, -70.3322],
+    "TIERRA AMARILLA": [-27.4833, -70.2667],
+    "IQUIQUE": [-20.2133, -70.1503],
+    "RANCAGUA": [-34.1708, -70.7444],
+    "TALCA": [-35.4264, -71.6554],
+    "TEMUCO": [-38.7359, -72.5904],
+    "PUERTO MONTT": [-41.4693, -72.9424],
+    "ARICA": [-18.4783, -70.3125],
+    "COQUIMBO": [-29.9533, -71.3395],
+    "CORONEL": [-37.0222, -73.1363]
+  };
 
   // --- UTILS ---
   const safeNum = (v) => {
@@ -104,6 +131,7 @@
   function renderAll() {
     renderKPIs();
     renderCharts();
+    renderMap();
     renderInsights();
   }
 
@@ -187,24 +215,6 @@
         });
     }
 
-    // Geographic Distribution (Faenas)
-    const ctxGeo = $("#chart_geo_dist")?.getContext("2d");
-    if (ctxGeo) {
-        const locations = {};
-        allWorkers.forEach(w => {
-            const loc = w.company_name || "CENTRAL";
-            locations[loc] = (locations[loc] || 0) + 1;
-        });
-        charts.geo = new Chart(ctxGeo, {
-            type: 'bar',
-            data: {
-                labels: Object.keys(locations),
-                datasets: [{ label: 'Personal', data: Object.values(locations), backgroundColor: 'rgba(34, 211, 238, 0.4)', borderRadius: 4 }]
-            },
-            options: { ...getBaseChartOptions(), indexAxis: 'y' }
-        });
-    }
-
     // Seniority Distribution Chart
     const ctxSenior = $("#chart_seniority_dist")?.getContext("2d");
     if (ctxSenior) {
@@ -244,6 +254,64 @@
             options: getBaseChartOptions()
         });
     }
+  }
+
+  function renderMap() {
+    const mapEl = $("#map_candidates");
+    if (!mapEl) return;
+
+    if (!mapInstance) {
+      mapInstance = L.map('map_candidates', { zoomControl: false }).setView([-33.4489, -70.6693], 4);
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; CartoDB'
+      }).addTo(mapInstance);
+      markersLayer = L.layerGroup().addTo(mapInstance);
+    }
+
+    markersLayer.clearLayers();
+
+    // Plot Candidates (Cyan)
+    allCandidates.forEach(cand => {
+      const coords = findCoords(cand.direccion);
+      if (coords) {
+        const marker = L.circleMarker(coords, {
+          radius: 6,
+          fillColor: "#22d3ee",
+          color: "#fff",
+          weight: 1,
+          opacity: 1,
+          fillOpacity: 0.8
+        });
+        marker.bindPopup(`<strong>${cand.nombre_completo}</strong><br>${cand.profesion || 'Candidato'}<br><small>${cand.direccion || ''}</small>`);
+        markersLayer.addLayer(marker);
+      }
+    });
+
+    // Plot Workers (Orange)
+    allWorkers.forEach(w => {
+      const coords = findCoords(w.company_name);
+      if (coords) {
+        const marker = L.circleMarker(coords, {
+          radius: 4,
+          fillColor: "#f97316",
+          color: "#fff",
+          weight: 1,
+          opacity: 0.8,
+          fillOpacity: 0.6
+        });
+        marker.bindPopup(`<strong>${w.full_name}</strong> (AFK)<br>${w.position || 'Operativo'}<br><small>${w.company_name || ''}</small>`);
+        markersLayer.addLayer(marker);
+      }
+    });
+  }
+
+  function findCoords(input) {
+    if (!input) return null;
+    const clean = input.toUpperCase();
+    for (const city in TacticalMesh) {
+      if (clean.includes(city)) return TacticalMesh[city];
+    }
+    return null; // No match found in mesh
   }
 
   function getBaseChartOptions() {
