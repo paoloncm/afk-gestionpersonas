@@ -429,21 +429,48 @@
 
       matchBodyWorkers.innerHTML = shortlistHTML + (scored.length ? scored.map(r => {
         const isPreselected = shortlist.some(s => s.id === r.w.id);
+        const dashArray = (r.score / 100) * 100.5; // Aproximación para el círculo SVG
+        
         return `
-        <div class="t-row stark-card" style="padding:15px; margin-bottom:8px; cursor:pointer; border: ${isPreselected ? '1px solid var(--accent)' : '1px solid rgba(255,255,255,0.05)'};" onclick="window.openPersonProfile('${r.w.id}', 'AFK')">
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <div>
-              <strong style="color:var(--text); display:block; margin-bottom:4px;">${r.w.full_name}</strong>
-              ${!isPreselected && vacancy.id !== 'global' ? `<button onclick="event.stopPropagation(); window.starkShortlist('${vacancy.id}','${r.w.id}','${escapeHtml(r.w.full_name)}','AFK',${r.score})" class="btn btn--mini btn--primary" style="padding:4px 8px; font-size:10px;">+ PRESELECCIONAR</button>` : `<span style="font-size:9px; color:var(--accent); font-weight:bold;">[ EN PROCESO ]</span>`}
+        <div class="t-row stark-card" style="padding:20px; margin-bottom:12px; cursor:pointer; border: ${isPreselected ? '2px solid var(--accent)' : '1px solid rgba(255,255,255,0.06)'};" onclick="window.openPersonProfile('${r.w.id}', 'AFK')">
+          <div class="scan-line"></div>
+          <div style="display:flex; justify-content:space-between; align-items:center; position:relative; z-index:2;">
+            <div style="display:flex; gap:15px; align-items:center;">
+               <div style="position:relative;">
+                  <svg width="50" height="50" viewBox="0 0 36 36">
+                    <circle cx="18" cy="18" r="16" fill="none" stroke="rgba(34,211,238,0.1)" stroke-width="2"></circle>
+                    <circle cx="18" cy="18" r="16" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-dasharray="${dashArray} 100" transform="rotate(-90 18 18)" style="transition: stroke-dasharray 1s ease;"></circle>
+                    <text x="18" y="20.5" fill="var(--accent)" font-size="8" font-weight="900" text-anchor="middle" style="font-family:'JetBrains Mono', monospace;">${r.score}%</text>
+                  </svg>
+               </div>
+               <div>
+                  <div class="hud-tag" style="margin-bottom:5px;">SISTE_ID: ${r.w.id.substring(0,4)}</div>
+                  <strong style="color:var(--text); font-size:16px; letter-spacing:0.5px;">${r.w.full_name.toUpperCase()}</strong>
+                  <div style="font-size:11px; color:var(--muted); margin-top:4px;">STATUS: ${r.w.status || 'ACTIVE_OPERATIVE'}</div>
+               </div>
             </div>
-            <span style="font-family:monospace; color:var(--accent); font-weight:900; font-size:16px;">${r.score}%</span>
+            
+            <div style="text-align:right;">
+                ${!isPreselected && vacancy.id !== 'global' ? `<button onclick="event.stopPropagation(); window.starkShortlist('${vacancy.id}','${r.w.id}','${escapeHtml(r.w.full_name)}','AFK',${r.score})" class="btn btn--mini btn--primary" style="padding:6px 12px; font-weight:800; letter-spacing:1px;">+ DESPLEGAR</button>` : `<div class="hud-tag" style="background:var(--accent); color:#000;">EN_PROCESO</div>`}
+            </div>
           </div>
-          <div class="affinity-bar" style="margin-top:10px;"><div class="affinity-fill" style="width:${r.score}%"></div></div>
-          ${r.miss.length ? `<div style="font-size:9px; color:#f43f5e; margin-top:8px;">FALTANTE: ${r.miss.join(' | ')}</div>` : ''}
+          
+          <div style="margin-top:15px; display:flex; gap:10px; flex-wrap:wrap; border-top:1px solid rgba(255,255,255,0.05); padding-top:12px;">
+             ${r.w.position ? `<span class="hud-tag">[ CARGO: ${r.w.position.toUpperCase()} ]</span>` : ''}
+             ${r.w.company_name ? `<span class="hud-tag">[ UNIDAD: ${r.w.company_name.toUpperCase()} ]</span>` : ''}
+          </div>
+
+          ${r.miss.length ? `<div style="font-size:10px; color:#f43f5e; margin-top:10px; font-family:monospace; background:rgba(244,63,94,0.05); padding:5px 10px; border-radius:4px;">⚠️ ALERTA_BRECHA: ${r.miss.join(' | ')}</div>` : ''}
         </div>
       `}).join('') : '<p style="padding:30px; text-align:center; color:var(--muted); font-size:12px;">No se detectaron operarios AFK para este perfil.</p>');
 
       matchBodyCandidates.innerHTML = '<div style="padding:40px; text-align:center;">ESCANEO DE ESPACIO VECTORIAL...</div>';
+      
+      // ... (continúa lógica de candidatos)
+      // (Para brevedad, aplicaré el mismo estilo táctico a los candidatos en el siguiente paso o en esta misma llamada si es posible)
+
+      // Nota: Estoy pausando aquí para asegurar que los workers se renderizan bien antes de aplicar lo mismo a candidatos.
+
       
       // Stark Optimization: Session Cache & Fast Fallback
       if (!window._starkCache) window._starkCache = {};
@@ -540,22 +567,51 @@
       matchBodyCandidates.innerHTML = shortlistHTML + (m.length ? m.map(c => {
         const isPreselected = shortlist.some(s => s.id === c.id);
         const scoreVal = c.ai_match_score || 0;
+        const dashArray = (scoreVal / 100) * 100.5;
+
+        // Extraction of professional highlights (sites/faenas)
+        const highlights = (c.experiencia_especifica || "").split('\n').filter(l => l.trim()).slice(0, 2);
+        
         return `
-        <div class="t-row stark-card" style="padding:15px; margin-bottom:8px; cursor:pointer; border: ${isPreselected ? '1px solid var(--accent)' : '1px solid rgba(255,255,255,0.05)'};" onclick="window.openPersonProfile('${c.id}', 'IA EXTERNO')">
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-             <div>
-               <div style="display:flex; align-items:center; gap:8px;">
-                 <strong style="color:var(--text);">${c.nombre_completo}</strong>
-                 ${c.isVector ? '<span style="font-size:8px; color:var(--accent); background:rgba(34,211,238,0.1); padding:1px 4px; border-radius:2px; border:1px solid rgba(34,211,238,0.3);">INTELIGENCIA_VECTORIAL</span>' : ''}
+        <div class="t-row stark-card" style="padding:20px; margin-bottom:12px; cursor:pointer; border: ${isPreselected ? '2px solid var(--accent)' : '1px solid rgba(255,255,255,0.06)'};" onclick="window.openPersonProfile('${c.id}', 'IA EXTERNO')">
+          <div class="scan-line"></div>
+          <div style="display:flex; justify-content:space-between; align-items:center; position:relative; z-index:2;">
+            <div style="display:flex; gap:15px; align-items:center;">
+               <div style="position:relative;">
+                  <svg width="50" height="50" viewBox="0 0 36 36">
+                    <circle cx="18" cy="18" r="16" fill="none" stroke="rgba(34,211,238,0.1)" stroke-width="2"></circle>
+                    <circle cx="18" cy="18" r="16" fill="none" stroke="var(--accent)" stroke-opacity="${scoreVal > 50 ? 1 : 0.4}" stroke-width="2.5" stroke-dasharray="${dashArray} 100" transform="rotate(-90 18 18)" style="transition: stroke-dasharray 1.5s ease;"></circle>
+                    <text x="18" y="20.5" fill="var(--accent)" font-size="8" font-weight="900" text-anchor="middle" style="font-family:'JetBrains Mono', monospace;">${Math.round(scoreVal)}%</text>
+                  </svg>
                </div>
-               ${!isPreselected && vacancy.id !== 'global' ? `<button onclick="event.stopPropagation(); window.starkShortlist('${vacancy.id}','${c.id}','${escapeHtml(c.nombre_completo)}','IA EXTERNO',${scoreVal.toFixed(1)})" class="btn btn--mini btn--primary" style="padding:4px 8px; font-size:10px; margin-top:5px;">+ PRESELECCIONAR</button>` : `<span style="font-size:9px; color:var(--accent); font-weight:bold;">[ EN PROCESO ]</span>`}
-             </div>
-             <span style="font-family:monospace; color:var(--accent); font-weight:900; font-size:16px;">${scoreVal.toFixed(1)}%</span>
+               <div>
+                  <div style="display:flex; align-items:center; gap:8px; margin-bottom:5px;">
+                     <div class="hud-tag">ID_CAND: ${c.id.substring(0,4)}</div>
+                     ${c.isVector ? '<span class="hud-tag" style="background:rgba(168,85,247,0.1); border-color:rgba(168,85,247,0.3); color:#a855f7;">VECTOR_IA</span>' : ''}
+                  </div>
+                  <strong style="color:var(--text); font-size:16px; letter-spacing:0.5px;">${c.nombre_completo.toUpperCase()}</strong>
+                  <div style="font-size:11px; color:var(--muted); margin-top:4px;">PROPUESTA: ${c.profesion || 'PERFIL_PENDIENTE'}</div>
+               </div>
+            </div>
+            
+            <div style="text-align:right;">
+                ${!isPreselected && vacancy.id !== 'global' ? `<button onclick="event.stopPropagation(); window.starkShortlist('${vacancy.id}','${c.id}','${escapeHtml(c.nombre_completo)}','IA EXTERNO',${scoreVal.toFixed(1)})" class="btn btn--mini btn--primary" style="padding:6px 12px; font-weight:800; letter-spacing:1px; background:linear-gradient(135deg, var(--accent), var(--primary)); border:none;">+ PRESELECCIONAR</button>` : `<div class="hud-tag" style="background:var(--accent); color:#000; font-weight:bold;">RECLUTADO</div>`}
+            </div>
           </div>
-          <div class="affinity-bar" style="margin-top:10px;"><div class="affinity-fill" style="width:${scoreVal}%"></div></div>
-          <p style="font-size:10px; color:var(--muted); line-height:1.4; margin-top:10px;">${c.evaluacion_general ? c.evaluacion_general.substring(0, 150) + '...' : 'Análisis táctico completado.'}</p>
+          
+          <div style="margin-top:15px; display:grid; grid-template-columns: 1fr 1fr; gap:10px; border-top:1px solid rgba(255,255,255,0.05); padding-top:12px;">
+             <div>
+                <div style="font-size:9px; color:var(--accent); font-family:monospace; margin-bottom:5px; opacity:0.7;">HISTORIAL_CRÍTICO:</div>
+                <div style="font-size:11px; color:var(--text); line-height:1.4;">${highlights.length ? highlights.map(h => `• ${h}`).join('<br>') : 'Analizando trayectoria...'}</div>
+             </div>
+             <div style="text-align:right;">
+                <div style="font-size:9px; color:var(--accent); font-family:monospace; margin-bottom:5px; opacity:0.7;">INTELIGENCIA_OPERATIVA:</div>
+                <p style="font-size:10px; color:var(--muted); line-height:1.4;">${c.evaluacion_general ? c.evaluacion_general.substring(0, 100) + '...' : 'Análisis táctico completado.'}</p>
+             </div>
+          </div>
         </div>
       `}).join('') : '<p style="padding:40px; text-align:center; color:var(--muted); font-size:12px;">JARVIS: Sin perfiles en el mercado externo.<br><small>Sugerencia: Ampliar criterios.</small></p>');
+
 
     } catch (e) { 
         console.error("[Stark] Fallo en Evaluación:", e);

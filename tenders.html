@@ -8,28 +8,28 @@
   <link rel="stylesheet" href="/static/styles.css">
 
   <style>
-    .hud-scanner { position: relative; background: rgba(2, 6, 23, 0.8); border: 1px solid var(--accent); padding: 30px; border-radius: 12px; overflow: hidden; margin-bottom: 20px; text-align: center; }
-    .hud-scanner::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--accent); box-shadow: 0 0 15px var(--accent); animation: scan 3s linear infinite; z-index: 10; }
-    @keyframes scan { 0% { top: 0; opacity: 1; } 50% { top: 100%; opacity: 0.5; } 100% { top: 0; opacity: 1; } }
-    .upload-zone { border: 2px dashed rgba(34, 211, 238, 0.3); padding: 40px; border-radius: 8px; cursor: pointer; transition: all 0.3s; }
-    .upload-zone:hover { border-color: var(--accent); background: rgba(34, 211, 238, 0.05); }
-    .intel-preview { display: none; margin-top: 20px; animation: fadeIn 0.5s ease; }
+    /* Stark HUD Level Tonny Stark */
+    .stark-hud { background: rgba(15, 23, 42, 0.7) !important; backdrop-filter: blur(16px) saturate(180%); border: 1px solid rgba(34, 211, 238, 0.4) !important; box-shadow: 0 0 50px rgba(34, 211, 238, 0.15), inset 0 0 20px rgba(34, 211, 238, 0.05); border-radius: 16px !important; }
+    .stark-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); position: relative; overflow: hidden; }
+    .stark-card:hover { border-color: var(--accent); background: rgba(34, 211, 238, 0.08); transform: translateY(-3px) scale(1.01); box-shadow: 0 10px 30px rgba(0,0,0,0.3), 0 0 15px rgba(34, 211, 238, 0.2); }
+    .stark-card::after { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: linear-gradient(45deg, transparent, rgba(34,211,238,0.05), transparent); transform: rotate(45deg); transition: 0.6s; z-index: -1; }
+    .stark-card:hover::after { left: 100%; }
     
-    /* Stark Combat HUD Styles */
-    .stark-hud { background: rgba(15, 23, 42, 0.8) !important; backdrop-filter: blur(12px); border: 1px solid rgba(34, 211, 238, 0.3) !important; box-shadow: 0 0 40px rgba(34, 211, 238, 0.1); }
-    .stark-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; transition: all 0.3s; }
-    .stark-card:hover { border-color: var(--accent); background: rgba(34, 211, 238, 0.05); transform: translateY(-2px); }
-    .affinity-bar { height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; margin-top: 8px; }
-    .affinity-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--primary)); transition: width 1s ease-out; }
-    .vacancy-pill { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); font-weight: 800; border: 1px solid rgba(34,211,238,0.3); padding: 2px 6px; border-radius: 4px; }
+    .scan-line { position: absolute; height: 1px; width: 100%; background: linear-gradient(90deg, transparent, var(--accent), transparent); top: 0; left: 0; animation: scan-anim 4s linear infinite; pointer-events: none; opacity: 0.3; }
+    @keyframes scan-anim { 0% { top: 0; } 100% { top: 100%; } }
     
-    /* Loader Stark */
-    .loader { width: 30px; height: 30px; border: 3px solid rgba(34,211,238,0.1); border-top: 3px solid var(--accent); border-radius: 50%; animation: spin 1s linear infinite; }
-    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .hud-tag { font-family: 'JetBrains Mono', monospace; font-size: 9px; padding: 2px 8px; border-radius: 4px; background: rgba(34,211,238,0.1); border: 1px solid rgba(34,211,238,0.3); color: var(--accent); text-transform: uppercase; letter-spacing: 0.5px; }
+    .hud-tag--crit { background: rgba(244,63,94,0.1); border-color: rgba(244,63,94,0.3); color: #f43f5e; }
     
-    /* Radar Effect V3 */
-    .radar-circle { width: 100px; height: 100px; border: 2px solid var(--accent); border-radius: 50%; position: relative; box-shadow: 0 0 20px rgba(34,211,238,0.5); }
-    .radar-circle::after { content:''; position:absolute; top:50%; left:50%; width:1px; height:50px; background:var(--accent); transform-origin: top; animation: radar-spin 2s linear infinite; }
+    .affinity-bar { height: 3px; background: rgba(255,255,255,0.05); border-radius: 1.5px; overflow: hidden; margin-top: 10px; }
+    .affinity-fill { height: 100%; background: linear-gradient(90deg, var(--accent), #fff); box-shadow: 0 0 10px var(--accent); width: 0; transition: width 1.5s ease-out; }
+    
+    /* Technical Corners */
+    .stark-card::before { content: ''; position: absolute; width: 8px; height: 8px; border-top: 2px solid var(--accent); border-left: 2px solid var(--accent); top: 0; left: 0; opacity: 0; transition: 0.3s; }
+    .stark-card:hover::before { opacity: 1; top: 10px; left: 10px; }
+    
+    .radar-circle { width: 120px; height: 120px; border: 1px solid rgba(34,211,238,0.3); border-radius: 50%; position: relative; }
+    .radar-circle::after { content:''; position:absolute; top:50%; left:50%; width:1px; height:60px; background:linear-gradient(to top, var(--accent), transparent); transform-origin: top; animation: radar-spin 2s linear infinite; box-shadow: 0 0 15px var(--accent); }
     @keyframes radar-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
   </style>
 </head>
@@ -307,4 +307,5 @@
   <script defer src="/static/chat.js?v=6.0"></script>
 </body>
 </html>
+
 
