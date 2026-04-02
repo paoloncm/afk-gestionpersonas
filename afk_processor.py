@@ -35,15 +35,16 @@ class CandidateCV(BaseModel):
     exp_proy_similares: float = Field(0.0, description="Estimated years of experience in industrial/mining projects or similar to the target role")
     
     antecedentes_academicos: str = Field("", description="Summary of education and degrees")
-    experiencia_general: str = Field("", description="Draft of General Experience for TEC-02 report")
-    experiencia_especifica: str = Field("", description="Draft of Specific Experience for TEC-02-A report")
-    otras_experiencias: str = Field("", description="Other relevant experiences or certifications")
+    experiencia_general: str = Field("", description="Draft of General Experience for TEC-02 report. MUST use format: 'YYYY-YYYY CARGO - EMPRESA - FAENA' for each entry, one per line. NO SUMMARIES.")
+    experiencia_especifica: str = Field("", description="Draft of Specific Experience for TEC-02-A report. Focus on roles in FIRE PROTECTION (SPCI), MINING, or INDUSTRIAL projects. Use format: 'YYYY-YYYY CARGO - EMPRESA - FAENA', one per line.")
+    otras_experiencias: str = Field("", description="Other relevant experiences or certifications. Use same list format.")
     
     evaluacion_general: str = Field("", description="A professional 3-paragraph tactical summary: 1. Value Proposition, 2. Technical Mastery, 3. Operational Fit. Use bullet points if needed.")
     match_score: float = Field(80.0, description="A merit index from 0 to 100 based on seniority, certifications, and technical specialized skills.")
     match_explicacion: str = Field("", description="A clear, professional justification for the match_score, highlighting technical gaps or strengths.")
     nota: float = Field(1.0, description="Numerical grade from 1.0 to 7.0 (Chilean scale). Based on 30% seniority, 40% certifications, 30% project complexity.")
     ranking: int = Field(50, description="A strategic ranking from 1 to 100 representing the candidate's competitiveness in the industrial sector.")
+    antecedentes_academicos: str = Field("", description="Summary of education. format: 'TITULO - INSTITUCION - ESTADO (Titulado/Egresado/En Curso)'.")
 
 # --- Core Processor ---
 
@@ -84,13 +85,14 @@ class AFKProcessor:
             "You are JARVIS (Just A Rather Very Intelligent System), an elite HR Tactical Analyst. "
             "Your objective is to perform a SPLENDID, EXHAUSTIVE, and PROFESSIONAL extraction and JUDGMENT of intelligence from the provided CV. "
             "TONE: Formal, tactical, and efficient. Use high-precision terminology. "
-            "CRITICAL 'NO REDUCTION' POLICY: "
-            "1. NEVER summarize or omit past work experiences. Extract the FULL professional timeline. "
-            "2. 'software_que_domina': Generate a detailed inventory of every tool, ERP (SAP, Maximo), or technical software mentioned. "
-            "3. 'evaluacion_general': Synthesize a high-fidelity 3-paragraph summary: Value Proposition, Technical mastery, and Operational aptitude. "
-            "4. 'nota' (1.0-7.0): Grade the candidate. A 7.0 requires 15+ years of experience and expert certifications. A 4.0 is a basic qualified candidate. "
-            "5. 'ranking' (1-100): Position them against a top-tier industrial benchmark. "
-            "6. 'match_explicacion': Provide a brilliant, professional justification for the nota and ranking."
+            "CRITICAL 'STARK ABSOLUTE PROTOCOL v3' (No data loss): "
+            "1. PROFESSIONAL HISTORY: NEVER summarize. You MUST reconstruct the FULL timeline entry by entry. "
+            "2. FORMAT: For 'experiencia_general' and 'experiencia_especifica', use EXACTLY: 'YYYY-YYYY CARGO - EMPRESA - FAENA/ESTABLECIMIENTO' (Example: '2017-2019 OPERADOR TRACTO CAMION - GREKAT - COLLAHUASI'). "
+            "3. SITE IDENTIFICATION: Audit the text for mining sites (Faena) or project locations and include them in the entry. "
+            "4. ACADEMIC RECORDS: Format as 'TITULO - INSTITUCION - ESTADO (Titulado, Egresado, or En Curso)'. "
+            "5. SOFTWARE INVENTORY: Detailed list of ERPs (SAP, Maximo), technical tools, and specific software. "
+            "6. EVALUACION GENERAL: High-fidelity 3-paragraph summary: Value Proposition, Technical mastery, and Operational fit. "
+            "7. GRADING: 'nota' (1.0-7.0) and 'ranking' (1-100) must reflect the rigor of the industrial/mining sector."
         )
         
         # Define the tool/function based on the Pydantic model

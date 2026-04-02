@@ -773,7 +773,7 @@
       newSheet.getCell("B49").value = c.antecedentes_academicos;
 
       // Forzar wrap text y ajuste de altura en los bloques de texto
-      [25, 32, 39, 45].forEach(rowNum => {
+      [25, 33, 41, 49].forEach(rowNum => {
         const cell = newSheet.getCell(`B${rowNum}`);
         cell.alignment = { vertical: 'top', horizontal: 'left', wrapText: true };
 
