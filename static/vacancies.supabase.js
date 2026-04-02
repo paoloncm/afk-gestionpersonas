@@ -73,15 +73,26 @@
             header.style.padding = '15px 20px';
             header.style.background = 'linear-gradient(90deg, rgba(34,211,238,0.1), transparent)';
             header.style.borderLeft = '4px solid var(--accent)';
-            header.style.marginBottom = '20px';
+            header.style.marginBottom = '8px';
             header.style.borderRadius = '0 8px 8px 0';
+            header.style.cursor = 'pointer';
+            header.style.userSelect = 'none';
+            header.title = 'Click para expandir/contraer';
 
             header.innerHTML = `
                 <div style="font-family:'JetBrains Mono', monospace; font-size:10px; color:var(--accent); font-weight:800; border:1px solid var(--accent); padding:2px 6px; border-radius:4px;">GRUP_ID: ${groupId.substring(0,4)}</div>
                 <h2 style="margin:0; font-size:18px; letter-spacing:1px; color:var(--text);">${group.name}</h2>
-                <div style="margin-left:auto; font-size:10px; color:var(--muted);">${group.vacancies.length} POSICIONES ACTIVAS</div>
+                <div style="margin-left:auto; display:flex; align-items:center; gap:20px;">
+                    <div style="font-size:10px; color:var(--muted);">${group.vacancies.length} POSICIONES ACTIVAS</div>
+                    <span class="stark-chevron" style="color:var(--accent); font-size:20px; transition:0.3s; transform:rotate(180deg);">▼</span>
+                </div>
             `;
             section.appendChild(header);
+
+            const gridContainer = document.createElement('div');
+            gridContainer.className = 'grid-container';
+            gridContainer.style.display = 'none'; // Collapsed by default
+            gridContainer.style.marginTop = '20px';
 
             const grid = document.createElement('div');
             grid.className = 'grid-2'; 
@@ -93,7 +104,17 @@
                 grid.appendChild(card);
             });
 
-            section.appendChild(grid);
+            gridContainer.appendChild(grid);
+            section.appendChild(gridContainer);
+
+            // Toggle Logic
+            header.onclick = () => {
+                const isHidden = gridContainer.style.display === 'none';
+                gridContainer.style.display = isHidden ? 'block' : 'none';
+                header.querySelector('.stark-chevron').style.transform = isHidden ? 'rotate(0deg)' : 'rotate(180deg)';
+                header.style.background = isHidden ? 'linear-gradient(90deg, rgba(34,211,238,0.2), transparent)' : 'linear-gradient(90deg, rgba(34,211,238,0.1), transparent)';
+            };
+
             container.appendChild(section);
         });
     }
