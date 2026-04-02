@@ -553,7 +553,7 @@
       throw new Error("No está cargada la librería ExcelJS.");
     }
 
-    const templateUrl = "./templates/tec02_template.xlsx";
+    const templateUrl = "/static/templates/tec02_template.xlsx";
     const response = await fetch(templateUrl);
 
     if (!response.ok) {
@@ -684,7 +684,7 @@
   async function exportTec02AFromTemplate(candidates, headerData) {
     if (!window.ExcelJS) throw new Error("No está cargada la librería ExcelJS.");
 
-    const templateUrl = "./templates/tec02-A_template.xlsx";
+    const templateUrl = "/static/templates/tec02-A_template.xlsx";
     const response = await fetch(templateUrl);
     if (!response.ok) {
       const altUrl = "templates/tec02-A_template.xlsx";
