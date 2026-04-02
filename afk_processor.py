@@ -13,37 +13,54 @@ load_dotenv()
 
 # --- Schemas ---
 
+class WorkExperience(BaseModel):
+    empresa: str = Field(..., description="Nombre de la empresa")
+    faena: Optional[str] = Field(None, description="Nombre de la faena minera o planta industrial (ej. 'Minera Escondida')")
+    cargo: str = Field(..., description="Cargo o posición ocupada")
+    funciones: List[str] = Field(default_factory=list, description="Lista de funciones técnicas específicas realizadas (ej. 'overhaul de filtros Larox', 'reparación de baldes')")
+    tecnologias: List[str] = Field(default_factory=list, description="Lista de herramientas, software o tecnologías usadas (ej. 'SAP', 'FCAW', 'SMAW')")
+    equipos: List[str] = Field(default_factory=list, description="Lista de equipos industriales o maquinaria intervenida (ej. 'CAEX', 'espesadores', 'bombas')")
+
+class Certification(BaseModel):
+    nombre: str = Field(..., description="Nombre de la certificación, curso o licencia (ej. 'Rigger alto tonelaje', 'Soldador AWS')")
+    institucion: Optional[str] = Field(None, description="Entidad que emite la certificación o capacitación (ej. 'CEIM')")
+    fecha: Optional[str] = Field(None, description="Fecha o año de obtención")
+
 class CandidateCV(BaseModel):
-    nombre_completo: str = Field(..., description="Full name of the candidate")
-    rut: Optional[str] = Field(None, description="Chilean ID (RUT) if present, formatted as 12.345.678-9")
-    fecha_nacimiento: Optional[str] = Field(None, description="Date of birth if present (YYYY-MM-DD format)")
-    profesion: str = Field(..., description="Main profession or degree")
-    correo: str = Field(..., description="Email address")
-    telefono: Optional[str] = Field(None, description="Contact phone number")
-    direccion: Optional[str] = Field(None, description="Physical address or city of residence")
+    nombre_completo: str = Field(..., description="Nombre completo del candidato")
+    rut: Optional[str] = Field(None, description="RUT chileno si está presente, formateado como 12.345.678-9")
+    fecha_nacimiento: Optional[str] = Field(None, description="Fecha de nacimiento si está presente (formato YYYY-MM-DD)")
+    profesion: str = Field(..., description="Profesión principal o grado académico. TRADUCIR SIEMPRE AL ESPAÑOL.")
+    correo: str = Field(..., description="Dirección de correo electrónico")
+    telefono: Optional[str] = Field(None, description="Número de teléfono de contacto")
+    direccion: Optional[str] = Field(None, description="Dirección física o ciudad de residencia")
     
-    cargo: Optional[str] = Field(None, description="Current or most recent job title/position")
-    ultima_exp_laboral_empresa: Optional[str] = Field(None, description="Name of the most recent company worked for")
-    periodo: Optional[str] = Field(None, description="Time period of the most recent employment (e.g., '2019 - Present')")
-    software_que_domina: Optional[str] = Field(None, description="List of software, tools, or technologies the candidate masters")
-    experiencia: Optional[str] = Field(None, description="Summary of the most recent work experience")
+    cargo: Optional[str] = Field(None, description="Cargo o posición laboral más reciente. TRADUCIR AL ESPAÑOL.")
+    ultima_exp_laboral_empresa: Optional[str] = Field(None, description="Nombre de la última empresa donde trabajó.")
+    periodo: Optional[str] = Field(None, description="Periodo de tiempo del empleo más reciente (ej., '2019 - Presente')")
+    software_que_domina: Optional[str] = Field(None, description="Lista de software, herramientas o tecnologías mencionadas. TRADUCIR AL ESPAÑOL.")
+    experiencia: Optional[str] = Field(None, description="Resumen de la experiencia laboral más reciente. TRADUCIR AL ESPAÑOL.")
+
+    # Atomic Evidence
+    experiencia_detallada: List[WorkExperience] = Field(default_factory=list, description="Cronología laboral ATÓMICA y DETALLADA. No omitir ninguna empresa o función técnica.")
+    certificaciones_detalladas: List[Certification] = Field(default_factory=list, description="Lista todas las certificaciones, cursos, licencias y capacitaciones mencionadas.")
     
-    cargo_a_desempenar: Optional[str] = Field(None, description="Latest or targeted position")
-    experiencia_total: float = Field(0.0, description="Total years of work experience (numeric)")
-    experiencia_en_empresa_actual: float = Field(0.0, description="Years in the current or most recent company")
-    exp_cargo_actual: float = Field(0.0, description="Years in the current or most recent position")
-    exp_proy_similares: float = Field(0.0, description="Estimated years of experience in industrial/mining projects or similar to the target role")
+    cargo_a_desempenar: Optional[str] = Field(None, description="Última posición o posición objetivo. TRADUCIR AL ESPAÑOL.")
+    experiencia_total: float = Field(0.0, description="Años totales de experiencia laboral (numérico)")
+    experiencia_en_empresa_actual: float = Field(0.0, description="Años en la empresa actual o más reciente")
+    exp_cargo_actual: float = Field(0.0, description="Años en el cargo actual o más reciente")
+    exp_proy_similares: float = Field(0.0, description="Años estimados de experiencia en proyectos industriales/mineros o similares al rol objetivo")
     
-    antecedentes_academicos: str = Field("", description="Summary of education and degrees")
-    experiencia_general: str = Field("", description="Draft of General Experience for TEC-02 report")
-    experiencia_especifica: str = Field("", description="Draft of Specific Experience for TEC-02-A report")
-    otras_experiencias: str = Field("", description="Other relevant experiences or certifications")
+    antecedentes_academicos: str = Field("", description="Resumen de educación y títulos. TRADUCIR AL ESPAÑOL.")
+    experiencia_general: str = Field("", description="ESTE CAMPO SERÁ CALCULADO AUTOMÁTICAMENTE. DEJAR VACÍO.")
+    experiencia_especifica: str = Field("", description="ESTE CAMPO SERÁ CALCULADO AUTOMÁTICAMENTE. DEJAR VACÍO.")
+    otras_experiencias: str = Field("", description="ESTE CAMPO SERÁ CALCULADO AUTOMÁTICAMENTE. DEJAR VACÍO.")
     
-    evaluacion_general: str = Field("", description="A professional 3-paragraph tactical summary: 1. Value Proposition, 2. Technical Mastery, 3. Operational Fit. Use bullet points if needed.")
-    match_score: float = Field(80.0, description="A merit index from 0 to 100 based on seniority, certifications, and technical specialized skills.")
-    match_explicacion: str = Field("", description="A clear, professional justification for the match_score, highlighting technical gaps or strengths.")
-    nota: float = Field(1.0, description="Numerical grade from 1.0 to 7.0 (Chilean scale). Based on 30% seniority, 40% certifications, 30% project complexity.")
-    ranking: int = Field(50, description="A strategic ranking from 1 to 100 representing the candidate's competitiveness in the industrial sector.")
+    evaluacion_general: str = Field("", description="Un resumen táctico profesional de 3 párrafos en ESPAÑOL: 1. Propuesta de Valor, 2. Dominio Técnico, 3. Aptitud Operativa. Usa viñetas para destacar equipos específicos.")
+    match_score: float = Field(80.0, description="Un índice de mérito de 0 a 100 basado en antigüedad, certificaciones y habilidades técnicas especializadas.")
+    match_explicacion: str = Field("", description="Una justificación clara y profesional en ESPAÑOL para el match_score, destacando brechas técnicas o fortalezas.")
+    nota: float = Field(1.0, description="Calificación numérica de 1.0 a 7.0 (escala chilena). Basada en 30% antigüedad, 40% certificaciones, 30% complejidad de proyectos.")
+    ranking: int = Field(50, description="Un ranking estratégico de 1 a 100 que representa la competitividad del candidato en el sector industrial.")
 
 # --- Core Processor ---
 
@@ -79,18 +96,60 @@ class AFKProcessor:
         else:
             raise ValueError(f"Unsupported file format: {ext}")
 
+    def _reconstruct_experiencia_general(self, experiencias: List[WorkExperience]) -> str:
+        if not experiencias: return ""
+        frases = []
+        for exp in experiencias:
+            base = f"Se desempeñó como {exp.cargo} en {exp.empresa}"
+            if exp.faena:
+                base += f", en {exp.faena}"
+            
+            detalles = []
+            if exp.funciones: detalles.extend(exp.funciones[:5])
+            if exp.equipos: detalles.extend([f"intervención de {e}" for e in exp.equipos[:3]])
+            
+            if detalles:
+                frase = f"{base}, desarrollando funciones tales como {', '.join(detalles)}."
+            else:
+                frase = f"{base}."
+            frases.append(frase)
+        return " ".join(frases)
+
+    def _reconstruct_experiencia_especifica(self, experiencias: List[WorkExperience], profesion: str) -> str:
+        # Simple heuristic: relevant if any keyword from profesion is in funciones/equipos
+        keywords = re.findall(r'\w+', profesion.lower())
+        relevantes = []
+        for exp in experiencias:
+            combined_text = " ".join(exp.funciones + exp.equipos + [exp.cargo]).lower()
+            if any(k in combined_text for k in keywords if len(k) > 3):
+                relevantes.append(exp)
+        
+        if not relevantes:
+            relevantes = experiencias[:2] # Fallback to latest 2
+            
+        return self._reconstruct_experiencia_general(relevantes)
+
+    def _reconstruct_otras_experiencias(self, certs: List[Certification]) -> str:
+        if not certs: return ""
+        items = []
+        for c in certs:
+            s = c.nombre
+            if c.institucion: s += f" ({c.institucion})"
+            items.append(s)
+        return ". ".join(items) + "."
+
     def process_cv_with_ai(self, text: str) -> CandidateCV:
         system_prompt = (
-            "You are JARVIS (Just A Rather Very Intelligent System), an elite HR Tactical Analyst. "
-            "Your objective is to perform a SPLENDID, EXHAUSTIVE, and PROFESSIONAL extraction and JUDGMENT of intelligence from the provided CV. "
-            "TONE: Formal, tactical, and efficient. Use high-precision terminology. "
-            "CRITICAL 'NO REDUCTION' POLICY: "
-            "1. NEVER summarize or omit past work experiences. Extract the FULL professional timeline. "
-            "2. 'software_que_domina': Generate a detailed inventory of every tool, ERP (SAP, Maximo), or technical software mentioned. "
-            "3. 'evaluacion_general': Synthesize a high-fidelity 3-paragraph summary: Value Proposition, Technical mastery, and Operational aptitude. "
-            "4. 'nota' (1.0-7.0): Grade the candidate. A 7.0 requires 15+ years of experience and expert certifications. A 4.0 is a basic qualified candidate. "
-            "5. 'ranking' (1-100): Position them against a top-tier industrial benchmark. "
-            "6. 'match_explicacion': Provide a brilliant, professional justification for the nota and ranking."
+            "Eres JARVIS (Just A Rather Very Intelligent System), un analista táctico de RRHH de élite. "
+            "Tu objetivo es realizar una extracción de inteligencia ATÓMICA y EXHAUSTIVA. "
+            "POLÍTICA CRÍTICA DE 'EVIDENCIA TÉCNICA': "
+            "1. No resumas. Captura cada empresa, faena, cargo y función técnica en 'experiencia_detallada'. "
+            "2. Sé específico con los equipos (CAEX, filtros Larox, SAP, etc.). Si el CV dice 'reparación de baldes', escríbelo tal cual. "
+            "3. Captura todas las certificaciones (AWS, CEIM, Licencias D/A/B) en 'certificaciones_detalladas'. "
+            "4. Idioma: Todo en ESPAÑOL profesional. Traduce si el origen es inglés. "
+            "Tu misión es recolectar la EVIDENCIA para un reporte técnico TEC-02. "
+            "REGLAS ADICIONALES: "
+            "- 'evaluacion_general': 3 párrafos técnicos sobre Propuesta de Valor, Dominio Técnico y Aptitud Operativa."
         )
         
         # Define the tool/function based on the Pydantic model
@@ -119,7 +178,15 @@ class AFKProcessor:
         tool_call = response.choices[0].message.tool_calls[0]
         data = json.loads(tool_call.function.arguments)
         
-        return CandidateCV(**data)
+        cv_obj = CandidateCV(**data)
+        
+        # --- RECONSTRUCTION LOGIC (Evidence-based) ---
+        print(f"🛠️ Reconstructing narratives from {len(cv_obj.experiencia_detallada)} atomic experiences...")
+        cv_obj.experiencia_general = self._reconstruct_experiencia_general(cv_obj.experiencia_detallada)
+        cv_obj.experiencia_especifica = self._reconstruct_experiencia_especifica(cv_obj.experiencia_detallada, cv_obj.profesion)
+        cv_obj.otras_experiencias = self._reconstruct_otras_experiencias(cv_obj.certificaciones_detalladas)
+        
+        return cv_obj
 
     def generate_embedding(self, text: str) -> List[float]:
         response = self.openai.embeddings.create(

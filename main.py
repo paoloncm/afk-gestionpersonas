@@ -1,6 +1,6 @@
 import os
 import threading
-from fastapi import FastAPI, BackgroundTasks
+from fastapi import FastAPI, BackgroundTasks, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel
@@ -9,9 +9,9 @@ from typing import Optional
 
 app = FastAPI(title="AFK RRHH")
 
-FRONTEND_DIR = Path(__file__).parent
+FRONTEND_DIR = Path(__file__).resolve().parent
 
-# Los archivos estáticos se montarán al final para no interferir con las rutas principales
+# --- HTML Routes ---
 
 @app.get("/", response_class=HTMLResponse)
 def index():
@@ -19,6 +19,14 @@ def index():
     if not index_file.exists():
         return HTMLResponse("index.html not found", status_code=404)
     return index_file.read_text(encoding="utf-8")
+
+@app.get("/{page}.html", response_class=HTMLResponse)
+def get_html_page(page: str):
+    """Serves HTML files directly (e.g., /candidates.html)."""
+    file_path = FRONTEND_DIR / f"{page}.html"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Page not found")
+    return file_path.read_text(encoding="utf-8")
 
 @app.get("/candidates", response_class=HTMLResponse)
 def candidates():
@@ -28,10 +36,13 @@ def candidates():
 def comparison():
     return (FRONTEND_DIR / "comparison.html").read_text(encoding="utf-8")
 
-# Healthcheck / Direct access
-@app.get("/candidates.html", response_class=HTMLResponse)
-def candidates_html():
-    return (FRONTEND_DIR / "candidates.html").read_text(encoding="utf-8")
+@app.get("/workers", response_class=HTMLResponse)
+def workers():
+    return (FRONTEND_DIR / "workers.html").read_text(encoding="utf-8")
+
+@app.get("/tenders", response_class=HTMLResponse)
+def tenders():
+    return (FRONTEND_DIR / "tenders.html").read_text(encoding="utf-8")
 
 # --- AI Semantic Matchmaking Endpoint ---
 class TenderMatchRequest(BaseModel):
@@ -165,5 +176,7 @@ async def sync_drive(background_tasks: BackgroundTasks):
     return {"ok": True, "message": "Google Drive sync started in background."}
 
 
-# IMPORTANTE: Montar archivos estáticos al final para que las rutas relativas funcionen
-app.mount("/", StaticFiles(directory=FRONTEND_DIR), name="static")
+# IMPORTANTE: Montar archivos estáticos después de las rutas HTML
+# Usamos /static para evitar servir archivos sensibles de la raíz
+# Nota: Path(__file__).resolve().parent asegura que la ruta sea absoluta y robusta en Railway
+app.mount("/static", StaticFiles(directory=FRONTEND_DIR / "static"), name="static")

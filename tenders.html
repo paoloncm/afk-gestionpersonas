@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>AFK RRHH — Licitaciones</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="/static/styles.css">
 
   <style>
     .hud-scanner { position: relative; background: rgba(2, 6, 23, 0.8); border: 1px solid var(--accent); padding: 30px; border-radius: 12px; overflow: hidden; margin-bottom: 20px; text-align: center; }
@@ -196,7 +196,7 @@
           <div style="display:flex; align-items:center; gap:20px;">
             <div id="profileAvatar" style="width:80px; height:80px; border-radius:12px; background:rgba(103,232,249,0.1); border:2px solid var(--accent); display:grid; place-items:center; font-size:40px; box-shadow: 0 0 20px var(--accent-glow);">👤</div>
             <div>
-              <div class="stark-id-badge" id="profileType">[ AFK OPERATIVE ]</div>
+              <div class="stark-id-badge" id="profileType">[ OPERARIO AFK ]</div>
               <h2 class="stark-name" id="profileName" style="font-size:28px;">JUAN PÉREZ</h2>
               <div id="profileStatus" class="stark-status" style="color:var(--ok);">● HABILITADO / NIVEL 1</div>
             </div>
@@ -238,7 +238,7 @@
 
             <!-- Column 2: CV Intelligence (IA) -->
             <div>
-                <div class="stark-summary-label">IA CV INTELLIGENCE [EXTRACTION_SUMMARY]</div>
+                <div class="stark-summary-label">INTELIGENCIA IA CV [RESUMEN_EXTRACCIÓN]</div>
                 <div id="profileCvSummary" class="stark-summary-content" style="background:rgba(34,211,238,0.03); padding:15px; border-radius:8px; border:1px solid rgba(34,211,238,0.1); font-size:12px; height:240px; overflow-y:auto; line-height:1.6;">
                     Sincronizando con redes neuronales...
                 </div>
@@ -253,7 +253,7 @@
         </div>
         
         <div class="modal__footer" style="padding:20px 25px; background:rgba(0,0,0,0.3); border-top:1px solid rgba(34,211,238,0.2); display:flex; justify-content:space-between; align-items:center;">
-             <div style="font-family:monospace; font-size:10px; color:var(--accent); opacity:0.5;">AFK_INTEL_SYSTEM_v10.4 // SECURE_LINK: ENABLED</div>
+             <div style="font-family:monospace; font-size:10px; color:var(--accent); opacity:0.5;">SISTEMA_AFK_INTEL_v10.4 // ENLACE_SEGURO: ACTIVADO</div>
              <button id="profileEditBtn" class="btn btn--mini" style="background:transparent; border:1px solid var(--accent); color:var(--accent);">ACCEDER A EXPEDIENTE COMPLETO</button>
         </div>
       </div>
@@ -263,8 +263,8 @@
   <!-- Scripts Logic -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="supabase.js"></script>
-  <script src="auth.js"></script>
+  <script src="/static/supabase.js"></script>
+  <script src="/static/auth.js"></script>
   <script src="tenders.supabase.js?v=10.0"></script>
 
   <!-- Chatbot JARVIS -->
@@ -289,6 +289,6 @@
   </div>
   <button id="chatbotFab" class="chatbot-fab">✨</button>
 
-  <script defer src="chat.js?v=6.0"></script>
+  <script defer src="/static/chat.js?v=6.0"></script>
 </body>
 </html>

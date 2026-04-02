@@ -7,7 +7,7 @@
   <title>AFK RRHH — Perfil de Candidato</title>
 
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="/static/styles.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
   <style>
@@ -280,8 +280,8 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="supabase.js?v=2.0"></script>
-  <script src="candidate.js?v=2.0"></script>
+  <script src="/static/supabase.js?v=2.0"></script>
+  <script src="/static/candidate.js?v=2.0"></script>
   <script>
     // Behavior for sidebar chat in profile page
     const d=document, chat=d.getElementById('chatbot');
@@ -289,8 +289,8 @@
     d.getElementById('openChatbot')?.addEventListener('click', e => { e.preventDefault(); chat.classList.add('is-open'); });
     d.getElementById('closeChat').onclick = () => chat.classList.remove('is-open');
   </script>
-  <script defer src="responsive.js?v=2.0"></script>
-  <script defer src="chat.js?v=5.0"></script>
+  <script defer src="/static/responsive.js?v=2.0"></script>
+  <script defer src="/static/chat.js?v=5.0"></script>
 </body>
 
 </html>

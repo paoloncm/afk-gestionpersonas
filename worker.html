@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Perfil de Trabajador — AFK RRHH</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="/static/styles.css">
   <style>
     .profile-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 24px; }
     .credential-card { background: var(--card-2); border: 1px solid var(--border); padding: 16px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; cursor: pointer; transition: all 0.2s ease; }
@@ -62,9 +62,9 @@
 
 <!-- Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase.js?v=2.0"></script>
-<script defer src="worker.js?v=2.0"></script>
-<script defer src="responsive.js?v=2.0"></script>
+<script src="/static/supabase.js?v=2.0"></script>
+<script defer src="/static/worker.js?v=2.0"></script>
+<script defer src="/static/responsive.js?v=2.0"></script>
     <aside id="chatbot" class="chatbot">
       <div class="chatbot__head">
         <strong>AFK Chatbot</strong>
@@ -78,7 +78,7 @@
         <button id="chatSend" class="btn btn--primary" type="button">Enviar</button>
       </div>
     </aside>
-  <script defer src="chat.js?v=5.0"></script>
+  <script defer src="/static/chat.js?v=5.0"></script>
 </body>
 </html>
 

@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
   <title>AFK RRHH — Trabajadores</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=1.1">
+  <link rel="stylesheet" href="/static/styles.css?v=1.1">
 </head>
 
 <body>
@@ -19,10 +19,10 @@
 
       <nav class="nav">
         <div class="nav-category">Admisión y selección</div>
-        <a href="index.html"><span class="label">Dashboard</span></a>
+        <a href="index.html"><span class="label">Tablero</span></a>
         <a href="vacancies.html"><span class="label">Vacantes</span></a>
         <a href="interviews.html"><span class="label">Entrevistas</span></a>
-        <a href="pipeline.html"><span class="label">Pipeline</span></a>
+        <a href="pipeline.html"><span class="label">Flujo de Selección</span></a>
 
         <div class="nav-category">Gestión</div>
         <a class="is-active" href="workers.html"><span class="label">Trabajadores</span></a>
@@ -32,7 +32,7 @@
         <a id="openChatbot" href="#chatbot"><span class="label">Chatbot</span></a>
 
         <div class="nav-category">Analítica e Inteligencia</div>
-        <a href="analytics.html"><span class="label">People Analytics</span></a>
+        <a href="analytics.html"><span class="label">Analítica de Personas</span></a>
       </nav>
     </aside>
 
@@ -203,14 +203,14 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="supabase.js?v=6.0"></script>
-  <script src="auth.js"></script>
+  <script src="/static/supabase.js?v=6.0"></script>
+  <script src="/static/auth.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="charts.js?v=2.4"></script>
-  <script defer src="workers.supabase.js?v=6.2"></script>
-  <script defer src="chat.js?v=4.0"></script>
-  <script defer src="responsive.js?v=2.0"></script>
+  <script src="/static/charts.js?v=2.4"></script>
+  <script defer src="/static/workers.supabase.js?v=6.2"></script>
+  <script defer src="/static/chat.js?v=4.0"></script>
+  <script defer src="/static/responsive.js?v=2.0"></script>
     <!-- Modal para nuevo candidato -->
     <div id="candidateModal" class="modal">
       <div class="modal__content" style="max-width:500px">

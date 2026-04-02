@@ -2,7 +2,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>AFK RRHH — Ranking</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="/static/styles.css">
 </head><body><div class="dashboard">
   <aside class="sidebar"><div class="brand"><div class="logo">AFK</div><span>RRHH</span></div>
     <nav class="nav">
@@ -45,8 +45,8 @@ d.getElementById('closeChat').onclick=()=>dr.classList.remove('is-open');
 d.getElementById('chatSend').onclick=()=>{const v=i.value.trim();if(!v)return;const m=d.createElement('div');m.className='chat-msg user';m.textContent=v;b.appendChild(m);i.value='';};
 i.onkeydown=e=>{if(e.key==='Enter')d.getElementById('chatSend').click()};
 </script>
-<script defer src="responsive.js?v=2.0"></script>
-  <script defer src="chat.js?v=5.0"></script>
+<script defer src="/static/responsive.js?v=2.0"></script>
+  <script defer src="/static/chat.js?v=5.0"></script>
 </body></html>
     
 

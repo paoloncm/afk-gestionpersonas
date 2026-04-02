@@ -1,11 +1,11 @@
-ï»¿<!doctype html>
+<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>AFK RRHH â€” Centro de Decisiones</title>
+  <title>AFK RRHH — Centro de Decisiones</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="/static/styles.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <style>
     .comparison-grid {
@@ -66,12 +66,12 @@
         <span>RRHH</span>
       </div>
       <nav class="nav">
-        <div class="nav-category">AdmisiÃ³n y selecciÃ³n</div>
+        <div class="nav-category">Admisión y selección</div>
         <a href="index.html"><span class="label">Dashboard</span></a>
         <a href="vacancies.html"><span class="label">Vacantes</span></a>
         <a href="interviews.html"><span class="label">Entrevistas</span></a>
         <a href="pipeline.html"><span class="label">Pipeline</span></a>
-        <div class="nav-category">GestiÃ³n</div>
+        <div class="nav-category">Gestión</div>
         <a href="workers.html"><span class="label">Trabajadores</span></a>
         <a href="alerts.html"><span class="label">Alertas</span></a>
         <a href="documents.html"><span class="label">Documentos</span></a>
@@ -80,7 +80,7 @@
     </aside>
 
     <header class="topbar">
-      <button class="btn-menu" aria-label="Abrir menÃº">â˜°</button>
+      <button class="btn-menu" aria-label="Abrir menú">?</button>
       <div style="margin-left:auto;">
          <button class="btn btn--primary" onclick="window.print()">Generar Informe PDF</button>
       </div>
@@ -88,25 +88,25 @@
 
     <main class="main">
       <div style="margin-bottom:20px;">
-        <a href="index.html" style="color:var(--text-muted); text-decoration:none; font-size:14px;">â† Volver al Dashboard</a>
+        <a href="index.html" style="color:var(--text-muted); text-decoration:none; font-size:14px;">? Volver al Dashboard</a>
       </div>
 
       <section class="hero-dashboard" id="decisionHero">
         <div class="hero-dashboard__text">
-          <div class="badge badge--success" style="margin-bottom:10px;">ğŸ† RecomendaciÃ³n de IA AFK</div>
+          <div class="badge badge--success" style="margin-bottom:10px;">?? Recomendación de IA AFK</div>
           <h2 id="winnerName">Analizando candidatos...</h2>
           <p id="winnerReason" style="max-width:700px; line-height:1.6; margin-top:12px; color:rgba(255,255,255,0.8);">
             Estamos procesando los perfiles para determinar el mejor calce operacional.
           </p>
           <div style="margin-top:24px; display:flex; gap:12px;">
-             <button id="btnQuickSchedule" class="btn btn--primary" style="height:44px; padding:0 24px;">ğŸ“… Agendar con el Ganador</button>
-             <button id="btnSelectWinner" class="btn" style="height:44px; padding:0 24px;">ğŸŸ¢ Seleccionar Candidato</button>
+             <button id="btnQuickSchedule" class="btn btn--primary" style="height:44px; padding:0 24px;">?? Agendar con el Ganador</button>
+             <button id="btnSelectWinner" class="btn" style="height:44px; padding:0 24px;">?? Seleccionar Candidato</button>
           </div>
         </div>
       </section>
 
       <section class="matrix-view">
-         <h3 style="margin:0 0 16px; font-size:18px; font-weight:900;">Matriz de DecisiÃ³n</h3>
+         <h3 style="margin:0 0 16px; font-size:18px; font-weight:900;">Matriz de Decisión</h3>
          <div id="matrixTableWrapper">
             <table class="comparison-table">
                <thead>
@@ -119,14 +119,14 @@
          </div>
       </section>
 
-      <h3 style="margin:40px 0 20px; font-size:18px; font-weight:900;">AnÃ¡lisis Detallado</h3>
+      <h3 style="margin:40px 0 20px; font-size:18px; font-weight:900;">Análisis Detallado</h3>
       <div id="comparisonContainer" class="comparison-grid"></div>
     </main>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="supabase.js?v=2.0"></script>
-  <script defer src="comparison.js?v=2.0"></script>
-  <script defer src="chat.js?v=5.0"></script>
+  <script src="/static/supabase.js?v=2.0"></script>
+  <script defer src="/static/comparison.js?v=2.0"></script>
+  <script defer src="/static/chat.js?v=5.0"></script>
 </body>
 </html>
