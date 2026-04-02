@@ -6,18 +6,14 @@
 </head><body><div class="dashboard">
   <aside class="sidebar"><div class="brand"><div class="logo">AFK</div><span>RRHH</span></div>
     <nav class="nav">
-        <div class="nav-category">Admisión y selección</div>
-        <a href="index.html"><span class="label">Dashboard</span></a>
-        <a href="vacancies.html"><span class="label">Vacantes</span></a>
-        <a class="is-active" href="interviews.html"><span class="label">Entrevistas</span></a>
-        <a href="pipeline.html"><span class="label">Pipeline</span></a>
-
-        <div class="nav-category">Gestión</div>
-        <a href="workers.html"><span class="label">Trabajadores</span></a>
-        <a href="alerts.html"><span class="label">Alertas</span></a>
-        <a href="documents.html"><span class="label">Documentos</span></a>
-        <a href="reports.html"><span class="label">Reportes</span></a>
-        <a id="openChatbot" href="#chatbot"><span class="label">Chatbot</span></a>
+      <a href="index.html"><span class="label">Dashboard</span></a>
+      <a href="workers.html"><span class="label">Trabajadores</span></a>
+      <a href="vacancies.html"><span class="label">Vacantes</span></a>
+      <a class="is-active" href="interviews.html"><span class="label">Entrevistas</span></a>
+      <a href="alerts.html"><span class="label">Alertas</span></a>
+      <a href="reports.html"><span class="label">Reportes</span></a>
+      <a href="documents.html"><span class="label">Documentos</span></a>
+      <a id="openChatbot" href="#chatbot"><span class="label">Chatbot</span></a>
     </nav>
   </aside>
   <header class="topbar"><button class="btn-menu" aria-label="Abrir menú">☰</button><div class="btn" onclick="location.href='documents.html'">Subir documentos</div><div class="btn" id="btnChat">Abrir Chatbot</div></header>
@@ -46,7 +42,5 @@ d.getElementById('chatSend').onclick=()=>{const v=i.value.trim();if(!v)return;co
 i.onkeydown=e=>{if(e.key==='Enter')d.getElementById('chatSend').click()};
 </script>
 <script defer src="responsive.js?v=2.0"></script>
-  <script defer src="chat.js?v=5.0"></script>
 </body></html>
     
-

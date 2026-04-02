@@ -1,14 +1,12 @@
 // chat.js — cliente ligero para n8n (Webhook -> Respond to Webhook)
 
 (() => {
-  // Unificar a un único Chatbot Maestro (n8n Agent)
-  const WEBHOOK_URL = 'https://primary-production-aa252.up.railway.app/webhook/a35e75ae-9003-493b-a00e-8edd8bd2b12a';
-  const CHAT_API = window.AFK_CHAT_WEBHOOK || WEBHOOK_URL;
-
+  const DEFAULT_API = 'https://primary-production-aa252.up.railway.app/webhook/a35e75ae-9003-493b-a00e-8edd8bd2b12a';
+  const CHAT_API = window.AFK_CHAT_WEBHOOK || DEFAULT_API;
   const USE_BASIC_AUTH = false, BASIC_USER = 'user', BASIC_PASS = 'pass';
   const BEARER_TOKEN = '';
   const BOT_WELCOME = 'Hola 👋 Soy el asistente de AFK. ¿En qué te ayudo?';
-  const TIMEOUT_MS = 180000; // 3 minutos como pidió el usuario
+  const TIMEOUT_MS = 20000;
   const RETRIES = 1;
 
   const d = document;
@@ -20,20 +18,9 @@
     btnClose = d.getElementById('closeChat'),
     btnSend = d.getElementById('chatSend');
 
-  // Cargar Marked.js dinámicamente si no existe
-  if (typeof marked === 'undefined') {
-    const s = d.createElement('script');
-    s.src = 'https://cdn.jsdelivr.net/npm/marked/marked.min.js';
-    d.head.appendChild(s);
-  }
-
   if (!drawer || !body || !input || !btnSend) return;
 
-  let history = [];
-  try {
-    const saved = localStorage.getItem('afk_chat_history');
-    if (saved) history = JSON.parse(saved);
-  } catch (e) { }
+  const history = [];
 
   const sessionId =
     localStorage.getItem('afk_chat_session') ||
@@ -44,27 +31,10 @@
   const append = (role, text) => {
     const m = d.createElement('div');
     m.className = 'chat-msg ' + (role === 'user' ? 'user' : 'bot');
-    
-    if (role === 'user') {
-      m.textContent = text;
-    } else {
-      // Usar Marked si está disponible, si no, fallback a textContent
-      if (typeof marked !== 'undefined') {
-        m.innerHTML = marked.parse(text);
-      } else {
-        m.textContent = text;
-      }
-    }
-    
+    m.textContent = text;
     body.appendChild(m);
     body.scrollTop = body.scrollHeight;
   };
-
-  // Restaurar historial visualmente
-  history.forEach(h => {
-    // n8n responde a veces con assistant o bot, lo mapeamos visualmente
-    append(h.role === 'user' ? 'user' : 'bot', h.content);
-  });
 
   const typing = (on = true) => {
     let el = d.getElementById('afk-typing');
@@ -84,10 +54,7 @@
   };
 
   function buildHeaders() {
-    const h = {
-      'Content-Type': 'application/json',
-      'X-AFK-Secret': 'AFK_PRO_2024_SECURE_KEY' // Blindaje de seguridad
-    };
+    const h = { 'Content-Type': 'application/json' };
     if (USE_BASIC_AUTH) h['Authorization'] = 'Basic ' + btoa(`${BASIC_USER}:${BASIC_PASS}`);
     if (BEARER_TOKEN) h['Authorization'] = 'Bearer ' + BEARER_TOKEN;
     return h;
@@ -157,24 +124,13 @@
     input.value = '';
     typing(true);
 
-    // Extraer contexto visual de la pantalla (lo que el usuario está viendo)
-    const scrapeScreen = () => {
-      if (window.AFK_PAGE_CONTEXT) return window.AFK_PAGE_CONTEXT;
-      const cards = Array.from(d.querySelectorAll('.card'));
-      if (!cards.length) return '';
-      // Unir los textos visibles y truncar a 2000 caracteres para no ocluir el ancho de banda del LLM
-      const text = cards.map(c => c.innerText.replace(/\n+/g, ' ').trim()).join(' | ');
-      return text.substring(0, 2000);
-    };
-
     const payload = {
       message: text,
       history,
       sessionId,
       meta: {
         page: location.pathname,
-        ts: Date.now(),
-        screen_context: scrapeScreen()
+        ts: Date.now()
       }
     };
 
@@ -194,13 +150,6 @@
         { role: 'user', content: text },
         { role: 'assistant', content: reply }
       );
-
-      // Limitar historial a los últimos 10 mensajes (5 interacciones) para no sobrecargar n8n
-      if (history.length > 10) {
-        history = history.slice(-10);
-      }
-
-      localStorage.setItem('afk_chat_history', JSON.stringify(history));
 
       if (typeof callback === 'function') callback(reply);
 
@@ -241,10 +190,7 @@
     }
   };
 
-  if (!history.length && !body.querySelector('.chat-msg')) {
+  if (!body.querySelector('.chat-msg')) {
     append('bot', BOT_WELCOME);
   }
-
-  // Agregamos un botón para limpiar el chat sin borrar la memoria explícita (opcional)
-  // Pero por ahora solo manejamos el borrado desde console.
 })();
