@@ -1,18 +1,34 @@
+<!-- AFK RRHH — index.html -->
 <!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8" />
+<<<<<<< HEAD
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
   <title>AFK RRHH — Tablero</title>
+=======
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AFK RRHH — Dashboard</title>
+>>>>>>> 8c99da40efea7850d26fba9f412dc9128e25ba4d
 
+  <!-- Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<<<<<<< HEAD
   <link rel="stylesheet" href="/static/styles.css">
+=======
 
+  <!-- Styles -->
+  <link rel="stylesheet" href="/static/styles.css">
+>>>>>>> 8c99da40efea7850d26fba9f412dc9128e25ba4d
+
+  <!-- Charts -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 
 <body>
   <div class="dashboard">
+
+    <!-- Sidebar -->
     <aside class="sidebar" aria-label="Navegación">
       <div class="brand">
         <div class="logo">AFK</div>
@@ -20,6 +36,7 @@
       </div>
 
       <nav class="nav">
+<<<<<<< HEAD
         <div class="nav-category">Admisión y selección</div>
         <a class="is-active" href="index.html"><span class="label">Tablero</span></a>
         <a href="vacancies.html"><span class="label">Vacantes</span></a>
@@ -28,158 +45,113 @@
 
         <div class="nav-category">Gestión</div>
         <a href="workers.html"><span class="label">Trabajadores</span></a>
+=======
+        <a class="is-active" href="index.html"><span class="label">Dashboard</span></a>
+        <a href="workers.html"><span class="label">Trabajadores</span></a>
+        <a href="pipeline.html"><span class="label">Pipeline</span></a>
+        <a href="vacancies.html"><span class="label">Vacantes</span></a>
+        <a href="interviews.html"><span class="label">Entrevistas</span></a>
+>>>>>>> 8c99da40efea7850d26fba9f412dc9128e25ba4d
         <a href="alerts.html"><span class="label">Alertas</span></a>
-        <a href="documents.html"><span class="label">Documentos</span></a>
         <a href="reports.html"><span class="label">Reportes</span></a>
+        <a href="documents.html"><span class="label">Documentos</span></a>
         <a id="openChatbot" href="#chatbot"><span class="label">Chatbot</span></a>
+<<<<<<< HEAD
 
         <div class="nav-category">Analítica e Inteligencia</div>
         <a href="analytics.html"><span class="label">Analítica de Personas</span></a>
+=======
+>>>>>>> 8c99da40efea7850d26fba9f412dc9128e25ba4d
       </nav>
     </aside>
 
+    <!-- Topbar -->
     <header class="topbar">
       <button class="btn-menu" aria-label="Abrir menú">☰</button>
-      <div style="display:flex; gap:10px; margin-left:auto; flex-wrap:wrap;">
-        <button id="btnGenerateTec02FromCandidates" class="btn">Generar TEC-02</button>
-        <button id="btnGenerateTec02AFromCandidates" class="btn">Generar TEC-02-A</button>
-        <button class="btn" onclick="location.href='documents.html'">Subir documentos</button>
-        <button class="btn btn--primary" id="btnChat">Abrir Chatbot</button>
-      </div>
+      <button class="btn" onclick="location.href='documents.html'">
+        Subir documentos
+      </button>
+      <button class="btn btn--primary" id="btnChat">
+        Abrir Chatbot
+      </button>
     </header>
-    <main class="main" id="app">
-      <!-- Franja de Emergencia (Solo visible si hay riesgos) -->
-      <div id="emergencyStrip" class="card card--critical" style="display:none; margin-bottom:20px; border-radius:12px; border:none; background: linear-gradient(90deg, #e6025b, #9d003b); animation: pulse-alert 1.5s infinite; transition: transform 0.3s ease;">
-         <div class="card__body" style="display:flex; justify-content:space-between; align-items:center; padding:12px 24px;">
-            <div style="display:flex; flex-direction:column; color:#fff;">
-               <div style="display:flex; align-items:center; gap:12px; font-weight:800;">
-                  <span style="font-size:20px;">🚨</span>
-                  <span id="emergencyMsg">1 trabajador NO puede ingresar a faena HOY</span>
-               </div>
-               <div id="emergencyList" style="padding-left:36px; margin-top:4px;"></div>
-            </div>
-            <button class="btn btn--mini" onclick="location.href='workers.html?status=Blocked'" style="background:#fff; color:#e6025b; font-weight:900;">RESOLVER BLOQUEO AHORA</button>
-         </div>
-      </div>
 
-      <section class="hero-dashboard">
-        <div class="hero-dashboard__text">
-          <h2>Centro de Control Inteligente</h2>
-          <p>Copiloto de Cumplimiento Laboral: Evita multas y bloqueos en faena automáticamente.</p>
-          
-          <div class="ai-command-bar">
-            <div class="pulse"></div>
-            <input id="aiQuickSearch" type="text" placeholder="Pregunta a AFK: ¿Quién está en riesgo hoy?">
-            <button id="btnAiQuick" class="btn btn--primary" style="border-radius:14px">Consultar</button>
-          </div>
-          <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
-             <button class="btn btn--mini ai-suggest" data-query="¿Quién está bloqueado hoy?">Bloqueados hoy</button>
-             <button class="btn btn--mini ai-suggest" data-query="¿Qué documentos vencen esta semana?">Vencimientos semana</button>
-             <button class="btn btn--mini ai-suggest" data-query="Top riesgos por faena">Top riesgos</button>
-          </div>
-        </div>
-        <div class="hero-dashboard__visual" style="text-align:right;">
-           <div class="badge badge--success" style="font-size:16px; padding:8px 16px; margin-bottom:10px;">🛡️ Sistema Protegido</div>
-           <div style="font-size:12px; color:var(--muted)">Última actualización: Hoy, hace pocos segundos</div>
+    <!-- Main -->
+    <main class="main" id="app">
+
+      <h1 class="h1">Dashboard</h1>
+
+      <!-- ✅ FILTROS -->
+      <section class="toolbar">
+        <div class="toolbar__left" style="display:flex; gap:12px; flex-wrap:wrap;">
+          <select id="filterEstado" class="select">
+            <option value="">Todos los estados</option>
+          </select>
+
+          <select id="filterCargo" class="select">
+            <option value="">Todos los cargos</option>
+          </select>
+
+          <button id="btnResetFilters" class="btn">Reset</button>
         </div>
       </section>
 
-      <section class="decision-grid" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));">
-        <div class="card card--success-alt">
+      <!-- KPIs -->
+      <section class="grid-kpi">
+        <div class="card">
           <div class="card__body kpi">
-            <span class="label">👥 Total Personal</span>
-            <span id="kpi_total_workers" class="value">0</span>
-            <div style="font-size:11px; color:var(--ok); margin-top:5px;">Dotación vigente</div>
+            <span class="label">Total candidatos</span>
+            <span id="kpi_total" class="value">—</span>
           </div>
         </div>
 
         <div class="card">
           <div class="card__body kpi">
-            <span class="label">🎯 Postulaciones</span>
-            <span id="kpi_total_candidates" class="value">0</span>
-            <div style="font-size:11px; color:var(--muted); margin-top:5px;">Candidatos activos</div>
-          </div>
-        </div>
-        <div class="card card--critical" id="card_risks">
-          <div class="card__body kpi">
-            <span class="label">🚨 Riesgos Críticos</span>
-            <span id="kpi_risks" class="value">0</span>
-            <div id="risk_sub" style="font-size:11px; color:rgba(255,255,255,0.6); margin-top:5px;">Trabajadores bloqueados</div>
-            <div class="kpi-actions" style="margin-top:15px; display:flex; gap:5px;">
-               <button class="btn btn--mini" style="flex:1; font-size:9px;" onclick="location.href='workers.html?status=Blocked'">Ver lista</button>
-               <button class="btn btn--mini btn--primary" style="flex:1; font-size:9px;">Notificar</button>
-            </div>
+            <span class="label">Promedio nota</span>
+            <span id="kpi_prom_nota" class="value">—</span>
           </div>
         </div>
 
-        <div class="card card--warning-alt" id="card_expiring">
+        <div class="card">
           <div class="card__body kpi">
-            <span class="label">⏳ Próximos Vencimientos</span>
-            <span id="kpi_expiring" class="value">0</span>
-            <div id="exp_sub" style="font-size:11px; color:rgba(255,255,255,0.6); margin-top:5px;">Caducan < 300 días</div>
-            <div class="kpi-actions" style="margin-top:15px; display:flex; gap:5px;">
-               <button class="btn btn--mini" style="flex:1; font-size:9px;" onclick="location.href='alerts.html'">Revisar</button>
-               <button class="btn btn--mini btn--primary" style="flex:1; font-size:9px;">Solicitar Doc</button>
-            </div>
+            <span class="label">Experiencia promedio</span>
+            <span id="kpi_prom_exp" class="value">—</span>
           </div>
         </div>
 
-        <div class="card card--success-alt">
+        <div class="card">
           <div class="card__body kpi">
-            <span class="label">✅ Índice de Cumplimiento</span>
-            <span id="kpi_compliance_pct" class="value">0%</span>
-            <div style="font-size:11px; color:var(--ok); margin-top:5px;">Salud documental total</div>
-          </div>
-        </div>
-
-        <div class="card" style="border: 1px dashed var(--accent); background:rgba(230,2,91,0.02);">
-          <div class="card__body kpi">
-            <span class="label" style="color:var(--accent);">🎯 Alertas de Selección</span>
-            <div id="recruitmentAlertsList" style="margin-top:10px; font-size:11px; max-height:80px; overflow-y:auto; text-align:left;">
-               <div class="text-muted">No hay alertas activas</div>
-            </div>
+            <span class="label">% Nota ≥ 6</span>
+            <span id="kpi_pct_n6" class="value">—</span>
           </div>
         </div>
       </section>
 
-      <!-- Nueva Sección: Recomendación AFK (Inteligencia Proactiva) -->
-      <section class="card card--success-alt" style="margin-bottom:32px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(0,0,0,0.3));">
-         <div class="card__body" style="display:flex; gap:20px; align-items:center;">
-             <div style="font-size:32px;">🧠</div>
-             <div style="flex:1;">
-                <h3 style="margin:0; font-size:16px; font-weight:800; color:var(--ok);">Recomendación de Inteligencia AFK</h3>
-                <p id="afkRecommendation" style="margin:5px 0 0; font-size:14px; color:rgba(255,255,255,0.8);">
-                   Analizando tendencia de cumplimiento... Todo parece estar en orden hoy.
-                </p>
-             </div>
-             <button id="btnRecAction" class="btn btn--primary" style="border-radius:10px;">Ejecutar Acción</button>
-         </div>
-      </section>
-
+      <!-- Charts -->
       <section class="section grid-3">
         <div class="card">
-          <div class="card__body" style="height:100%; display:flex; flex-direction:column;">
-            <h3 style="margin:0 0 15px; font-size:14px; font-weight:900; color:var(--muted); text-transform:uppercase;">Distribución por Tipo de Examen</h3>
-            <div style="flex:1; min-height:220px; position:relative;">
-              <canvas id="chart_exam_types"></canvas>
+          <div class="card__body">
+            <div class="text-muted">Distribución de notas</div>
+            <div class="chart-box">
+              <canvas id="chart_notas"></canvas>
             </div>
           </div>
         </div>
 
         <div class="card">
           <div class="card__body">
-            <div class="text-muted" style="font-size:12px; font-weight:700; text-transform:uppercase; margin-bottom:12px;">Cumplimiento de Credenciales</div>
-            <div class="chart-box" style="height:200px;">
-              <canvas id="chart_credentials_pct"></canvas>
+            <div class="text-muted">Nota vs Experiencia</div>
+            <div class="chart-box">
+              <canvas id="chart_scatter"></canvas>
             </div>
           </div>
         </div>
 
         <div class="card">
           <div class="card__body">
-            <div class="text-muted" style="font-size:12px; font-weight:700; text-transform:uppercase; margin-bottom:12px;">Distribución de Exámenes</div>
-            <div class="chart-box" style="height:200px;">
-              <canvas id="chart_exams_distribution"></canvas>
+            <div class="text-muted">Profesiones</div>
+            <div class="chart-box">
+              <canvas id="chart_profesiones"></canvas>
             </div>
           </div>
         </div>
@@ -188,8 +160,8 @@
       <section class="section grid-2">
         <div class="card">
           <div class="card__body">
-            <div class="text-muted" style="font-size:12px; font-weight:700; text-transform:uppercase; margin-bottom:12px;">Pipeline de Selección</div>
-            <div class="chart-box" style="height:220px;">
+            <div class="text-muted">Pipeline por estado</div>
+            <div class="chart-box">
               <canvas id="chart_pipeline"></canvas>
             </div>
           </div>
@@ -197,13 +169,14 @@
 
         <div class="card">
           <div class="card__body">
-            <div class="text-muted" style="font-size:12px; font-weight:700; text-transform:uppercase; margin-bottom:12px;">Top 5 Candidatos Estrellas</div>
+            <div class="text-muted">Top 5 candidatos (por nota)</div>
             <ol id="topCandidates" class="toplist"></ol>
           </div>
         </div>
       </section>
 
-      <section id="candidateSection">
+      <!-- Tabla de candidatos -->
+      <section id="candidatesTable">
         <h2 class="h1">Candidatos</h2>
 
         <div class="toolbar">
@@ -213,13 +186,9 @@
               <input id="candSearch" type="search" placeholder="Buscar candidato…" />
             </div>
           </div>
-
-          <div class="toolbar__right" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
-            <button id="btnSyncDrive" class="btn btn--secondary" style="background:rgba(255,255,255,0.05); border:1px solid var(--border);">🔄 Sincronizar Drive</button>
-            <button id="btnNewCandidate" class="btn btn--primary">Nuevo Candidato</button>
-            <button id="btnCompare" class="btn btn--primary" style="display:none">
-              Comparar seleccionados (<span id="compareCount">0</span>)
-            </button>
+          <div class="toolbar__right">
+            <button id="btnNewCandidate" class="btn btn--primary" style="margin-right: 10px;">Nuevo Candidato</button>
+            <button id="btnCompare" class="btn btn--primary" style="display:none">Comparar seleccionados (<span id="compareCount">0</span>)</button>
           </div>
         </div>
 
@@ -229,16 +198,18 @@
               <div class="t-col-cb"></div>
               <div class="t-col-name">Nombre</div>
               <div class="t-col-prof">Profesión</div>
-              <div class="t-col-vac">Cargo a desempeñar</div>
+              <div class="t-col-vac">Vacante a postular</div>
               <div class="t-col-score">Puntaje</div>
               <div class="t-col-exp">Años exp.</div>
               <div class="t-col-status">Estado</div>
             </div>
+            <!-- filas dinámicas -->
           </div>
         </div>
       </section>
     </main>
 
+    <!-- Chatbot -->
     <aside id="chatbot" class="chatbot">
       <div class="chatbot__head">
         <strong>Asistente AFK</strong>
@@ -253,98 +224,60 @@
       </div>
     </aside>
 
-    <div id="candidateModal" class="modal">
-      <div class="modal__content" style="max-width:500px">
-        <div class="modal__header">
-          <h2 class="h1" style="font-size:1.5rem">Registrar Candidato</h2>
-          <button class="close-modal">&times;</button>
-        </div>
-        <div class="modal__body">
-          <form id="candidateForm">
-            <div class="grid-2">
-              <div class="form-group">
-                <label>Nombre Completo</label>
-                <input name="nombre_completo" required class="input" placeholder="Ej: Juan Pérez">
-              </div>
-              <div class="form-group">
-                <label>RUT</label>
-                <input name="rut" required class="input" placeholder="Ej: 12.345.678-9">
-              </div>
-            </div>
-
-            <div class="grid-2">
-              <div class="form-group">
-                <label>Profesión</label>
-                <input name="profesion" class="input" placeholder="Ej: Ingeniero Civil">
-              </div>
-
-              <div class="form-group">
-                <label>Nota / Ranking (0-10)</label>
-                <input name="nota" type="number" step="0.1" min="0" max="10" class="input" value="5">
-              </div>
-            </div>
-
-            <div class="grid-2">
-              <div class="form-group">
-                <label>Correo</label>
-                <input name="correo" type="email" class="input" placeholder="correo@ejemplo.com">
-              </div>
-
-              <div class="form-group">
-                <label>Teléfono</label>
-                <input name="telefono" class="input" placeholder="+56 9 ...">
-              </div>
-            </div>
-
+  <!-- Modal Nuevo Candidato -->
+  <div id="candidateModal" class="modal">
+    <div class="modal__content" style="max-width:500px">
+      <div class="modal__header">
+        <h2 class="h1" style="font-size:1.5rem">Registrar Candidato</h2>
+        <button class="close-modal">&times;</button>
+      </div>
+      <div class="modal__body">
+        <form id="candidateForm">
+          <div class="form-group">
+            <label>Nombre Completo</label>
+            <input name="nombre_completo" required class="input" placeholder="Ej: Juan Pérez">
+          </div>
+          <div class="grid-2">
             <div class="form-group">
-              <label>Cargo a desempeñar</label>
-              <input name="cargo_a_desempenar" class="input" placeholder="Ej: Supervisor de Proyectos">
+              <label>Profesión</label>
+              <input name="profesion" class="input" placeholder="Ej: Desarrollador">
             </div>
-
-            <div class="grid-2">
-              <div class="form-group">
-                <label>Experiencia total</label>
-                <input name="experiencia_total" type="number" step="0.1" class="input" value="0">
-              </div>
-
-              <div class="form-group">
-                <label>Experiencia en empresa actual</label>
-                <input name="experiencia_en_empresa_actual" type="number" step="0.1" class="input" value="0">
-              </div>
-            </div>
-
-            <div class="grid-2">
-              <div class="form-group">
-                <label>Exp. cargo actual</label>
-                <input name="exp_cargo_actual" type="number" step="0.1" class="input" value="0">
-              </div>
-
-              <div class="form-group">
-                <label>Exp. proyectos similares</label>
-                <input name="exp_proy_similares" type="number" step="0.1" class="input" value="0">
-              </div>
-            </div>
-
             <div class="form-group">
-              <label>Antecedentes Académicos (Resumen)</label>
-              <textarea name="antecedentes_academicos" class="input" rows="3" placeholder="Ej: Ingeniero Civil, Magíster en..."></textarea>
+              <label>Nota / Ranking (0-10)</label>
+              <input name="nota" type="number" step="0.1" min="0" max="10" class="input" value="5">
             </div>
-
+          </div>
+          <div class="grid-2">
             <div class="form-group">
-              <label>Cargar CV (PDF)</label>
-              <input name="cv_file" type="file" class="input" accept=".pdf">
+              <label>Correo</label>
+              <input name="correo" type="email" class="input" placeholder="correo@ejemplo.com">
             </div>
-
-            <div style="margin-top:20px">
-              <button type="submit" class="btn btn--primary" style="width:100%">Guardar candidato</button>
+            <div class="form-group">
+              <label>Teléfono</label>
+              <input name="telefono" class="input" placeholder="+56 9 ...">
             </div>
-          </form>
-        </div>
+          </div>
+          <div class="form-group">
+            <label>Vincular a Vacante</label>
+            <select name="vacancy_id" id="selectVacancy" class="select" style="width:100%">
+              <option value="">Ninguna por ahora</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Cargar CV (PDF)</label>
+            <input name="cv_file" type="file" class="input" accept=".pdf">
+          </div>
+          <div style="margin-top:20px">
+            <button type="submit" class="btn btn--primary" style="width:100%">Guardar y Empezar Proceso</button>
+          </div>
+        </form>
       </div>
     </div>
   </div>
 
+  <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<<<<<<< HEAD
   <script src="/static/supabase.js"></script>
   <script src="/static/auth.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
@@ -354,6 +287,15 @@
   <script defer src="/static/candidates.supabase.js?v=3.0"></script>
   <script defer src="/static/chat.js?v=5.0"></script>
   <script defer src="/static/responsive.js?v=2.0"></script>
+=======
+  <script src="/static/supabase.js"></script>
+
+  <!-- App scripts -->
+  <script defer src="/static/sheet.js?v=2.0"></script>
+  <script defer src="/static/candidates.supabase.js?v=2.0"></script>
+  <script defer src="/static/charts.js?v=2.0"></script>
+  <script defer src="/static/chat.js?v=2.0"></script>
+  <script defer src="/static/responsive.js?v=2.0"></script>
+>>>>>>> 8c99da40efea7850d26fba9f412dc9128e25ba4d
 </body>
 </html>
-
