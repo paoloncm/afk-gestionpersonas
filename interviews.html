@@ -85,7 +85,12 @@
     }
   </style>
 </head><body><div class="dashboard">
-  <aside class="sidebar"><div class="brand"><div class="logo">AFK</div><span>RRHH</span></div>
+  <aside class="sidebar" aria-label="Navegación">
+      <div class="brand">
+        <div class="logo">AFK</div>
+        <span>RRHH</span>
+      </div>
+
       <nav class="nav">
         <div class="nav-category">Admisión y selección</div>
         <a href="index.html"><span class="label">Dashboard</span></a>
@@ -103,8 +108,16 @@
         <div class="nav-category">Analítica e Inteligencia</div>
         <a href="analytics.html"><span class="label">People Analytics</span></a>
       </nav>
-  </aside>
-  <header class="topbar"><button class="btn-menu" aria-label="Abrir menú">☰</button><div class="btn" onclick="location.href='documents.html'">Subir documentos</div><div class="btn" id="btnChat">Abrir Chatbot</div></header>
+    </aside>
+  <header class="topbar">
+      <button class="btn-menu" aria-label="Abrir menú">☰</button>
+      <div style="display:flex; gap:10px; margin-left:auto; flex-wrap:wrap;">
+        <button id="btnGenerateTec02FromCandidates" class="btn">Generar TEC-02</button>
+        <button id="btnGenerateTec02AFromCandidates" class="btn">Generar TEC-02-A</button>
+        <button class="btn" onclick="location.href='documents.html'">Subir documentos</button>
+        <button class="btn btn--primary" id="btnChat">Abrir Chatbot</button>
+      </div>
+    </header>
   <main class="main" id="interviews-container">
     <h1 class="h1">Cargando entrevistas...</h1>
   </main>
@@ -180,4 +193,5 @@
 <script defer src="/static/responsive.js?v=2.0"></script>
   <script defer src="/static/chat.js?v=5.0"></script>
 </body></html>
+
 

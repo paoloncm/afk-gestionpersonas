@@ -15,7 +15,7 @@
 
 <body>
   <div class="dashboard">
-    <aside class="sidebar">
+    <aside class="sidebar" aria-label="Navegación">
       <div class="brand">
         <div class="logo">AFK</div>
         <span>RRHH</span>
@@ -43,8 +43,10 @@
     <header class="topbar">
       <button class="btn-menu" aria-label="Abrir menú">☰</button>
       <div style="display:flex; gap:10px; margin-left:auto; flex-wrap:wrap;">
-        <button class="btn btn--primary" id="btnExportAnalytics">Exportar Reporte</button>
-        <button class="btn" id="btnChat">Abrir Chatbot</button>
+        <button id="btnGenerateTec02FromCandidates" class="btn">Generar TEC-02</button>
+        <button id="btnGenerateTec02AFromCandidates" class="btn">Generar TEC-02-A</button>
+        <button class="btn" onclick="location.href='documents.html'">Subir documentos</button>
+        <button class="btn btn--primary" id="btnChat">Abrir Chatbot</button>
       </div>
     </header>
 
@@ -211,3 +213,4 @@
   <script defer src="/static/responsive.js"></script>
 </body>
 </html>
+

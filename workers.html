@@ -11,7 +11,7 @@
 
 <body>
   <div class="dashboard">
-    <aside class="sidebar">
+    <aside class="sidebar" aria-label="Navegación">
       <div class="brand">
         <div class="logo">AFK</div>
         <span>RRHH</span>
@@ -38,11 +38,11 @@
 
     <header class="topbar">
       <button class="btn-menu" aria-label="Abrir menú">☰</button>
-      <div style="margin-left:auto; display:flex; gap:10px; align-items:center;">
-          <input type="text" id="projectName" placeholder="Nombre del Proyecto" class="input" style="width:180px; height:36px; font-size:12px;">
-          <button class="btn" id="btnExportExcel">Generar planilla</button>
-          <button class="btn btn--primary" id="btnGenerateReport">📄 Generar reporte de cumplimiento</button>
-          <button class="btn" id="btnChat">Chatbot</button>
+      <div style="display:flex; gap:10px; margin-left:auto; flex-wrap:wrap;">
+        <button id="btnGenerateTec02FromCandidates" class="btn">Generar TEC-02</button>
+        <button id="btnGenerateTec02AFromCandidates" class="btn">Generar TEC-02-A</button>
+        <button class="btn" onclick="location.href='documents.html'">Subir documentos</button>
+        <button class="btn btn--primary" id="btnChat">Abrir Chatbot</button>
       </div>
     </header>
 
@@ -328,3 +328,4 @@
     </div>
   </body>
 </html>
+

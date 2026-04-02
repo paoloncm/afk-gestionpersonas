@@ -63,8 +63,12 @@
 
     <header class="topbar">
       <button class="btn-menu" aria-label="Abrir menú">☰</button>
-      <div class="h1" style="font-size:18px; margin-right:auto; margin-bottom: 0;">Gestión de Licitaciones</div>
-      <button id="btnNewTender" class="btn btn--primary" style="margin-left:auto;">+ Nueva Licitación</button>
+      <div style="display:flex; gap:10px; margin-left:auto; flex-wrap:wrap;">
+        <button id="btnGenerateTec02FromCandidates" class="btn">Generar TEC-02</button>
+        <button id="btnGenerateTec02AFromCandidates" class="btn">Generar TEC-02-A</button>
+        <button class="btn" onclick="location.href='documents.html'">Subir documentos</button>
+        <button class="btn btn--primary" id="btnChat">Abrir Chatbot</button>
+      </div>
     </header>
 
     <main class="main">
@@ -303,3 +307,4 @@
   <script defer src="/static/chat.js?v=6.0"></script>
 </body>
 </html>
+

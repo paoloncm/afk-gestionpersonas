@@ -79,8 +79,12 @@
 </head>
 <body>
   <div class="dashboard">
-    <aside class="sidebar">
-      <div class="brand"><div class="logo">AFK</div><span>RRHH</span></div>
+    <aside class="sidebar" aria-label="Navegación">
+      <div class="brand">
+        <div class="logo">AFK</div>
+        <span>RRHH</span>
+      </div>
+
       <nav class="nav">
         <div class="nav-category">Admisión y selección</div>
         <a href="index.html"><span class="label">Dashboard</span></a>
@@ -101,9 +105,13 @@
     </aside>
 
     <header class="topbar">
-        <button class="btn-menu" aria-label="Abrir menú">☰</button>
-        <div class="h1" style="font-size:20px">Pipeline de Reclutamiento</div>
-        <div class="btn" id="btnChat">Abrir Copiloto</div>
+      <button class="btn-menu" aria-label="Abrir menú">☰</button>
+      <div style="display:flex; gap:10px; margin-left:auto; flex-wrap:wrap;">
+        <button id="btnGenerateTec02FromCandidates" class="btn">Generar TEC-02</button>
+        <button id="btnGenerateTec02AFromCandidates" class="btn">Generar TEC-02-A</button>
+        <button class="btn" onclick="location.href='documents.html'">Subir documentos</button>
+        <button class="btn btn--primary" id="btnChat">Abrir Chatbot</button>
+      </div>
     </header>
 
     <main class="main">
@@ -141,4 +149,5 @@
   <script defer src="/static/chat.js?v=5.0"></script>
 </body>
 </html>
+
 

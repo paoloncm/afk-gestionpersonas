@@ -67,14 +67,15 @@
 <body>
   <div class="dashboard">
 
-    <aside class="sidebar">
+    <aside class="sidebar" aria-label="Navegación">
       <div class="brand">
         <div class="logo">AFK</div>
         <span>RRHH</span>
       </div>
+
       <nav class="nav">
         <div class="nav-category">Admisión y selección</div>
-        <a class="is-active" href="index.html"><span class="label">Dashboard</span></a>
+        <a href="index.html"><span class="label">Dashboard</span></a>
         <a href="vacancies.html"><span class="label">Vacantes</span></a>
         <a href="interviews.html"><span class="label">Entrevistas</span></a>
         <a href="pipeline.html"><span class="label">Pipeline</span></a>
@@ -93,6 +94,12 @@
 
     <header class="topbar">
       <button class="btn-menu" aria-label="Abrir menú">☰</button>
+      <div style="display:flex; gap:10px; margin-left:auto; flex-wrap:wrap;">
+        <button id="btnGenerateTec02FromCandidates" class="btn">Generar TEC-02</button>
+        <button id="btnGenerateTec02AFromCandidates" class="btn">Generar TEC-02-A</button>
+        <button class="btn" onclick="location.href='documents.html'">Subir documentos</button>
+        <button class="btn btn--primary" id="btnChat">Abrir Chatbot</button>
+      </div>
     </header>
 
     <main class="main">
@@ -294,4 +301,5 @@
 </body>
 
 </html>
+
 

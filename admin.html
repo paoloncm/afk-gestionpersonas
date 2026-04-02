@@ -16,18 +16,33 @@
         <div class="logo">AFK</div>
         <span>RRHH</span>
       </div>
+
       <nav class="nav">
-        <div class="nav-category">Administración</div>
-        <a class="is-active" href="admin.html"><span class="label">Mapeo de Clientes</span></a>
+        <div class="nav-category">Admisión y selección</div>
+        <a href="index.html"><span class="label">Dashboard</span></a>
+        <a href="vacancies.html"><span class="label">Vacantes</span></a>
+        <a href="interviews.html"><span class="label">Entrevistas</span></a>
+        <a href="pipeline.html"><span class="label">Pipeline</span></a>
+
         <div class="nav-category">Gestión</div>
-        <a href="index.html"><span class="label">Volver al Dashboard</span></a>
+        <a href="workers.html"><span class="label">Trabajadores</span></a>
+        <a href="alerts.html"><span class="label">Alertas</span></a>
+        <a href="documents.html"><span class="label">Documentos</span></a>
+        <a href="reports.html"><span class="label">Reportes</span></a>
+        <a id="openChatbot" href="#chatbot"><span class="label">Chatbot</span></a>
+
+        <div class="nav-category">Analítica e Inteligencia</div>
+        <a href="analytics.html"><span class="label">People Analytics</span></a>
       </nav>
     </aside>
 
     <header class="topbar">
-      <button class="btn-menu">☰</button>
-      <div style="margin-left:auto;">
-        <strong>Panel de Administración</strong>
+      <button class="btn-menu" aria-label="Abrir menú">☰</button>
+      <div style="display:flex; gap:10px; margin-left:auto; flex-wrap:wrap;">
+        <button id="btnGenerateTec02FromCandidates" class="btn">Generar TEC-02</button>
+        <button id="btnGenerateTec02AFromCandidates" class="btn">Generar TEC-02-A</button>
+        <button class="btn" onclick="location.href='documents.html'">Subir documentos</button>
+        <button class="btn btn--primary" id="btnChat">Abrir Chatbot</button>
       </div>
     </header>
 
@@ -167,4 +182,5 @@
 </body>
 
 </html>
+
 
