@@ -8,8 +8,23 @@
   <link rel="stylesheet" href="/static/styles.css">
   <style>
     .profile-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 24px; }
-    .credential-card { background: var(--card-2); border: 1px solid var(--border); padding: 16px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .credential-card { background: var(--card-2); border: 1px solid var(--border); padding: 16px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; cursor: pointer; transition: all 0.2s ease; }
+    .credential-card:hover { border-color: var(--accent); background: rgba(255,255,255,0.05); transform: translateY(-2px); }
     .credential-info { display: flex; flex-direction: column; gap: 4px; }
+    
+    /* Document Modal Styles */
+    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+    .modal.is-active { display: flex; }
+    .modal-content { background: var(--card); border: 1px solid var(--border); border-radius: 18px; width: 100%; max-width: 550px; position: relative; box-shadow: 0 20px 40px rgba(0,0,0,0.4); animation: modalIn 0.3s ease-out; }
+    @keyframes modalIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .modal-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .modal-body { padding: 24px; }
+    .modal-close { background: none; border: none; color: var(--muted); font-size: 24px; cursor: pointer; padding: 4px; display: flex; line-height: 1; }
+    .modal-close:hover { color: #fff; }
+    .detail-section { margin-bottom: 20px; }
+    .detail-section label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 8px; font-weight: 700; }
+    .detail-content { background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 10px; padding: 14px; font-size: 14px; color: var(--text); line-height: 1.6; }
+
     @media (max-width: 880px) { .profile-grid { grid-template-columns: 1fr; } }
   </style>
 </head>
@@ -18,12 +33,18 @@
   <aside class="sidebar">
     <div class="brand"><div class="logo">AFK</div><span>RRHH</span></div>
     <nav class="nav">
+      <div class="nav-category">Admisión y selección</div>
       <a href="index.html"><span class="label">Dashboard</span></a>
-      <a class="is-active" href="workers.html"><span class="label">Trabajadores</span></a>
-      <a href="pipeline.html"><span class="label">Pipeline</span></a>
       <a href="vacancies.html"><span class="label">Vacantes</span></a>
       <a href="interviews.html"><span class="label">Entrevistas</span></a>
+      <a href="pipeline.html"><span class="label">Pipeline</span></a>
+
+      <div class="nav-category">Gestión</div>
+      <a class="is-active" href="workers.html"><span class="label">Trabajadores</span></a>
       <a href="alerts.html"><span class="label">Alertas</span></a>
+      <a href="documents.html"><span class="label">Documentos</span></a>
+      <a href="reports.html"><span class="label">Reportes</span></a>
+      <a id="openChatbot" href="#chatbot"><span class="label">Chatbot</span></a>
     </nav>
   </aside>
 
@@ -41,7 +62,6 @@
 
 <!-- Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<<<<<<< HEAD
 <script src="/static/supabase.js?v=2.0"></script>
 <script defer src="/static/worker.js?v=2.0"></script>
 <script defer src="/static/responsive.js?v=2.0"></script>
@@ -59,10 +79,6 @@
       </div>
     </aside>
   <script defer src="/static/chat.js?v=5.0"></script>
-=======
-<script src="/static/supabase.js?v=2.0"></script>
-<script defer src="/static/worker.js?v=2.0"></script>
-<script defer src="/static/responsive.js?v=2.0"></script>
->>>>>>> 8c99da40efea7850d26fba9f412dc9128e25ba4d
 </body>
 </html>
+

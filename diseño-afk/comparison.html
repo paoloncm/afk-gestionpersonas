@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AFK RRHH — Comparativo</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <style>
+    .comparison-grid {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      margin-top: 24px;
+    }
+    .comp-avatar {
+      width: 60px;
+      height: 60px;
+      border-radius: 999px;
+      margin-bottom: 12px;
+    }
+    .comp-value {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--primary);
+    }
+    .comp-label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+    }
+    .radar-box {
+      height: 250px;
+      margin-top: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo">AFK</div>
+        <span>RRHH</span>
+      </div>
+      <nav class="nav">
+        <a href="index.html">Dashboard</a>
+        <a class="is-active" href="#">Comparativo</a>
+      </nav>
+    </aside>
+
+    <header class="topbar">
+      <button class="btn-menu" aria-label="Abrir menú">☰</button>
+      <button class="btn" onclick="location.href='index.html'">Volver</button>
+    </header>
+
+    <main class="main">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h1 class="h1">Comparativo de Candidatos</h1>
+      </div>
+
+      <div id="comparisonContainer" class="comparison-grid">
+        <!-- Tarjetas dinámicas -->
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase.js"></script>
+  <script src="comparison.js"></script>
+  <script defer src="responsive.js?v=2.0"></script>
+</body>
+</html>
