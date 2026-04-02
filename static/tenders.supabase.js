@@ -569,8 +569,9 @@
         const scoreVal = c.ai_match_score || 0;
         const dashArray = (scoreVal / 100) * 100.5;
 
-        // Extraction of professional highlights (sites/faenas)
-        const highlights = (c.experiencia_especifica || "").split('\n').filter(l => l.trim()).slice(0, 2);
+        // Extraction of professional highlights (sites/faenas) with robust fallback
+        const rawHighlights = c.experiencia_especifica || c.experiencia_general || c.experiencia || "";
+        const highlights = rawHighlights.split('\n').filter(l => l.trim()).slice(0, 2);
         
         return `
         <div class="t-row stark-card" style="padding:20px; margin-bottom:12px; cursor:pointer; border: ${isPreselected ? '2px solid var(--accent)' : '1px solid rgba(255,255,255,0.06)'};" onclick="window.openPersonProfile('${c.id}', 'IA EXTERNO')">
