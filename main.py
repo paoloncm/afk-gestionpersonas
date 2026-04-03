@@ -140,6 +140,75 @@ async def process_cv(req: CVProcessRequest, background_tasks: BackgroundTasks):
     return {"ok": True, "message": f"JARVIS pipeline triggered for candidate {req.candidate_id}"}
 
 
+# --- JARVIS Candidate AI Summary Endpoint ---
+class CandidateSummaryRequest(BaseModel):
+    candidate_id: str
+
+@app.post("/api/generate-candidate-summary")
+async def generate_candidate_summary(req: CandidateSummaryRequest):
+    """Generates a tactical AI summary for a specific candidate."""
+    try:
+        import json
+        from openai import OpenAI
+        from supabase import create_client
+        
+        url = os.getenv("SUPABASE_URL")
+        key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+        openai_key = os.getenv("OPENAI_API_KEY")
+        
+        if not all([url, key, openai_key]):
+            return JSONResponse({"ok": False, "detail": "Missing configuration (API Keys)"}, status_code=500)
+            
+        supabase = create_client(url, key)
+        openai = OpenAI(api_key=openai_key)
+        
+        # 1. Fetch Candidate Data
+        c_res = supabase.table("candidates").select("*").eq("id", req.candidate_id).single().execute()
+        candidate = c_res.data
+        if not candidate:
+            return JSONResponse({"ok": False, "detail": "Candidate not found"}, status_code=404)
+            
+        # 2. Build AI Context
+        # Prefer full text if exists, otherwise summary
+        context = candidate.get("cv_full_text") or candidate.get("evaluacion_general") or "Sin datos de CV disponibles."
+        profesion = candidate.get("profesion", "Perfil no definido")
+        nombre = candidate.get("nombre_completo", "Candidato")
+        
+        prompt = (
+            f"ACTÚA COMO JARVIS (STARK INDUSTRIES). Genera un RESUMEN EJECUTIVO TÁCTICO de alto impacto para el candidato {nombre}.\n"
+            f"PROFESIÓN: {profesion}\n\n"
+            f"CONTEXTO DEL PERFIL:\n{context[:4000]}\n\n"
+            "REGLAS ESTRUCTURALES:\n"
+            "1. Tono oficial, ejecutivo y táctico.\n"
+            "2. Máximo 4 párrafos cortos.\n"
+            "3. Enfoque en: Proposición de valor, Dominio técnico y Fit operativo en entornos industriales/mineros.\n"
+            "4. IDIOMA: ESPAÑOL PROFESIONAL CHILENO.\n"
+            "5. NO USES PLACEHOLDERS. VE DIRECTO AL GRANO."
+        )
+        
+        # 3. Request LLM Analysis
+        ai_res = openai.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": "You are JARVIS, an elite AI specialized in industrial talent analysis."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.7
+        )
+        
+        resumen = ai_res.choices[0].message.content
+        
+        # 4. Persistence: Update candidate record
+        supabase.table("candidates").update({"resumen_ia": resumen}).eq("id", req.candidate_id).execute()
+        
+        return {"ok": True, "resumen_ia": resumen}
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JSONResponse({"ok": False, "detail": str(e)}, status_code=500)
+
+
 # --- Google Drive Sync Interaction ---
 
 def run_drive_sync():

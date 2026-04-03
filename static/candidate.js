@@ -275,34 +275,28 @@
     if (aiPreview) aiPreview.innerText = "SISTEMA ACTIVO — ANALIZANDO";
 
     try {
-      // Usar el webhook definido en app.js para flujo de rrhh
-      const WEBHOOK_URL = "https://primary-production-29c40.up.railway.app/webhook/afk-preuba-rrhh";
+      // LLAMADA AL MOTOR INTERNO (FASTAPI) — EVITA CORS Y USA GPT-4o DIRECTAMENTE
+      const API_URL = `${window.location.origin}/api/generate-candidate-summary`;
       
-      const response = await fetch(WEBHOOK_URL, {
+      const response = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          id: r.id,
-          nombre: r.nombre_completo,
-          profesion: r.profesion,
-          cargo_postulado: r.cargo_postulado,
-          experiencia_total: r.experiencia_total,
-          evaluacion_general: r.evaluacion_general,
-          experiencia_general: r.experiencia_general,
-          resumen_ia: r.resumen_ia
+          candidate_id: r.id
         })
       });
 
-      if (!response.ok) throw new Error("Fallo en la comunicación con la matriz IA");
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.detail || "Fallo en la comunicación con el motor Stark IA");
+      }
 
       const result = await response.json();
-      console.log("Stark AI Response:", result);
+      console.log("Stark Internal AI Response:", result);
 
-      // El flujo de n8n normalmente actualiza la DB, re-fetchear o usar retorno
-      window.notificar?.("ANÁLISIS COMPLETADO EXITOSAMENTE", "success");
+      window.notificar?.("INFORME DE INTELIGENCIA GENERADO", "success");
       
-      // Intentar extraer el resumen del retorno si n8n lo envía
-      const newSummary = (Array.isArray(result) ? result[0]?.resumen_ia : result?.resumen_ia) || "Análisis completado. Por favor, refresca el HUD para ver los detalles actualizados en la base de datos central.";
+      const newSummary = result.resumen_ia || "Análisis completado sin datos de respuesta.";
       
       aiContent.innerHTML = newSummary.replace(/\n/g, '<br>');
       if (aiPreview) aiPreview.innerText = "SISTEMA LISTO — ANÁLISIS CONFIRMADO";
