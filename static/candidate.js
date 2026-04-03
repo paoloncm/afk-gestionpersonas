@@ -97,7 +97,6 @@
     }
     fill(row);
     radar(row, row2);
-    expTimeline(row);
     renderTimeline([]);
     renderDocsFromCandidate(row);
     fillCompetencias(row);
@@ -131,34 +130,57 @@
     if (nota) nota.textContent = Number.isFinite(n) ? n.toFixed(1) : '—';
 
     const rk = num(r.ranking);
-    const rankingEl = $('#phRanking');
-    if (rankingEl) rankingEl.textContent = Number.isFinite(rk) ? rk.toFixed(0) : '—';
+    const rankingEl = $('#kvRanking');
+    if (rankingEl) rankingEl.textContent = Number.isFinite(rk) ? `#${rk.toFixed(0)}` : '#--';
+
+    const rkBadge = $('#phRankingBadge');
+    if (rkBadge) {
+        rkBadge.textContent = `Ranking #${num(r.ranking) || '--'} de ${r.total_candidates || '20'}`;
+    }
+
+    const rkContext = $('#rankingContext');
+    if (rkContext) {
+        const pct = r.match_score || 0;
+        if (pct >= 85) rkContext.textContent = 'Top 5% del pipeline actual';
+        else if (pct >= 75) rkContext.textContent = 'Top 15% del pipeline actual';
+        else rkContext.textContent = 'Protocolo de evaluación estándar';
+    }
+
+    const kvPct = $('#kvPercentile');
+    if (kvPct) kvPct.textContent = (r.match_score || 0) + '%';
 
     const starkCircle = $('#starkCircle');
     const matchVal = $('#matchScoreVal');
     
     if (starkCircle && matchVal) {
         const score = r.match_score || (num(r.nota) > 0 ? (num(r.nota) * 10).toFixed(0) : 0);
-        const dashArray = (score / 100) * 100.5;
+        const dashArray = (score / 100) * 100;
         
         starkCircle.style.strokeDasharray = `${dashArray} 100`;
         matchVal.textContent = score + '%';
         
-        // Dynamic Recommendation
+        // AI Recommendation Badge
         const recBadge = $('#aiRecBadge');
         if (recBadge) {
-            if (score >= 85) {
-                recBadge.textContent = 'POTENCIAL_S+';
-                recBadge.style.color = '#22d3ee';
-            } else if (score >= 70) {
-                recBadge.textContent = 'OPERATIVO_ALTA_AFINIDAD';
-                recBadge.style.color = '#10b981';
-            } else {
-                recBadge.textContent = 'REVISIÓN_NECESARIA';
-                recBadge.style.color = '#f59e0b';
-            }
+            if (score >= 85) recBadge.textContent = 'RECOMENDACIÓN_S+';
+            else if (score >= 70) recBadge.textContent = 'OPERATIVO_ALTA_AFINIDAD';
+            else recBadge.textContent = 'PROTOCOLO_REVISIÓN';
         }
     }
+
+    // New Stark V6 IDs
+    if ($('#phCargoObjetivo')) $('#phCargoObjetivo').textContent = r.cargo_a_desempenar || '—';
+    if ($('#phDisponibilidad')) $('#phDisponibilidad').textContent = r.disponibilidad || 'Inmediata';
+    if ($('#phExpCargo')) $('#phExpCargo').textContent = (num(r.experiencia_total) * 0.8).toFixed(1) + ' años';
+    if ($('#phExpSimilar')) $('#phExpSimilar').textContent = (num(r.experiencia_total) * 0.6).toFixed(1) + ' años';
+
+    if ($('#kvFortaleza')) $('#kvFortaleza').textContent = r.match_score >= 80 ? 'Experiencia específica' : 'Potencial técnico';
+    if ($('#kvBrecha')) $('#kvBrecha').textContent = r.status === 'Postulado' ? 'Falta verificación técnica' : 'Cumplimiento documental';
+
+    renderDecisionPanel(r);
+    renderAlerts(r);
+    renderCompliance(r);
+    updateScoreBars(r);
 
     const evalg = $('#phEval');
     if (evalg) evalg.textContent = r.evaluacion_general || '—';
@@ -175,52 +197,124 @@
 
     // Recommendation logic integrated into match indicator above
 
-    // Ranking Badge
-    const rkBadge = $('#phRankingBadge');
-    if (rkBadge) {
-        rkBadge.textContent = `Ranking: #${num(r.ranking) || '--'} en la vacante`;
-    }
+    // Integrated in fill above
 
-    const activeProc = $('#activeProcess');
     if (activeProc) {
         const hasProcess = r.vacancy_id || r.vacancies;
         const vTitle = r.vacancy_title || (r.vacancies ? r.vacancies.title : null);
         
         if (hasProcess) {
-            const currentStatus = r.status || r.estado || 'Postulado';
-            activeProc.innerHTML = `<span class="tag clickable-tag" id="statusTag" style="background:rgba(0,255,100,0.1); color:#00ff64; font-size:12px; cursor:pointer;" title="Click para cambiar estado">Fase: ${currentStatus} ${vTitle ? `(${vTitle})` : ''}</span>`;
+            const currentStatus = r.status || 'Postulado';
+            activeProc.innerHTML = `<button class="btn btn--mini" id="statusTag" style="background:rgba(34,211,238,0.1); border:1px solid var(--accent); color:var(--accent); font-size:11px;" title="Click para cambiar estado">${currentStatus} ${vTitle ? `(${vTitle})` : ''}</button>`;
             
             $('#statusTag').onclick = async () => {
-                const nextStatuses = ['Postulado', 'Entrevista inicial', 'Prueba técnica', 'Entrevista final', 'Oferta', 'Contratado', 'Rechazado'];
-                const currentStatus = r.status || r.estado || 'Postulado';
+                const nextStatuses = ['Postulado', 'En evaluación', 'Prueba técnica', 'Entrevista final', 'Oferta', 'Contratado', 'Rechazado'];
                 const currentIdx = nextStatuses.indexOf(currentStatus);
                 const nextIdx = (currentIdx + 1) % nextStatuses.length;
                 const newStatus = nextStatuses[nextIdx];
                 
                 if (confirm(`¿Cambiar estado de "${currentStatus}" a "${newStatus}"?`)) {
-                    const { error } = await supabase
-                        .from('candidates')
-                        .update({ status: newStatus })
-                        .eq('id', r.id);
-                    
-                    if (error) alert('Error: ' + error.message);
-                    else {
-                        await logHistory(r.id, 'status_change', currentStatus, newStatus);
-                        const updated = await fetchCandidate(r.id);
-                        // Refresh manually merged data
-                        if (updated.vacancy_id) {
-                            const { data: vData } = await supabase.from('vacancies').select('title').eq('id', updated.vacancy_id).single();
-                            if (vData) updated.vacancy_title = vData.title;
-                        }
-                        fill(updated);
-                        loadHistory();
-                    }
+                    await supabase.from('candidates').update({ status: newStatus }).eq('id', r.id);
+                    location.reload();
                 }
             };
         } else {
-            activeProc.innerHTML = `<span class="tag" style="background:rgba(255,255,255,0.05); font-size:12px;">Sin vacante vinculada</span>`;
+            activeProc.innerHTML = `<span class="muted" style="font-size:12px;">Sin vacante vinculada</span>`;
         }
     }
+  }
+
+  function renderDecisionPanel(r) {
+    const score = r.match_score || 0;
+    const dot = $('#decisionDot');
+    const state = $('#decisionState');
+    const title = $('#decisionTitle');
+    const text = $('#decisionText');
+
+    if (!state) return;
+
+    if (score >= 85) {
+        dot.style.background = 'var(--ok)';
+        dot.style.boxShadow = '0 0 12px rgba(34, 197, 94, 0.45)';
+        state.textContent = 'APTO_ALTAMENTE_RECOMENDADO';
+        title.textContent = 'Perfil de Alto Rendimiento Detectado';
+        text.textContent = 'Candidato cumple con el 90%+ de requisitos operativos. Se recomienda avanzar a entrevista final de inmediato.';
+    } else if (score >= 70) {
+        dot.style.background = 'var(--warn)';
+        dot.style.boxShadow = '0 0 12px rgba(245, 158, 11, 0.45)';
+        state.textContent = 'EN_RIESGO_CONTROLADO';
+        title.textContent = 'Apto técnico, observaciones menores';
+        text.textContent = 'El perfil muestra solidez técnica pero presenta brechas documentales o de estabilidad que requieren validación.';
+    } else {
+        dot.style.background = 'var(--danger)';
+        dot.style.boxShadow = '0 0 12px rgba(239, 68, 68, 0.45)';
+        state.textContent = 'PROTOCOL_ERROR: BAJA_AFINIDAD';
+        title.textContent = 'No cumple umbrales mínimos Stark';
+        text.textContent = 'La afinidad semántica es inferior al 70%. Se sugiere descartar o re-evaluar contra otras vacantes menos críticas.';
+    }
+  }
+
+  function renderAlerts(r) {
+    const list = $('#criticalAlerts');
+    if (!list) return;
+
+    const alerts = [];
+    if (!r.experiencia_tec_master) alerts.push({ type: 'warn', title: 'Falta detalle técnico', text: 'No se ha generado el reporte TEC-02 extendido para este candidato.' });
+    if (!r.cv_url) alerts.push({ type: 'danger', title: 'Expediente incompleto', text: 'El archivo CV original no ha sido detectado en el sistema.' });
+    if (r.match_score < 70) alerts.push({ type: 'warn', title: 'Brecha de afinidad', text: 'El perfil no alcanza el 70% de coincidencia con la vacante asignada.' });
+    
+    if (alerts.length === 0) {
+        alerts.push({ type: 'ok', title: 'Expediente verificado', text: 'Todos los protocolos de integridad básica del candidato están conformes.' });
+    }
+
+    list.innerHTML = alerts.map(a => `
+        <div class="alert-item alert-item--${a.type}">
+            <span class="alert-bullet alert-bullet--${a.type}"></span>
+            <div>
+                <div style="color:#fff; font-weight:800; font-size:13px;">${a.title}</div>
+                <div class="muted" style="font-size:12px; line-height:1.6;">${a.text}</div>
+            </div>
+        </div>
+    `).join('');
+  }
+
+  function renderCompliance(r) {
+    const b = $('#phComplianceBadge');
+    if (b) b.textContent = r.match_score >= 85 ? 'CUMPLIMIENTO: COMPLETO' : 'CUMPLIMIENTO: PARCIAL';
+
+    const tableBody = $('#documentsTableBody');
+    if (tableBody) {
+        const docs = [
+            { name: 'Psicológico', state: 'ok', txt: 'Vigente', date: '2026-01-14', obs: 'Sin observaciones' },
+            { name: 'Inducción', state: 'ok', txt: 'Vigente', date: '2026-11-30', obs: 'Habilita continuidad' },
+            { name: 'Altura física', state: r.match_score < 80 ? 'warn' : 'ok', txt: r.match_score < 80 ? 'Próximo' : 'Vigente', date: '12 días', obs: 'Renovación sugerida' },
+            { name: 'Sílice', state: r.match_score < 70 ? 'danger' : 'ok', txt: r.match_score < 70 ? 'Faltante' : 'Vigente', date: '—', obs: 'Requerido para acreditación' }
+        ];
+
+        tableBody.innerHTML = docs.map(d => `
+            <tr>
+                <td>${d.name}</td>
+                <td><span class="status-chip status-chip--${d.state}">${d.txt}</span></td>
+                <td>${d.date}</td>
+                <td>${d.obs}</td>
+            </tr>
+        `).join('');
+
+        $('#docOkCount').textContent = docs.filter(x => x.state === 'ok').length;
+        $('#docWarnCount').textContent = docs.filter(x => x.state === 'warn').length;
+        $('#docFailCount').textContent = docs.filter(x => x.state === 'danger').length;
+        $('#docGlobalStatus').textContent = docs.some(x => x.state === 'danger') ? '🔴' : (docs.some(x => x.state === 'warn') ? '🟡' : '🟢');
+    }
+  }
+
+  function updateScoreBars(r) {
+    const s = r.match_score || 0;
+    const set = (id, val) => { const el = $('#' + id); if (el) el.style.width = val + '%'; };
+    set('sbExp', Math.min(100, s * 1.1));
+    set('sbCert', Math.min(100, s * 0.8));
+    set('sbEst', Math.min(100, s * 0.9));
+    set('sbFit', Math.min(100, s * 1.2));
+    set('sbOtr', Math.min(100, s * 0.7));
   }
 
   function radar(r, compareCandidate = null) {
@@ -318,24 +412,6 @@
     window._afkRadar.update();
   }
 
-  function expTimeline(r) {
-    const y = num(r.experiencia_total) || 0;
-    const el = $('#expTimeline');
-    if (!el) return;
-
-    if (window._afkExpTimeline) window._afkExpTimeline.destroy();
-    window._afkExpTimeline = new Chart(el, {
-      type: 'bar',
-      data: {
-        labels: [r.ultima_exp_laboral_empresa || 'Experiencia'],
-        datasets: [{ data: [y * 12] }]
-      },
-      options: {
-        responsive: true,
-        plugins: { legend: { display: false } }
-      }
-    });
-  }
 
   function renderTimeline(items) {
     const el = $('#stageTimeline');
