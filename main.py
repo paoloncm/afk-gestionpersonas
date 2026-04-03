@@ -182,9 +182,13 @@ async def generate_candidate_summary(req: CandidateSummaryRequest):
             "   - Si un periodo dice 'Actualidad', 'Presente' o similar, usa 2024 como año de fin.\n"
             "   - Suma todos los años (ej: 2011-2016 = 5 años, 2021-2024 = 3 años => Total 8 años).\n"
             "   - Devuelve un número decimal aproximado (float).\n"
-            "2. RESUMEN TÁCTICO: Genera 3 párrafos de alto impacto sobre su valor, dominio técnico y fit operativo.\n"
-            "3. FORMATO DE SALIDA: Responde EXCLUSIVAMENTE con un objeto JSON válido (sin markdown) con estas llaves:\n"
-            "   {\"resumen\": \"texto_aqui\", \"anios_calculados\": 12.5}"
+            "2. SCORES TÁCTICOS (0-100):\n"
+            "   - 'estabilidad': Basado en la duración promedio en empleos previos (mayor duración = mayor score).\n"
+            "   - 'fit_tecnico': Qué tan experto es para su Profesión/Cargo específico.\n"
+            "   - 'certificaciones': Relevancia de cursos y exámenes mencionados.\n"
+            "3. RESUMEN TÁCTICO: Genera 3 párrafos de alto impacto sobre su valor, dominio técnico y fit operativo.\n"
+            "4. FORMATO DE SALIDA: Responde EXCLUSIVAMENTE con un objeto JSON válido (sin markdown) con estas llaves:\n"
+            "   {\"resumen\": \"texto_aqui\", \"anios_calculados\": 12.5, \"score_estabilidad\": 85, \"score_fit_tecnico\": 90, \"score_certificaciones\": 75}"
         )
         
         # 3. Request LLM Analysis
@@ -202,18 +206,28 @@ async def generate_candidate_summary(req: CandidateSummaryRequest):
             raw_data = json.loads(ai_res.choices[0].message.content)
             resumen = raw_data.get("resumen", "Análisis completado.")
             anios = float(raw_data.get("anios_calculados", 0.0))
+            score_est = int(raw_data.get("score_estabilidad", 80))
+            score_fit = int(raw_data.get("score_fit_tecnico", 80))
+            score_cert = int(raw_data.get("score_certificaciones", 80))
         except:
             resumen = ai_res.choices[0].message.content
-            anios = 0.0
+            anios, score_est, score_fit, score_cert = 0.0, 80, 80, 80
         
-        # 4. Persistence: Update both summary and total experience
+        # 4. Persistence: Update summary and base experience
         update_payload = {"resumen_ia": resumen}
         if anios > 0:
             update_payload["experiencia_total"] = anios
             
         supabase.table("candidates").update(update_payload).eq("id", req.candidate_id).execute()
         
-        return {"ok": True, "resumen_ia": resumen, "experiencia_total": anios}
+        return {
+            "ok": True, 
+            "resumen_ia": resumen, 
+            "experiencia_total": anios,
+            "score_estabilidad": score_est,
+            "score_fit_tecnico": score_fit,
+            "score_certificaciones": score_cert
+        }
         
     except Exception as e:
         import traceback

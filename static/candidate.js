@@ -139,8 +139,28 @@
     
     vSelector.onchange = () => {
       const selected = scoredVacancies.find(x => x.id === vSelector.value);
-      if (selected) updateHUD(selected);
+      if (selected) {
+        updateHUD(selected);
+        updateBenchmarking(selected.id);
+      }
     };
+  }
+
+  async function updateBenchmarking(vId) {
+    if (!vId) return;
+    try {
+      const { data, error } = await supabase.table("candidates").select("id, match_score").eq("vacancy_id", vId).order("match_score", { ascending: false }).execute();
+      if (error || !data) return;
+      
+      const total = data.length;
+      const index = data.findIndex(c => c.id === r.id);
+      const rank = index >= 0 ? index + 1 : "--";
+      const percentile = total > 1 ? Math.round(((total - (index)) / total) * 100) : 100;
+
+      set('#kvRanking', `#${rank} de ${total}`);
+      set('#kvPercentile', `${percentile}%`);
+      set('#benchMatch', `${percentile >= 50 ? '+' : ''}${percentile - 50}% vs RIVALES`);
+    } catch (err) { console.error("Benchmarking Error:", err); }
   }
 
   function updateHUD(vac) {
@@ -228,6 +248,8 @@
   set('#phCargoObjetivo', r.cargo_postulado);
   set('#phUltima', r.ultima_empresa);
   
+  if (r.vacancy_id) updateBenchmarking(r.vacancy_id);
+
   // Disponibilidad y cargos similares (Data-driven placeholders)
   set('#phDisponibilidad', "INMEDIATA");
   set('#phExpCargo', totalExp + " AÑOS");
@@ -330,6 +352,14 @@
         if (expBar) expBar.style.width = `${Math.min(100, (displayedExperience / 15) * 100)}%`;
         r.experiencia_total = result.experiencia_total;
       }
+
+      // ACTUALIZAR BARRAS DE COMPETENCIA (RADAR)
+      if (result.score_estabilidad) updateBar("#sbEst", result.score_estabilidad);
+      if (result.score_fit_tecnico) updateBar("#sbFit", result.score_fit_tecnico);
+      if (result.score_certificaciones) updateBar("#sbCert", result.score_certificaciones);
+      
+      // RE-CALCULAR RANKING
+      if (r.vacancy_id) updateBenchmarking(r.vacancy_id);
 
     } catch (err) {
       console.error("Stark AI Error:", err);
