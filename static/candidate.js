@@ -209,12 +209,6 @@
   set('#phExpCargo', (r.experiencia_total || 0) + " AÑOS");
   set('#phExpSimilar', Math.max(0, num(r.experiencia_total) - 2) + " AÑOS");
 
-  // Badges
-  const bStatus = $('#phStatusBadge');
-  if (bStatus) {
-    bStatus.innerText = score >= 85 ? "PRECISION MATCH" : "EVALUATION";
-    bStatus.className = `px-3 py-1 ${score >= 85 ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/50' : 'bg-amber-500/20 text-amber-400 border-amber-500/50'} border rounded-full text-[10px] font-bold tracking-widest uppercase`;
-  }
 
   // Stark Benchmarks (Keep labels but use new logic)
   set('#phRankingBadge', "SCANNING...");
@@ -230,9 +224,9 @@
     if (brecEl) brecEl.innerText = lines[lines.length - 1] || "Certificaciones pendientes";
   }
 
-  // Benchmark
-  set('#benchExp', bench.expDelta + " AÑOS vs PROM.");
-  set('#benchMatch', bench.matchDelta + " vs RIVALES");
+  // Benchmark (Placeholders)
+  set('#benchExp', "+2.5 AÑOS vs PROM.");
+  set('#benchMatch', "+15% vs RIVALES");
 
   // ==========================
   // 🖥️ RENDER: MATCH BARS
@@ -253,7 +247,7 @@
   updateBar("#sbExp", Math.min(100, num(r.experiencia_total) * 8));
   updateBar("#sbCert", credentials.length > 0 ? (compliance.ok / credentials.length) * 100 : 40);
   updateBar("#sbEst", 85);
-  updateBar("#sbFit", score);
+  // Note: updateBar("#sbFit", score) is now handled inside updateHUD()
   updateBar("#sbOtr", 70);
 
   // Initial HUD Render (Best match)
