@@ -156,7 +156,7 @@ class AFKProcessor:
             "experiencia_en_empresa_actual", "exp_cargo_actual", "exp_proy_similares",
             "cargo_a_desempenar", "nota", "ranking", "status", "vacancy_id",
             "match_score", "onboarding_progress", "source",
-            "antecedentes_academicos", "direccion", "cv_full_text", "cv_embedding"
+            "antecedentes_academicos", "direccion", "cv_full_text", "cv_embedding", "resumen_ia"
         }
         
         raw = cv_data.model_dump()
