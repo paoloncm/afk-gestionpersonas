@@ -422,9 +422,10 @@
       
       const scored = (ws || []).map(w => {
         const wCs = (cs || []).filter(c => c.worker_id === w.id);
-        const miss = rs.filter(r => !wCs.some(c => normalizeText(c.credential_name).includes(normalizeText(r))));
-        const score = rs.length ? Math.round(((rs.length - miss.length) / rs.length) * 100) : 0;
-        return { w, score, miss };
+        const matched = rs.filter(r => wCs.some(c => normalizeText(c.credential_name).includes(normalizeText(r))));
+        const miss = rs.filter(r => !matched.includes(r));
+        const score = rs.length ? Math.round((matched.length / rs.length) * 100) : 0;
+        return { w, score, matched, miss };
       }).sort((a,b) => b.score - a.score);
 
       matchBodyWorkers.innerHTML = shortlistHTML + (scored.length ? scored.map(r => {
@@ -460,7 +461,25 @@
              ${r.w.company_name ? `<span class="hud-tag">[ UNIDAD: ${r.w.company_name.toUpperCase()} ]</span>` : ''}
           </div>
 
-          ${r.miss.length ? `<div style="font-size:10px; color:#f43f5e; margin-top:10px; font-family:monospace; background:rgba(244,63,94,0.05); padding:5px 10px; border-radius:4px;">⚠️ ALERTA_BRECHA: ${r.miss.join(' | ')}</div>` : ''}
+          ${r.miss.length || r.matched.length ? `
+            <div style="margin-top:12px; border-top:1px dashed rgba(255,255,255,0.05); padding-top:10px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-size:9px; color:var(--accent); font-family:monospace; cursor:pointer; font-weight:800; border:1px solid rgba(34,211,238,0.3); padding:2px 8px; border-radius:4px;" onclick="event.stopPropagation(); const d=this.parentElement.nextElementSibling; d.style.display=d.style.display==='none'?'block':'none'; this.innerHTML = d.style.display==='none' ? '➔ VER ANÁLISIS DE CAPACIDADES' : '✖ CERRAR ANÁLISIS';">➔ VER ANÁLISIS DE CAPACIDADES</span>
+                </div>
+                <div class="analysis-detail" style="display:none; margin-top:12px; background:rgba(0,0,0,0.2); padding:10px; border-radius:8px;">
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; font-size:10px;">
+                        <div>
+                            <div style="color:#00ff64; margin-bottom:8px; font-weight:900; letter-spacing:0.5px;">[ REQUISITOS_CUMPLIDOS ]</div>
+                            ${r.matched.length ? r.matched.map(m => `<div style="color:var(--text); opacity:0.9; margin-bottom:3px;">✅ ${m.toUpperCase()}</div>`).join('') : '<div style="color:var(--muted); font-style:italic;">Ningún requisito detectado.</div>'}
+                        </div>
+                        <div>
+                            <div style="color:#f43f5e; margin-bottom:8px; font-weight:900; letter-spacing:0.5px;">[ BRECHA_OPERATIVA ]</div>
+                            ${r.miss.length ? r.miss.map(m => `<div style="color:#f43f5e; margin-bottom:3px;">❌ ${m.toUpperCase()}</div>`).join('') : '<div style="color:#00ff64;">Sin brechas detectadas.</div>'}
+                        </div>
+                    </div>
+                </div>
+            </div>
+          ` : ''}
         </div>
       `}).join('') : '<p style="padding:30px; text-align:center; color:var(--muted); font-size:12px;">No se detectaron operarios AFK para este perfil.</p>');
 
@@ -493,7 +512,7 @@
           }
       }
 
-      const { data: candidates } = await window.supabase.from('candidates').select('id, nombre_completo, profesion, evaluacion_general, experiencia_general, cv_embedding');
+      const { data: candidates } = await window.supabase.from('candidates').select('id, nombre_completo, profesion, evaluacion_general, experiencia_general, experiencia_especifica, match_explicacion, cv_embedding');
       console.log(`[Stark] BBDD Matcher: ${candidates?.length || 0} perfiles localizados.`);
       
       const m = (candidates || []).map(c => {
@@ -561,7 +580,11 @@
          // Security Fallback: If title contains a direct word from vacancy, ensure at least 15%
          if (finalScore < 15 && tWords.some(w => pClean.includes(w))) finalScore = 15;
 
-         return { ...c, ai_match_score: finalScore, isVector: isVectorMatch };
+                   // Intelligence Matching Details
+          const matchedByIA = rsClean.filter(r => pClean.includes(r) || evClean.includes(r));
+          const missByIA = rsClean.filter(r => !matchedByIA.includes(r));
+
+          return { ...c, ai_match_score: finalScore, isVector: isVectorMatch, matched: matchedByIA, miss: missByIA };
       }).sort((a,b) => b.ai_match_score - a.ai_match_score);
       
       matchBodyCandidates.innerHTML = shortlistHTML + (m.length ? m.map(c => {
@@ -600,16 +623,43 @@
             </div>
           </div>
           
-          <div style="margin-top:15px; display:grid; grid-template-columns: 1fr 1fr; gap:10px; border-top:1px solid rgba(255,255,255,0.05); padding-top:12px;">
+          <!-- Historial y Evaluación Rápida -->
+          <div style="margin-top:15px; display:grid; grid-template-columns: 1fr 1fr; gap:10px; border-top:1px solid rgba(255,255,255,0.05); padding-top:12px; margin-bottom:12px;">
              <div>
                 <div style="font-size:9px; color:var(--accent); font-family:monospace; margin-bottom:5px; opacity:0.7;">HISTORIAL_CRÍTICO:</div>
                 <div style="font-size:11px; color:var(--text); line-height:1.4;">${highlights.length ? highlights.map(h => `• ${h}`).join('<br>') : 'Analizando trayectoria...'}</div>
              </div>
              <div style="text-align:right;">
-                <div style="font-size:9px; color:var(--accent); font-family:monospace; margin-bottom:5px; opacity:0.7;">INTELIGENCIA_OPERATIVA:</div>
+                <div style="font-size:9px; color:var(--accent); font-family:monospace; margin-bottom:5px; opacity:0.7;">PROPOSICIÓN_DE_VALOR:</div>
                 <p style="font-size:10px; color:var(--muted); line-height:1.4;">${c.evaluacion_general ? c.evaluacion_general.substring(0, 100) + '...' : 'Análisis táctico completado.'}</p>
              </div>
           </div>
+
+          <!-- Desglose de Inteligencia (Cosas que tiene y que le faltan) -->
+          <div style="border-top:1px dashed rgba(255,255,255,0.08); padding-top:12px;">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                  <span style="font-size:9px; color:var(--accent); font-family:monospace; cursor:pointer; font-weight:800; border:1px solid rgba(34,211,238,0.3); padding:2px 8px; border-radius:4px;" onclick="event.stopPropagation(); const d=this.parentElement.nextElementSibling; d.style.display=d.style.display==='none'?'block':'none'; this.innerHTML = d.style.display==='none' ? '➔ VER ANÁLISIS DE BRECHAS' : '✖ CERRAR ANÁLISIS';">➔ VER ANÁLISIS DE BRECHAS</span>
+              </div>
+              <div class="analysis-detail" style="display:none; margin-top:12px; background:rgba(0,0,0,0.2); padding:10px; border-radius:8px;">
+                  <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; font-size:10px;">
+                      <div>
+                          <div style="color:#00ff64; margin-bottom:8px; font-weight:900; letter-spacing:0.5px;">[ REQUISITOS_CUMPLIDOS ]</div>
+                          ${c.matched && c.matched.length ? c.matched.map(m => `<div style="color:var(--text); opacity:0.9; margin-bottom:3px;">✅ ${m.toUpperCase()}</div>`).join('') : '<div style="color:var(--muted); font-style:italic;">Evaluando potencial técnico...</div>'}
+                      </div>
+                      <div>
+                          <div style="color:#f43f5e; margin-bottom:8px; font-weight:900; letter-spacing:0.5px;">[ BRECHAS_DETECTADAS ]</div>
+                          ${c.miss && c.miss.length ? c.miss.map(m => `<div style="color:#f43f5e; margin-bottom:3px;">❌ ${m.toUpperCase()}</div>`).join('') : '<div style="color:#00ff64;">Cubre todos los criterios del perfil.</div>'}
+                      </div>
+                  </div>
+                  ${c.match_explicacion ? `
+                    <div style="margin-top:15px; font-size:11px; color:rgba(255,255,255,0.7); border-top:1px solid rgba(255,255,255,0.05); padding-top:12px; line-height:1.5; font-style:italic;">
+                        <span style="color:var(--accent); font-weight:900; font-style:normal;">TACTICAL_INSIGHT:</span> "${c.match_explicacion}"
+                    </div>
+                  ` : ''}
+              </div>
+          </div>
+
+
         </div>
       `}).join('') : '<p style="padding:40px; text-align:center; color:var(--muted); font-size:12px;">JARVIS: Sin perfiles en el mercado externo.<br><small>Sugerencia: Ampliar criterios.</small></p>');
 
