@@ -29,6 +29,52 @@
     return totalYears > 0 ? Math.round(totalYears * 10) / 10 : 0;
   };
 
+  let starkRadar;
+  function initRadar(scores = [60, 40, 70, 50, 80]) {
+    const ctx = document.getElementById('radar');
+    if (!ctx || typeof Chart === 'undefined') return;
+    
+    // Si ya existe, solo actualizar datos
+    if (starkRadar) {
+      starkRadar.data.datasets[0].data = scores;
+      starkRadar.update();
+      return;
+    }
+
+    starkRadar = new Chart(ctx, {
+      type: 'radar',
+      data: {
+        labels: ['EXPERIENCIA', 'CERTS', 'ESTABILIDAD', 'FIT TÉCNICO', 'POTENCIAL'],
+        datasets: [{
+          label: 'PERFIL STARK',
+          data: scores,
+          backgroundColor: 'rgba(34, 211, 238, 0.2)',
+          borderColor: 'rgba(34, 211, 238, 0.8)',
+          borderWidth: 2,
+          pointBackgroundColor: '#22d3ee',
+          pointBorderColor: '#fff',
+          pointHoverBackgroundColor: '#fff',
+          pointHoverBorderColor: '#22d3ee'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          r: {
+            angleLines: { color: 'rgba(255,255,255,0.15)' },
+            grid: { color: 'rgba(255,255,255,0.1)' },
+            pointLabels: { color: 'rgba(255,255,255,0.6)', font: { size: 10, family: "'JetBrains Mono', monospace" } },
+            suggestedMin: 0,
+            suggestedMax: 100,
+            ticks: { display: false, stepSize: 20 }
+          }
+        },
+        plugins: { legend: { display: false } }
+      }
+    });
+  }
+
   const qs = new URLSearchParams(window.location.search);
   const candidateId = qs.get("id") || qs.get("trabajador_uuid") || qs.get("worker_id");
 
@@ -159,7 +205,23 @@
 
       set('#kvRanking', `#${rank} de ${total}`);
       set('#kvPercentile', `${percentile}%`);
-      set('#benchMatch', `${percentile >= 50 ? '+' : ''}${percentile - 50}% vs RIVALES`);
+      set('#benchMatch', `${percentile}%`);
+      
+      // Cálculo de GAP de experiencia
+      const avgExp = data.reduce((acc, c) => acc + (num(c.experiencia_total) || 5), 0) / total;
+      const myExp = num(totalExp) || 0;
+      const gap = (myExp - avgExp).toFixed(1);
+      set('#benchExp', `${gap >= 0 ? '+' : ''}${gap} AÑOS vs PROM.`);
+      set('#benchCert', credentials.length > 0 ? "VALIDADO (" + credentials.length + ")" : "SIN REGISTROS");
+      set('#benchEst', myExp > 5 ? "ESTABLE" : "MOVILIDAD ALTA");
+
+      if (percentile > 80) {
+        set('#benchConclusion', "Candidato en el TOP 20% de la vacante. Perfil altamente competitivo con excedente técnico.");
+      } else if (percentile > 50) {
+        set('#benchConclusion', "Candidato sobre el promedio. Cumple con los requisitos operativos base.");
+      } else {
+        set('#benchConclusion', "Candidato por debajo del percentil crítico. Requiere auditoría técnica adicional.");
+      }
     } catch (err) { console.error("Benchmarking Error:", err); }
   }
 
@@ -249,6 +311,13 @@
   set('#phUltima', r.ultima_empresa);
   
   if (r.vacancy_id) updateBenchmarking(r.vacancy_id);
+
+  // Radar Inicial (con datos disponibles o default)
+  initRadar([
+    Math.min(100, (totalExp / 15) * 100),
+    credentials.length > 0 ? (compliance.ok / credentials.length) * 100 : 40,
+    85, 50, 70
+  ]);
 
   // Disponibilidad y cargos similares (Data-driven placeholders)
   set('#phDisponibilidad', "INMEDIATA");
@@ -358,6 +427,15 @@
       if (result.score_fit_tecnico) updateBar("#sbFit", result.score_fit_tecnico);
       if (result.score_certificaciones) updateBar("#sbCert", result.score_certificaciones);
       
+      // ACTUALIZAR RADAR CON SCORES IA
+      initRadar([
+        Math.min(100, (displayedExperience / 15) * 100),
+        result.score_certificaciones || 50,
+        result.score_estabilidad || 50,
+        result.score_fit_tecnico || 50,
+        75
+      ]);
+
       // RE-CALCULAR RANKING
       if (r.vacancy_id) updateBenchmarking(r.vacancy_id);
 
