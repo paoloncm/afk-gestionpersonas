@@ -294,12 +294,20 @@
       const result = await response.json();
       console.log("Stark Internal AI Response:", result);
 
-      window.notificar?.("INFORME DE INTELIGENCIA GENERADO", "success");
+      window.notificar?.("INFORME DE INTELIGENCIA Y AUDITORÍA COMPLETADA", "success");
       
       const newSummary = result.resumen_ia || "Análisis completado sin datos de respuesta.";
       
       aiContent.innerHTML = newSummary.replace(/\n/g, '<br>');
       if (aiPreview) aiPreview.innerText = "SISTEMA LISTO — ANÁLISIS CONFIRMADO";
+
+      // ACTUALIZAR HUD CON LA EXPERIENCIA CALCULADA
+      if (result.experiencia_total !== undefined) {
+        const expEl = $('#totalExperience');
+        if (expEl) expEl.textContent = `${result.experiencia_total} AÑOS`;
+        // Actualizar objeto r local para que otros componentes lo vean
+        r.experiencia_total = result.experiencia_total;
+      }
 
     } catch (err) {
       console.error("Stark AI Error:", err);

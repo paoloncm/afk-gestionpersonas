@@ -168,40 +168,52 @@ async def generate_candidate_summary(req: CandidateSummaryRequest):
         if not candidate:
             return JSONResponse({"ok": False, "detail": "Candidate not found"}, status_code=404)
             
-        # 2. Build AI Context
-        # Prefer full text if exists, otherwise summary
-        context = candidate.get("cv_full_text") or candidate.get("evaluacion_general") or "Sin datos de CV disponibles."
+        # 2. Build AI Context (Prioritizing 'experiencia_general' for chronological audit)
+        historial = candidate.get("experiencia_general") or candidate.get("cv_full_text") or "Sin datos de historial disponibles."
         profesion = candidate.get("profesion", "Perfil no definido")
         nombre = candidate.get("nombre_completo", "Candidato")
         
         prompt = (
-            f"ACTÚA COMO JARVIS (STARK INDUSTRIES). Genera un RESUMEN EJECUTIVO TÁCTICO de alto impacto para el candidato {nombre}.\n"
-            f"PROFESIÓN: {profesion}\n\n"
-            f"CONTEXTO DEL PERFIL:\n{context[:4000]}\n\n"
-            "REGLAS ESTRUCTURALES:\n"
-            "1. Tono oficial, ejecutivo y táctico.\n"
-            "2. Máximo 4 párrafos cortos.\n"
-            "3. Enfoque en: Proposición de valor, Dominio técnico y Fit operativo en entornos industriales/mineros.\n"
-            "4. IDIOMA: ESPAÑOL PROFESIONAL CHILENO.\n"
-            "5. NO USES PLACEHOLDERS. VE DIRECTO AL GRANO."
+            f"ACTÚA COMO JARVIS (STARK INDUSTRIES). Genera un RESUMEN EJECUTIVO TÁCTICO y realiza una AUDITORÍA CRONOLÓGICA para {nombre}.\n"
+            f"PROFESIÓN: {profesion}\n"
+            f"DATOS DE HISTORIAL RECOLECTADOS:\n{historial[:5000]}\n\n"
+            "INSTRUCCIONES CRÍTICAS STARK:\n"
+            "1. AUDITORÍA DE EXPERIENCIA: Calcula la SUMA TOTAL de años de experiencia basándote en los periodos del historial.\n"
+            "   - Si un periodo dice 'Actualidad', 'Presente' o similar, usa 2024 como año de fin.\n"
+            "   - Suma todos los años (ej: 2011-2016 = 5 años, 2021-2024 = 3 años => Total 8 años).\n"
+            "   - Devuelve un número decimal aproximado (float).\n"
+            "2. RESUMEN TÁCTICO: Genera 3 párrafos de alto impacto sobre su valor, dominio técnico y fit operativo.\n"
+            "3. FORMATO DE SALIDA: Responde EXCLUSIVAMENTE con un objeto JSON válido (sin markdown) con estas llaves:\n"
+            "   {\"resumen\": \"texto_aqui\", \"anios_calculados\": 12.5}"
         )
         
         # 3. Request LLM Analysis
         ai_res = openai.chat.completions.create(
             model="gpt-4o",
             messages=[
-                {"role": "system", "content": "You are JARVIS, an elite AI specialized in industrial talent analysis."},
+                {"role": "system", "content": "You are JARVIS, an elite AI auditor. You output ONLY valid JSON."},
                 {"role": "user", "content": prompt}
             ],
-            temperature=0.7
+            temperature=0.3,
+            response_format={"type": "json_object"}
         )
         
-        resumen = ai_res.choices[0].message.content
+        try:
+            raw_data = json.loads(ai_res.choices[0].message.content)
+            resumen = raw_data.get("resumen", "Análisis completado.")
+            anios = float(raw_data.get("anios_calculados", 0.0))
+        except:
+            resumen = ai_res.choices[0].message.content
+            anios = 0.0
         
-        # 4. Persistence: Update candidate record
-        supabase.table("candidates").update({"resumen_ia": resumen}).eq("id", req.candidate_id).execute()
+        # 4. Persistence: Update both summary and total experience
+        update_payload = {"resumen_ia": resumen}
+        if anios > 0:
+            update_payload["experiencia_total"] = anios
+            
+        supabase.table("candidates").update(update_payload).eq("id", req.candidate_id).execute()
         
-        return {"ok": True, "resumen_ia": resumen}
+        return {"ok": True, "resumen_ia": resumen, "experiencia_total": anios}
         
     except Exception as e:
         import traceback
