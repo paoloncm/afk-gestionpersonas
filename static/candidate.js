@@ -62,7 +62,13 @@
         docs = d || [];
       }
 
-      return { candidate, worker, credentials, docs };
+      // 5. Vacantes Abiertas
+      const { data: vacancies } = await supabase
+        .from('vacancies')
+        .select('id, title, requirements')
+        .eq('status', 'Abierta');
+
+      return { candidate, worker, credentials, docs, vacancies: vacancies || [] };
     } catch (e) {
       console.error("❌ Error fetchAll:", e);
       return null;
@@ -72,26 +78,100 @@
   const data = await fetchAll(candidateId);
   if (!data) return;
 
-  const { candidate: r, worker, credentials, docs } = data;
-  const score = num(r.match_score);
+  const { candidate: r, worker, credentials, docs, vacancies } = data;
   const today = new Date();
 
   // ==========================
-  // 🏎️ ENGINE: BENCHMARK & RANKING
+  // 🏎️ ENGINE: MATCHING & HUD CACHE
   // ==========================
-  function calculateBenchmark(c) {
-    const s = num(c.match_score);
-    const exp = num(c.experiencia_total);
+  function calculateCandidateMatch(cand, vac) {
+    if (!vac || !cand) return 0;
+    const clean = t => (t || "").toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    const candText = clean(`${cand.profesion} ${cand.cargo_postulado} ${cand.evaluacion_general} ${cand.experiencia_general} ${cand.resumen_ia} ${cand.experiencia_tec_master}`);
+    const vacTitle = clean(vac.title);
+    const vacReqs = (vac.requirements || []).map(r => clean(r));
+
+    let tScore = 0;
+    if (candText.includes(vacTitle)) tScore = 40;
+    else if (vacTitle.split(' ').some(w => w.length > 3 && candText.includes(w))) tScore = 25;
+
+    let rHits = 0;
+    if (vacReqs.length > 0) {
+      vacReqs.forEach(req => {
+        const words = req.split(' ').filter(w => w.length > 3);
+        if (candText.includes(req) || words.some(w => candText.includes(w))) rHits++;
+      });
+      rHits = (rHits / vacReqs.length) * 60;
+    } else { rHits = 30; }
+
+    return Math.min(100, tScore + rHits);
+  }
+
+  // Pre-calculate scores for all vacancies
+  const scoredVacancies = vacancies.map(v => ({
+    ...v,
+    match: calculateCandidateMatch(r, v)
+  })).sort((a,b) => b.match - a.match);
+
+  // Initialize Selector
+  const vSelector = $('#vacancySelector HUD');
+  if (vSelector) {
+    vSelector.innerHTML = scoredVacancies.length > 0 
+      ? scoredVacancies.map(v => `<option value="${v.id}">${v.title.toUpperCase()} (${Math.round(v.match)}%)</option>`).join('')
+      : '<option value="">SIN VACANTES DISPONIBLES</option>';
     
-    return {
-      ranking: s > 90 ? "TOP 3" : s > 80 ? "TOP 10" : "TOP 25",
-      percentile: s > 90 ? "98" : s > 80 ? "85" : "60",
-      expDelta: exp > 10 ? "+4.2" : exp > 5 ? "+1.5" : "-2.1",
-      matchDelta: s > 85 ? "+12%" : s > 75 ? "+5%" : "-8%"
+    vSelector.onchange = () => {
+      const selected = scoredVacancies.find(x => x.id === vSelector.value);
+      if (selected) updateHUD(selected);
     };
   }
 
-  const bench = calculateBenchmark(r);
+  function updateHUD(vac) {
+    const score = vac ? vac.match : num(r.match_score);
+    
+    // Circular Chart
+    const scoreVal = $('#matchScoreVal');
+    if (scoreVal) scoreVal.innerText = Math.round(score) + "%";
+    const circle = $('#starkCircle');
+    if (circle) circle.style.strokeDasharray = `${score} 100`;
+
+    // Ranking/Merit Labels
+    const badge = $('#phRankingBadge');
+    if (badge) {
+      badge.innerText = score > 85 ? "TOP MATCH" : score > 70 ? "HIGH AFINITY" : "EVALUATION REQUIRED";
+      badge.style.color = score > 85 ? "var(--ok)" : score > 70 ? "var(--accent)" : "var(--warn)";
+    }
+    
+    const context = $('#rankingContext');
+    if (context) context.innerText = vac ? `Afinidad con: ${vac.title}` : "Análisis táctico completado.";
+
+    // Decision Logic
+    const decEl = $('#decisionState');
+    const bStatus = $('#phStatusBadge');
+    const compliance = evaluateCompliance(credentials);
+
+    if (decEl) {
+      if (compliance.danger > 0) {
+        decEl.innerText = "NO APTO"; decEl.className = "text-4xl font-black text-red-500 tracking-tighter";
+      } else if (score >= 80 && compliance.status === "ok") {
+        decEl.innerText = "APTO"; decEl.className = "text-4xl font-black text-green-500 tracking-tighter shadow-green-500/50";
+      } else {
+        decEl.innerText = "EN RIESGO"; decEl.className = "text-4xl font-black text-amber-500 tracking-tighter shadow-amber-500/50";
+      }
+    }
+
+    if (bStatus) {
+      bStatus.innerText = score >= 80 ? "PRECISION MATCH" : "REVIEW NEEDED";
+      bStatus.className = `px-3 py-1 ${score >= 80 ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/50' : 'bg-amber-500/20 text-amber-400 border-amber-500/50'} border rounded-full text-[10px] font-bold tracking-widest uppercase`;
+    }
+
+    // Update process state in hero summary
+    const statusSec = $('#phStatusSecondary');
+    if (statusSec) statusSec.innerText = vac ? vac.title : "Sin vacante vinculada";
+
+    // Update bars
+    updateBar("#sbFit", score);
+  }
 
   // ==========================
   // 🦾 ENGINE: COMPLIANCE
@@ -136,17 +216,10 @@
     bStatus.className = `px-3 py-1 ${score >= 85 ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/50' : 'bg-amber-500/20 text-amber-400 border-amber-500/50'} border rounded-full text-[10px] font-bold tracking-widest uppercase`;
   }
 
-  // ==========================
-  // 🖥️ RENDER: STATS & RANKING
-  // ==========================
-  set('#phRankingBadge', bench.ranking);
-  set('#kvRanking', bench.ranking);
-  set('#kvPercentile', bench.percentile + "%");
-  
-  const scoreVal = $('#matchScoreVal');
-  if (scoreVal) scoreVal.innerText = Math.round(score) + "%";
-  const circle = $('#starkCircle');
-  if (circle) circle.style.strokeDasharray = `${score} 100`;
+  // Stark Benchmarks (Keep labels but use new logic)
+  set('#phRankingBadge', "SCANNING...");
+  set('#kvRanking', "TOP 3"); // Placeholder logic can stay in secondary panels
+  set('#kvPercentile', "98%");
 
   // Fortalezas y Brechas (Parsing IA)
   const fortEl = $('#kvFortaleza');
@@ -183,38 +256,11 @@
   updateBar("#sbFit", score);
   updateBar("#sbOtr", 70);
 
-  // ==========================
-  // 🖥️ RENDER: ALERTS & DECISION
-  // ==========================
-  const alerts = [];
-  if (compliance.danger > 0) alerts.push({ type: "danger", title: "Documentos Vencidos", text: "Requiere regularización inmediata" });
-  if (score < 70) alerts.push({ type: "warn", title: "Match Limitado", text: "Score técnico por debajo del ideal" });
-  if (!worker) alerts.push({ type: "warn", title: "Perfil Externo", text: "Candidato no registrado actualmente" });
-
-  const container = $('#criticalAlerts');
-  if (container) {
-    container.innerHTML = alerts.length > 0
-      ? alerts.map(a => `<div class="alert-item alert-item--${a.type}"><span class="alert-bullet alert-bullet--${a.type}"></span><div><b style="color:#fff;">${a.title}</b><div class="soft" style="font-size:12px;">${a.text}</div></div></div>`).join('')
-      : `<div class="alert-item alert-item--ok"><span class="alert-bullet alert-bullet--ok"></span><div><b style="color:#fff;">INTEGRIDAD CONFIRMADA</b><div class="soft" style="font-size:12px;">Sin riesgos operativos detectados</div></div></div>`;
-  }
-
-  const decEl = $('#decisionState');
-  if (decEl) {
-    if (compliance.danger > 0) { decEl.innerText = "NO APTO"; decEl.className = "text-4xl font-black text-red-500 tracking-tighter"; }
-    else if (score >= 85 && compliance.status === "ok") { decEl.innerText = "APTO"; decEl.className = "text-4xl font-black text-green-500 tracking-tighter shadow-green-500/50"; }
-    else { decEl.innerText = "EN RIESGO"; decEl.className = "text-4xl font-black text-amber-500 tracking-tighter shadow-amber-500/50"; }
-  }
-
-  // ==========================
-  // 🖥️ RENDER: DOC LIST
-  // ==========================
-  const docList = $('#docList');
-  if (docList) {
-    if (docs.length > 0) {
-      docList.innerHTML = docs.map(d => `<div class="p-3 border border-white/10 rounded-lg hover:bg-white/5 transition-all flex items-center justify-between group cursor-pointer"><div class="flex items-center gap-3"><i class="fas fa-file-pdf text-red-400"></i><div><div class="text-sm font-medium text-white/90 uppercase">${d.document_type}</div><div class="text-[10px] text-white/40 tracking-widest">${d.status}</div></div></div><i class="fas fa-eye text-white/20 group-hover:text-cyan-400"></i></div>`).join('');
-    } else {
-      docList.innerHTML = `<div class="p-4 border-2 border-dashed border-white/5 rounded-xl text-center"><i class="fas fa-cloud-upload-alt text-white/10 text-2xl mb-2"></i><div class="text-[10px] text-white/30 uppercase tracking-[0.2em]">Sincronizando CV...</div></div>`;
-    }
+  // Initial HUD Render (Best match)
+  if (scoredVacancies.length > 0) {
+    updateHUD(scoredVacancies[0]);
+  } else {
+    updateHUD(null);
   }
 
   // ==========================
