@@ -7,65 +7,648 @@
   <title>AFK RRHH — Perfil de Candidato</title>
 
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="/static/styles.css">
 
   <style>
-    .profile {
-      display: grid;
-      gap: 16px
+    :root {
+      --accent: #22d3ee;
+      --accent-2: #67e8f9;
+      --accent-glow: rgba(34, 211, 238, 0.25);
+      --bg-dark: #020617;
+      --bg-panel: rgba(15, 23, 42, 0.6);
+      --bg-panel-2: rgba(15, 23, 42, 0.82);
+      --stark-border: 1px solid rgba(255, 255, 255, 0.08);
+      --stark-cyan: 1px solid rgba(34, 211, 238, 0.32);
+      --text-soft: rgba(255, 255, 255, 0.76);
+      --text-dim: rgba(255, 255, 255, 0.56);
+      --ok: #22c55e;
+      --warn: #f59e0b;
+      --danger: #ef4444;
+      --violet: #a855f7;
     }
 
-    .profile__header {
-      display: flex;
+    * { box-sizing: border-box; }
+
+    body {
+      background-color: var(--bg-dark);
+      background-image:
+        radial-gradient(circle at 50% 0%, rgba(34, 211, 238, 0.08) 0%, transparent 70%),
+        linear-gradient(180deg, rgba(2,6,23,1) 0%, rgba(2,6,23,1) 100%);
+    }
+
+    .stark-shell {
+      background: rgba(15, 23, 42, 0.32);
+      backdrop-filter: blur(16px);
+      border: var(--stark-border);
+      border-radius: 18px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .stark-card {
+      background: var(--bg-panel);
+      backdrop-filter: blur(10px);
+      border: var(--stark-border);
+      border-radius: 18px;
+      padding: 22px;
+      position: relative;
+      overflow: hidden;
+      transition: .25s ease;
+    }
+
+    .stark-card:hover {
+      border-color: rgba(34, 211, 238, 0.25);
+      box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.04) inset;
+    }
+
+    .scan-line {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      opacity: .10;
+      animation: scan 4s linear infinite;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
+
+    .tech-border {
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(34, 211, 238, 0.5);
+      opacity: .65;
+      pointer-events: none;
+    }
+
+    .tech-tl { top: 18px; left: 18px; border-right: 0; border-bottom: 0; }
+    .tech-tr { top: 18px; right: 18px; border-left: 0; border-bottom: 0; }
+    .tech-bl { bottom: 18px; left: 18px; border-right: 0; border-top: 0; }
+    .tech-br { bottom: 18px; right: 18px; border-left: 0; border-top: 0; }
+
+    .hud-tag {
+      display: inline-flex;
       align-items: center;
-      gap: 16px
+      gap: 8px;
+      min-height: 30px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--accent);
+      background: rgba(34, 211, 238, 0.08);
+      border: 1px solid rgba(34, 211, 238, 0.22);
+      padding: 6px 10px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      white-space: nowrap;
     }
 
-    .profile__header .avatar {
-      width: 72px;
-      height: 72px;
-      border-radius: 999px
+    .hud-tag--violet {
+      color: #d8b4fe;
+      border-color: rgba(168, 85, 247, 0.28);
+      background: rgba(168, 85, 247, 0.10);
     }
 
-    .grid2 {
+    .hud-tag--ok {
+      color: #86efac;
+      border-color: rgba(34, 197, 94, 0.28);
+      background: rgba(34, 197, 94, 0.10);
+    }
+
+    .hud-tag--warn {
+      color: #fcd34d;
+      border-color: rgba(245, 158, 11, 0.28);
+      background: rgba(245, 158, 11, 0.10);
+    }
+
+    .hud-tag--danger {
+      color: #fca5a5;
+      border-color: rgba(239, 68, 68, 0.28);
+      background: rgba(239, 68, 68, 0.10);
+    }
+
+    .section-kicker {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1.6px;
+      color: var(--accent);
+      font-family: 'JetBrains Mono', monospace;
+      margin-bottom: 14px;
+      opacity: .9;
+    }
+
+    .muted { color: var(--text-dim); }
+    .soft { color: var(--text-soft); }
+
+    .hero {
+      position: relative;
+      padding: 38px 34px 30px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      background:
+        linear-gradient(180deg, rgba(34,211,238,0.03), transparent 60%),
+        radial-gradient(circle at 100% 0%, rgba(34,211,238,0.05), transparent 40%);
+    }
+
+    .hero-grid {
       display: grid;
-      gap: 16px;
-      grid-template-columns: repeat(2, minmax(0, 1fr))
+      grid-template-columns: 1.6fr .9fr;
+      gap: 24px;
+      align-items: stretch;
     }
 
-    @media(max-width:900px) {
-      .grid2 {
-        grid-template-columns: 1fr
-      }
+    .hero-main {
+      min-width: 0;
     }
 
-    .timeline {
-      list-style: none;
+    .hero-top {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .hero-name {
+      font-size: clamp(28px, 4vw, 48px);
+      line-height: .98;
+      font-weight: 900;
+      color: #fff;
+      letter-spacing: -1px;
+      text-transform: uppercase;
       margin: 0;
-      padding: 0;
-      display: grid;
-      gap: 10px
     }
 
-    .timeline li {
+    .hero-role {
+      margin-top: 8px;
+      font-size: 16px;
+      color: var(--accent);
+      font-family: 'JetBrains Mono', monospace;
+      opacity: .9;
+    }
+
+    .hero-summary {
+      margin-top: 18px;
       display: grid;
-      grid-template-columns: 120px 1fr;
+      grid-template-columns: repeat(4, minmax(120px, 1fr));
+      gap: 14px;
+      padding-top: 18px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .stat-box {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 14px;
+      padding: 14px 14px 12px;
+      min-height: 76px;
+    }
+
+    .stat-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      color: var(--accent);
+      opacity: .75;
+      font-family: 'JetBrains Mono', monospace;
+      margin-bottom: 6px;
+      letter-spacing: .8px;
+    }
+
+    .stat-value {
+      font-size: 18px;
+      font-weight: 800;
+      color: #fff;
+      line-height: 1.1;
+    }
+
+    .hero-side {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .score-panel {
+      background: rgba(0,0,0,0.18);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 20px;
+      padding: 18px;
+      display: flex;
+      gap: 18px;
+      align-items: center;
+      min-height: 150px;
+    }
+
+    .score-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .decision-panel {
+      background: linear-gradient(180deg, rgba(34,211,238,0.06), rgba(255,255,255,0.02));
+      border: var(--stark-cyan);
+      border-radius: 18px;
+      padding: 18px;
+    }
+
+    .decision-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 900;
+      font-size: 14px;
+      letter-spacing: .4px;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+    }
+
+    .decision-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--warn);
+      box-shadow: 0 0 12px rgba(245, 158, 11, 0.45);
+    }
+
+    .decision-title {
+      font-size: 18px;
+      font-weight: 900;
+      color: #fff;
+      margin: 0 0 8px;
+    }
+
+    .decision-text {
+      color: var(--text-soft);
+      font-size: 13px;
+      line-height: 1.65;
+      margin: 0;
+    }
+
+    .actions-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .btn-ghost-accent {
+      background: rgba(34,211,238,0.08);
+      border: 1px solid rgba(34,211,238,0.18);
+      color: #d9fbff;
+    }
+
+    .candidate-layout {
+      padding: 28px 34px 34px;
+      display: grid;
+      gap: 18px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap: 18px;
+    }
+
+    .grid-2-equal {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+
+    .alert-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .alert-item {
+      display: flex;
       gap: 12px;
-      padding: 10px;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      background: rgba(255, 255, 255, .03)
+      align-items: flex-start;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .alert-item--danger { border-color: rgba(239,68,68,0.22); background: rgba(239,68,68,0.06); }
+    .alert-item--warn { border-color: rgba(245,158,11,0.22); background: rgba(245,158,11,0.06); }
+    .alert-item--ok { border-color: rgba(34,197,94,0.22); background: rgba(34,197,94,0.06); }
+
+    .alert-bullet {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      margin-top: 5px;
+      flex: 0 0 auto;
+    }
+
+    .alert-bullet--danger { background: var(--danger); box-shadow: 0 0 10px rgba(239,68,68,.45); }
+    .alert-bullet--warn { background: var(--warn); box-shadow: 0 0 10px rgba(245, 158, 11,.45); }
+    .alert-bullet--ok { background: var(--ok); box-shadow: 0 0 10px rgba(34,197,94,.45); }
+
+    .ai-summary {
+      font-size: 14px;
+      line-height: 1.75;
+      color: rgba(255,255,255,0.88);
+    }
+
+    .ai-summary strong {
+      color: #fff;
+    }
+
+    .kv-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .kv-item {
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .kv-item .label {
+      font-size: 10px;
+      color: var(--accent);
+      opacity: .75;
+      font-family: 'JetBrains Mono', monospace;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .kv-item .value {
+      font-size: 14px;
+      color: #fff;
+      font-weight: 700;
+      line-height: 1.45;
+    }
+
+    .score-breakdown {
+      display: grid;
+      gap: 12px;
+    }
+
+    .score-line {
+      display: grid;
+      grid-template-columns: 120px 1fr 44px;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .score-line .name {
+      color: var(--text-soft);
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .score-bar {
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .score-bar > span {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, rgba(34,211,238,.35), rgba(34,211,238,.95));
+    }
+
+    .score-line .val {
+      text-align: right;
+      color: #fff;
+      font-weight: 800;
+      font-size: 12px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .pill-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .pill-list li {
+      background: rgba(34,211,238,0.05);
+      border: 1px solid rgba(34,211,238,0.18);
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      color: #fff;
+      line-height: 1;
     }
 
     .chart-box {
-      height: 280px;
-      width: 100%
+      width: 100%;
+      height: 250px;
     }
 
-    .files a {
-      display: inline-block;
-      margin: 6px 10px 6px 0
+    .files {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .file-pill {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.06);
+      color: #fff;
+      font-size: 12px;
+    }
+
+    .compliance-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .mini-state {
+      padding: 14px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.06);
+      background: rgba(255,255,255,0.02);
+    }
+
+    .mini-state .num {
+      color: #fff;
+      font-size: 24px;
+      font-weight: 900;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+
+    .mini-state .txt {
+      color: var(--text-dim);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .8px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .table-shell {
+      width: 100%;
+      overflow: auto;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    table.afk-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 720px;
+      background: rgba(255,255,255,0.015);
+    }
+
+    table.afk-table th,
+    table.afk-table td {
+      padding: 12px 14px;
+      text-align: left;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      font-size: 13px;
+      color: #fff;
+    }
+
+    table.afk-table th {
+      color: var(--accent);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-family: 'JetBrains Mono', monospace;
+      background: rgba(34,211,238,0.04);
+    }
+
+    .status-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 11px;
+      line-height: 1;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .7px;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+
+    .status-chip--ok {
+      color: #86efac;
+      border-color: rgba(34,197,94,0.25);
+      background: rgba(34,197,94,0.08);
+    }
+
+    .status-chip--warn {
+      color: #fcd34d;
+      border-color: rgba(245,158,11,0.25);
+      background: rgba(245,158,11,0.08);
+    }
+
+    .status-chip--danger {
+      color: #fca5a5;
+      border-color: rgba(239,68,68,0.25);
+      background: rgba(239,68,68,0.08);
+    }
+
+    .cta-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .cta-btn {
+      border-radius: 14px;
+      min-height: 46px;
+      font-weight: 800;
+      letter-spacing: .2px;
+    }
+
+    iframe#pdfViewer {
+      width: 100%;
+      height: 320px;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      background: #000;
+    }
+
+    .pulse {
+      width: 9px;
+      height: 9px;
+      background: var(--accent);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--accent);
+      animation: pulse 2s infinite;
+      flex: 0 0 auto;
+    }
+
+    @keyframes pulse { 0%,100% { opacity: .35; } 50% { opacity: 1; } }
+
+    @media (max-width: 1240px) {
+      .hero-grid,
+      .grid-2,
+      .grid-2-equal {
+        grid-template-columns: 1fr;
+      }
+
+      .cta-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 980px) {
+      .hero-summary,
+      .grid-3,
+      .compliance-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .hero,
+      .candidate-layout {
+        padding-left: 16px;
+        padding-right: 16px;
+      }
+
+      .hero-summary,
+      .grid-3,
+      .kv-grid,
+      .compliance-grid,
+      .cta-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .score-panel {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .score-line {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
@@ -73,177 +656,405 @@
 <body>
   <div class="dashboard">
 
-    <aside class="sidebar">
+    <aside class="sidebar" aria-label="Navegación">
       <div class="brand">
         <div class="logo">AFK</div>
         <span>RRHH</span>
       </div>
+
       <nav class="nav">
-        <a class="is-active" href="index.html"><span class="label">Dashboard</span></a>
-        <a href="workers.html"><span class="label">Trabajadores</span></a>
-        <a href="pipeline.html"><span class="label">Pipeline</span></a>
+        <div class="nav-category">Admisión y selección</div>
+        <a href="index.html"><span class="label">Dashboard</span></a>
         <a href="vacancies.html"><span class="label">Vacantes</span></a>
         <a href="interviews.html"><span class="label">Entrevistas</span></a>
+        <a href="pipeline.html"><span class="label">Pipeline</span></a>
+
+        <div class="nav-category">Gestión</div>
+        <a href="workers.html"><span class="label">Trabajadores</span></a>
         <a href="alerts.html"><span class="label">Alertas</span></a>
-        <a href="reports.html"><span class="label">Reportes</span></a>
         <a href="documents.html"><span class="label">Documentos</span></a>
+        <a href="reports.html"><span class="label">Reportes</span></a>
         <a id="openChatbot" href="#chatbot"><span class="label">Chatbot</span></a>
+
+        <div class="nav-category">Analítica e Inteligencia</div>
+        <a href="analytics.html"><span class="label">People Analytics</span></a>
       </nav>
     </aside>
 
     <header class="topbar">
       <button class="btn-menu" aria-label="Abrir menú">☰</button>
+      <div style="display:flex; gap:10px; margin-left:auto; flex-wrap:wrap;">
+        <button id="btnGenerateTec02FromCandidates" class="btn">Generar TEC-02</button>
+        <button id="btnGenerateTec02AFromCandidates" class="btn">Generar TEC-02-A</button>
+        <button class="btn" onclick="location.href='documents.html'">Subir documentos</button>
+        <button class="btn btn--primary" id="btnChat">Abrir Chatbot</button>
+      </div>
     </header>
 
     <main class="main">
-      <div style="margin-bottom:20px;">
+      <div style="margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
         <a href="index.html" style="color:var(--text-muted); text-decoration:none; font-size:14px;">← Volver al Dashboard</a>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn btn--mini" onclick="window.print()">Imprimir ficha</button>
+          <button class="btn btn--mini" id="btnExportPDF">Exportar PDF</button>
+        </div>
       </div>
-      <h1 class="h1">Ficha del Candidato</h1>
 
-      <div class="profile">
+      <div class="stark-shell">
+        <div class="scan-line"></div>
 
-        <div class="card">
-          <div class="card__body">
-            <div class="profile__header">
-              <img id="phAvatar" class="avatar" src="" alt="">
-              <div>
-                <div id="phName" class="h1" style="margin:0">—</div>
-                <div id="phProf" class="text-muted">—</div>
-                <div id="phContact" class="text-muted">—</div>
-                <div id="activeProcess" style="margin-top:8px"></div>
-                <div id="aiMatchContainer" style="margin-top:8px; display:none;">
-                    <span class="tag" style="background:rgba(255,165,0,0.1); color:#ffa500; font-size:12px; font-weight:bold;">Match IA: <span id="matchScoreVal">--</span>%</span>
+        <!-- HERO -->
+        <section class="hero">
+          <div class="tech-border tech-tl"></div>
+          <div class="tech-border tech-tr"></div>
+          <div class="tech-border tech-bl"></div>
+          <div class="tech-border tech-br"></div>
+
+          <div class="hero-grid">
+            <div class="hero-main">
+              <div class="hero-top">
+                <span id="phStatusBadge" class="hud-tag hud-tag--warn">EN EVALUACIÓN</span>
+                <span id="aiRecBadge" class="hud-tag hud-tag--violet">RECOMENDACIÓN IA</span>
+                <span id="phComplianceBadge" class="hud-tag">CUMPLIMIENTO DOCUMENTAL</span>
+              </div>
+
+              <h1 id="phName" class="hero-name">NOMBRE CANDIDATO</h1>
+              <div id="phProf" class="hero-role">Cargo principal / especialidad</div>
+
+              <div class="hero-summary">
+                <div class="stat-box">
+                  <div class="stat-label">Experiencia total</div>
+                  <div id="phExp" class="stat-value">—</div>
+                </div>
+
+                <div class="stat-box">
+                  <div class="stat-label">Cargo objetivo</div>
+                  <div id="phCargoObjetivo" class="stat-value" style="font-size:14px;">—</div>
+                </div>
+
+                <div class="stat-box">
+                  <div class="stat-label">Última entidad</div>
+                  <div id="phUltima" class="stat-value" style="font-size:14px;">—</div>
+                </div>
+
+                <div class="stat-box">
+                  <div class="stat-label">Estado del proceso</div>
+                  <div id="phStatusSecondary" class="stat-value" style="font-size:14px;">Sin vacante vinculada</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="hero-side">
+              <div class="score-panel">
+                <div style="position:relative; width:108px; height:108px; flex:0 0 108px;">
+                  <svg width="108" height="108" viewBox="0 0 36 36">
+                    <circle cx="18" cy="18" r="16" fill="none" stroke="rgba(34,211,238,0.06)" stroke-width="2"></circle>
+                    <circle id="starkCircle" cx="18" cy="18" r="16" fill="none" stroke="var(--accent)" stroke-width="3" stroke-dasharray="0 100" transform="rotate(-90 18 18)" style="transition: stroke-dasharray 1.4s ease;"></circle>
+                    <text x="18" y="19" fill="#fff" font-size="8" font-weight="900" text-anchor="middle" style="font-family:'JetBrains Mono', monospace;" id="matchScoreVal">--</text>
+                    <text x="18" y="23" fill="rgba(255,255,255,.6)" font-size="2.7" text-anchor="middle" style="font-family:'JetBrains Mono', monospace;">SCORE</text>
+                  </svg>
+                  <div style="position:absolute; inset:14px; border:1px dashed rgba(34,211,238,0.18); border-radius:50%; pointer-events:none;"></div>
+                </div>
+
+                <div class="score-meta">
+                  <div class="section-kicker" style="margin-bottom:2px;">Índice de mérito</div>
+                  <div id="phRankingBadge" style="font-size:13px; color:#fff; font-weight:800;">Ranking #-- de --</div>
+                  <div class="muted" style="font-size:12px;">Protocolo Stark Secure v6</div>
+                  <div class="muted" style="font-size:12px;" id="rankingContext">Esperando análisis...</div>
+                </div>
+              </div>
+
+              <div class="decision-panel">
+                <div class="decision-status">
+                  <span class="decision-dot" id="decisionDot"></span>
+                  <span id="decisionState">Verificando...</span>
+                </div>
+                <h3 id="decisionTitle" class="decision-title">ACCEDIENDO A EXPEDIENTE</h3>
+                <p id="decisionText" class="decision-text">
+                  Interfaz de inteligencia táctica procesando datos del candidato para determinar viabilidad operativa.
+                </p>
+
+                <div class="actions-row">
+                  <button class="btn btn--primary">Preseleccionar</button>
+                  <button class="btn btn-ghost-accent">Solicitar docs</button>
+                  <button class="btn">Enviar a cliente</button>
                 </div>
               </div>
             </div>
           </div>
-        </div>
+        </section>
 
-        <div class="grid2">
-
-          <div class="card">
-            <div class="card__body">
-              <h2 class="h1" style="font-size:18px">Información</h2>
-
-              <div class="text-muted">Última empresa</div>
-              <div id="phUltima">—</div><br />
-
-              <div class="text-muted">Cargo último</div>
-              <div id="phCargo">—</div><br />
-
-              <div class="text-muted">Periodo</div>
-              <div id="phPeriodo">—</div><br />
-
-              <div class="text-muted">Años de experiencia</div>
-              <div id="phExp">—</div>
+        <div class="candidate-layout">
+          <!-- ALERTAS -->
+          <section class="stark-card">
+            <div class="section-kicker">➔ Alertas críticas</div>
+            <div id="criticalAlerts" class="alert-list">
+              <!-- Dinámico -->
             </div>
+          </section>
+
+          <!-- IA + SCORE -->
+          <div class="grid-2">
+            <section class="stark-card">
+              <div class="section-kicker">➔ Resumen ejecutivo IA</div>
+
+              <div style="display:flex; align-items:flex-start; gap:12px; margin-bottom:14px;">
+                <div class="pulse"></div>
+                <div id="aiSummaryPreview" class="soft" style="font-family:'JetBrains Mono', monospace; font-size:12px;">
+                  SISTEMA LISTO · El perfil presenta alto match técnico para continuar evaluación.
+                </div>
+              </div>
+
+              <div id="aiSummaryContent" class="ai-summary">
+                 Esperando detonación de análisis táctico...
+              </div>
+
+              <div class="actions-row" style="margin-top:18px;">
+                <button id="btnAiSummary" class="btn btn--primary">Detonar análisis extremo</button>
+                <button class="btn">Generar informe</button>
+              </div>
+            </section>
+
+            <section class="stark-card">
+              <div class="section-kicker">➔ Score explicado</div>
+
+              <div class="score-breakdown">
+                <div class="score-line">
+                  <div class="name">Experiencia</div>
+                  <div class="score-bar"><span id="sbExp" style="width: 0%"></span></div>
+                  <div class="val">40%</div>
+                </div>
+                <div class="score-line">
+                  <div class="name">Certificaciones</div>
+                  <div class="score-bar"><span id="sbCert" style="width: 0%"></span></div>
+                  <div class="val">22%</div>
+                </div>
+                <div class="score-line">
+                  <div class="name">Estabilidad</div>
+                  <div class="score-bar"><span id="sbEst" style="width: 0%"></span></div>
+                  <div class="val">15%</div>
+                </div>
+                <div class="score-line">
+                  <div class="name">Fit técnico</div>
+                  <div class="score-bar"><span id="sbFit" style="width: 0%"></span></div>
+                  <div class="val">18%</div>
+                </div>
+                <div class="score-line">
+                  <div class="name">Otros</div>
+                  <div class="score-bar"><span id="sbOtr" style="width: 0%"></span></div>
+                  <div class="val">5%</div>
+                </div>
+              </div>
+
+              <div style="height:1px; background:rgba(255,255,255,0.06); margin:18px 0;"></div>
+
+              <div class="section-kicker" style="margin-bottom:10px;">Posición relativa</div>
+              <div class="kv-grid">
+                <div class="kv-item">
+                  <div class="label">Ranking</div>
+                  <div class="value" id="kvRanking">#--</div>
+                </div>
+                <div class="kv-item">
+                  <div class="label">Percentil</div>
+                  <div class="value" id="kvPercentile">--%</div>
+                </div>
+                <div class="kv-item">
+                  <div class="label">Fortaleza diferencial</div>
+                  <div class="value" id="kvFortaleza">Verificando...</div>
+                </div>
+                <div class="kv-item">
+                  <div class="label">Brecha principal</div>
+                  <div class="value" id="kvBrecha">Analizando...</div>
+                </div>
+              </div>
+            </section>
           </div>
 
-          <div class="card">
-            <div class="card__body">
-              <h2 class="h1" style="font-size:18px">Score</h2>
+          <!-- PERFIL + GESTIÓN -->
+          <div class="grid-2">
+            <section class="stark-card">
+              <div class="section-kicker">➔ Perfil rápido y capacidades</div>
 
-              <div class="text-muted">Ranking</div>
-              <div id="phRanking">—</div><br />
+              <div class="kv-grid" style="margin-bottom:16px;">
+                <div class="kv-item">
+                  <div class="label">Profesión</div>
+                  <div id="phCargo" class="value">—</div>
+                </div>
+                <div class="kv-item">
+                  <div class="label">Disponibilidad</div>
+                  <div id="phDisponibilidad" class="value">Inmediata</div>
+                </div>
+                <div class="kv-item">
+                  <div class="label">Experiencia en cargo</div>
+                  <div id="phExpCargo" class="value">—</div>
+                </div>
+                <div class="kv-item">
+                  <div class="label">Proyectos similares</div>
+                  <div id="phExpSimilar" class="value">—</div>
+                </div>
+              </div>
 
-              <div class="text-muted">Nota</div>
-              <div id="phNota">—</div><br />
+              <div>
+                <div class="section-kicker" style="margin-bottom:10px;">Experiencia específica IA</div>
+                <ul id="phConoc" class="pill-list">
+                    <!-- Dinámico -->
+                </ul>
+              </div>
 
-              <div class="text-muted" style="margin-top:10px;">Perfil de competencias</div>
-              <div class="chart-box">
+              <div style="margin-top:18px;">
+                <div class="section-kicker" style="margin-bottom:10px;">Evaluación crítica</div>
+                <div id="phEval" class="soft" style="font-size:13px; line-height:1.7; border-left:2px solid var(--accent); padding-left:14px;">
+                  —
+                </div>
+              </div>
+            </section>
+
+            <section class="stark-card">
+              <div class="section-kicker">➔ Gestión de expediente</div>
+
+              <div style="display:grid; gap:14px;">
+                <div>
+                  <label class="stat-label">Vincular a vacante</label>
+                  <select id="selectVacancy" class="input" style="width:100%; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); color:#fff; margin-bottom:10px;">
+                    <option>Seleccionar vacante...</option>
+                  </select>
+                  <button id="btnLinkVacancy" class="btn btn--primary" style="width:100%;">Sincronizar vacante</button>
+                </div>
+
+                <div>
+                  <label class="stat-label">Programar entrevista</label>
+                  <input type="datetime-local" id="interviewDate" class="input" style="width:100%; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); color:#fff; margin-bottom:10px;">
+                  <button id="btnScheduleInterview" class="btn btn--primary" style="width:100%;">Agendar operación</button>
+                </div>
+
+                <div>
+                  <label class="stat-label">Acciones rápidas</label>
+                  <div class="cta-grid">
+                    <button class="btn cta-btn btn--primary">Preseleccionar</button>
+                    <button class="btn cta-btn">Descartar</button>
+                    <button class="btn cta-btn btn-ghost-accent">Solicitar docs</button>
+                    <button class="btn cta-btn">Enviar a cliente</button>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <!-- DOCUMENTOS -->
+          <section class="stark-card">
+            <div class="section-kicker">➔ Cumplimiento documental</div>
+
+            <div class="compliance-grid">
+              <div class="mini-state">
+                <div class="num" id="docOkCount">0</div>
+                <div class="txt">Vigentes</div>
+              </div>
+              <div class="mini-state">
+                <div class="num" id="docWarnCount">0</div>
+                <div class="txt">Por vencer</div>
+              </div>
+              <div class="mini-state">
+                <div class="num" id="docFailCount">0</div>
+                <div class="txt">Faltantes</div>
+              </div>
+              <div class="mini-state">
+                <div class="num" id="docGlobalStatus">🔴</div>
+                <div class="txt">Estado general</div>
+              </div>
+            </div>
+
+            <div class="table-shell" style="margin-bottom:16px;">
+              <table class="afk-table">
+                <thead>
+                  <tr>
+                    <th>Documento / examen</th>
+                    <th>Estado</th>
+                    <th>Vencimiento</th>
+                    <th>Observación</th>
+                  </tr>
+                </thead>
+                <tbody id="documentsTableBody">
+                   <!-- Dinámico -->
+                </tbody>
+              </table>
+            </div>
+
+            <div class="grid-2-equal">
+              <div>
+                <div class="section-kicker">➔ Documentos IA</div>
+                <div class="files" id="docList">
+                  <!-- Dinámico -->
+                </div>
+              </div>
+
+              <div>
+                <div class="section-kicker">➔ Visor documental</div>
+                <iframe id="pdfViewer"></iframe>
+              </div>
+            </div>
+          </section>
+
+          <!-- RADAR + COMPARACIÓN -->
+          <div class="grid-2">
+            <section class="stark-card">
+              <div class="section-kicker">➔ Radar de competencias</div>
+              <div class="chart-box" style="height:260px;">
                 <canvas id="radar"></canvas>
               </div>
-            </div>
-          </div>
+            </section>
 
-          <div class="card" style="grid-column:1 / -1">
-            <div class="card__body">
-              <div style="display:flex; justify-content:space-between; align-items:center;">
-                <h2 class="h1" style="font-size:18px">Resumen AI (Copiloto)</h2>
-                <button id="btnAiSummary" class="btn btn--primary" style="font-size:12px; padding: 4px 12px;">Generar Resumen</button>
-              </div>
-              <div id="aiSummaryContent" class="text-muted" style="margin-top:12px; line-height:1.6;">
-                Haz clic en "Generar Resumen" para que el asistente analice el perfil...
-              </div>
-            </div>
-          </div>
+            <section class="stark-card">
+              <div class="section-kicker">➔ Benchmark del candidato</div>
 
-          <div class="card">
-            <div class="card__body">
-              <h2 class="h1" style="font-size:18px">Gestión de Reclutamiento</h2>
-              
-              <div class="form-group" style="margin-top:12px">
-                <label style="display:block; margin-bottom:8px; color:var(--text-muted); font-size:14px;">Vincular a Vacante</label>
-                <select id="selectVacancy" class="select" style="width:100%"></select>
-                <button id="btnLinkVacancy" class="btn btn--primary" style="width:100%; margin-top:12px">Vincular</button>
-              </div>
-
-              <div style="margin-top:24px; border-top:1px solid var(--border); padding-top:16px">
-                <label style="display:block; margin-bottom:8px; color:var(--text-muted); font-size:14px;">Programar Entrevista</label>
-                <input type="datetime-local" id="interviewDate" class="input" style="width:100%; margin-top:8px; padding:10px; background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:8px; color:#fff;">
-                <button id="btnScheduleInterview" class="btn btn--primary" style="width:100%; margin-top:12px">Programar</button>
-              </div>
-            </div>
-          </div>
-
-
-          <div class="card" style="grid-column:1 / -1">
-            <div class="card__body">
-              <h2 class="h1" style="font-size:18px">Historial</h2>
-              <ol id="stageTimeline" class="timeline"></ol>
-            </div>
-          </div>
-
-          <div class="card" style="grid-column:1 / -1">
-            <div class="card__body">
-              <h2 class="h1" style="font-size:18px">Evaluación general</h2>
-              <div id="phEval">—</div>
-            </div>
-          </div>
-
-          <div class="card" style="grid-column:1 / -1">
-            <div class="card__body">
-              <h2 class="h1" style="font-size:18px">Competencias y experiencia adicional</h2>
-
-              <div class="grid2" style="margin-top:8px">
-                <div>
-                  <h3 class="h1" style="font-size:14px">Experiencia específica</h3>
-                  <ul id="phConoc" class="pill-list"></ul>
+              <div class="kv-grid">
+                <div class="kv-item">
+                  <div class="label">Experiencia</div>
+                  <div class="value" id="benchExp">—</div>
                 </div>
-
-                <div>
-                  <h3 class="h1" style="font-size:14px">Otras experiencias</h3>
-                  <ul id="phOtrasExp" class="pill-list"></ul>
+                <div class="kv-item">
+                  <div class="label">Certificaciones</div>
+                  <div class="value" id="benchCert">—</div>
+                </div>
+                <div class="kv-item">
+                  <div class="label">Estabilidad</div>
+                  <div class="value" id="benchEst">—</div>
+                </div>
+                <div class="kv-item">
+                  <div class="label">Match vacante</div>
+                  <div class="value" id="benchMatch">—</div>
                 </div>
               </div>
-            </div>
-          </div>
 
-          <div class="card" style="grid-column:1 / -1">
-            <div class="card__body">
-              <h2 class="h1" style="font-size:18px">Documentos</h2>
-              <div class="files" id="docList"></div>
-              <iframe id="pdfViewer"
-                style="width:100%;height:380px;border:1px solid var(--border);border-radius:10px"></iframe>
-            </div>
+              <div style="margin-top:16px; padding:14px; border-radius:14px; background:rgba(34,211,238,0.05); border:1px solid rgba(34,211,238,0.16);">
+                <div style="font-size:12px; color:var(--accent); font-family:'JetBrains Mono', monospace; text-transform:uppercase; margin-bottom:8px;">Conclusión comparativa</div>
+                <div class="soft" id="benchConclusion" style="font-size:13px; line-height:1.7;">
+                  Esperando análisis comparativo de inteligencia...
+                </div>
+              </div>
+            </section>
           </div>
-
         </div>
       </div>
     </main>
 
     <!-- Chatbot -->
     <aside id="chatbot" class="chatbot">
-      <div class="chatbot__head"><strong>AFK Copiloto</strong><button id="closeChat" class="btn">Cerrar</button></div>
+      <div class="chatbot__head">
+        <strong>AFK Copiloto</strong>
+        <button id="closeChat" class="btn">Cerrar</button>
+      </div>
       <div id="chatBody" class="chatbot__body"></div>
-      <div class="chatbot__input"><input id="chatInput"><button id="chatSend" class="btn btn--primary">Enviar</button></div>
+      <div class="chatbot__input">
+        <input id="chatInput">
+        <button id="chatSend" class="btn btn--primary">Enviar</button>
+      </div>
     </aside>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="supabase.js?v=2.0"></script>
-  <script src="candidate.js?v=2.0"></script>
+  <script src="/static/supabase.js?v=2.0"></script>
+  <script src="/static/candidate.js?v=5.0"></script>
+
   <script>
     // Behavior for sidebar chat in profile page
     const d=document, chat=d.getElementById('chatbot');
@@ -251,7 +1062,9 @@
     d.getElementById('openChatbot')?.addEventListener('click', e => { e.preventDefault(); chat.classList.add('is-open'); });
     d.getElementById('closeChat').onclick = () => chat.classList.remove('is-open');
   </script>
-  <script defer src="responsive.js?v=2.0"></script>
+
+  <script defer src="/static/responsive.js?v=2.0"></script>
+  <script defer src="/static/chat.js?v=5.0"></script>
 </body>
 
 </html>
