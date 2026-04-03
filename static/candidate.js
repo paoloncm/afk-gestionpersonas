@@ -134,53 +134,46 @@
     const rankingEl = $('#phRanking');
     if (rankingEl) rankingEl.textContent = Number.isFinite(rk) ? rk.toFixed(0) : '—';
 
-    const matchCont = $('#aiMatchContainer');
+    const starkCircle = $('#starkCircle');
     const matchVal = $('#matchScoreVal');
-    const btnGuide = $('#btnAiGuide');
-    if (matchCont && matchVal) {
-        const score = r.match_score || (num(r.nota) > 0 ? (num(r.nota) * 10).toFixed(0) : null);
-        if (score) {
-            matchCont.style.display = 'block';
-            matchVal.textContent = score;
-            if (btnGuide) btnGuide.style.display = 'block';
-        } else {
-            matchCont.style.display = 'none';
-            if (btnGuide) btnGuide.style.display = 'none';
+    
+    if (starkCircle && matchVal) {
+        const score = r.match_score || (num(r.nota) > 0 ? (num(r.nota) * 10).toFixed(0) : 0);
+        const dashArray = (score / 100) * 100.5;
+        
+        starkCircle.style.strokeDasharray = `${dashArray} 100`;
+        matchVal.textContent = score + '%';
+        
+        // Dynamic Recommendation
+        const recBadge = $('#aiRecBadge');
+        if (recBadge) {
+            if (score >= 85) {
+                recBadge.textContent = 'POTENCIAL_S+';
+                recBadge.style.color = '#22d3ee';
+            } else if (score >= 70) {
+                recBadge.textContent = 'OPERATIVO_ALTA_AFINIDAD';
+                recBadge.style.color = '#10b981';
+            } else {
+                recBadge.textContent = 'REVISIÓN_NECESARIA';
+                recBadge.style.color = '#f59e0b';
+            }
         }
     }
 
     const evalg = $('#phEval');
     if (evalg) evalg.textContent = r.evaluacion_general || '—';
 
-    // Status Badge
-    const statusVal = r.status || 'Nuevo';
     const statusBadge = $('#phStatusBadge');
     if (statusBadge) {
-        statusBadge.textContent = statusVal;
-        statusBadge.className = 'badge ' + (statusVal === 'Contratado' ? 'badge--success' : (statusVal === 'Rechazado' ? 'badge--danger' : 'badge--info'));
+        statusBadge.textContent = (r.status || 'NUEVO_EXPEDIENTE').toUpperCase();
     }
 
-    // Recommendation Badge
-    const recBadge = $('#aiRecBadge');
-    if (recBadge) {
-        const nota = num(r.nota);
-        if (nota >= 6.5) {
-            recBadge.textContent = 'Alto Potencial';
-            recBadge.style.background = 'rgba(16, 185, 129, 0.1)';
-            recBadge.style.color = '#10b981';
-            recBadge.style.borderColor = '#10b981';
-        } else if (nota >= 5.5) {
-            recBadge.textContent = 'Recomendable';
-            recBadge.style.background = 'rgba(245, 158, 11, 0.1)';
-            recBadge.style.color = '#f59e0b';
-            recBadge.style.borderColor = '#f59e0b';
-        } else if (nota > 0) {
-            recBadge.textContent = 'Bajo Calce';
-            recBadge.style.background = 'rgba(239, 68, 68, 0.1)';
-            recBadge.style.color = '#ef4444';
-            recBadge.style.borderColor = '#ef4444';
-        }
+    const statusSec = $('#phStatusSecondary');
+    if (statusSec) {
+        statusSec.textContent = (r.status || 'ACTIVO').toUpperCase();
     }
+
+    // Recommendation logic integrated into match indicator above
 
     // Ranking Badge
     const rkBadge = $('#phRankingBadge');
@@ -424,21 +417,26 @@
 
   if (btnAi) {
     btnAi.onclick = async () => {
-      summaryBox.parentElement.parentElement.style.display = 'block';
-      summaryBox.innerHTML = '<i>Analizando perfil con IA...</i>';
+      summaryBox.parentElement.style.display = 'block';
+      summaryBox.innerHTML = '<div style="font-family:monospace; color:var(--accent);">➔ INICIANDO_DECODER_IA...</div>';
       
-      const candidateInfo = `Candidato: ${row.nombre_completo}, Profesión: ${row.profesion}, Experiencia: ${row.experiencia_total} años, Nota: ${row.nota}. Evaluación actual: ${row.evaluacion_general}`;
-      const prompt = `Por favor, genera un resumen ejecutivo de 3 puntos clave para este candidato: ${candidateInfo}. Sé breve y profesional. Sé muy directo sobre sus fortalezas y debilidades.`;
+      // Intentar cargar explicacion guardada si existe
+      if (row.match_explicacion) {
+          summaryBox.innerHTML = `<div style="margin-bottom:15px; padding:10px; border-left:2px solid var(--accent); background:rgba(34,211,238,0.05);">${row.match_explicacion}</div>`;
+      }
+
+      const candidateInfo = `Candidato: ${row.nombre_completo}, Profesión: ${row.profesion}, Experiencia: ${row.experiencia_total} años, Nota: ${row.nota}.`;
+      const prompt = `Actúa como JARVIS de Iron Man. Eres el sistema de inteligencia de AFK. Analiza este perfil: ${candidateInfo}. Genera un reporte táctico de 3 puntos (FORTALEZAS, RIESGOS, VERDICTO). Usa un tono tecnológico y directo.`;
 
       if (window.afkChatSend) {
           window.afkChatSend(prompt, (reply) => {
-              summaryBox.innerHTML = reply.replace(/\n/g, '<br>');
+              summaryBox.innerHTML += `<div style='margin-top:10px;'>${reply.replace(/\n/g, '<br>')}</div>`;
               if ($('#aiSummaryPreview')) {
-                  $('#aiSummaryPreview').textContent = reply.split('.')[0] + '...';
+                  $('#aiSummaryPreview').textContent = 'ANÁLISIS_COMPLETO: DISPONIBLE';
               }
           });
       } else {
-          summaryBox.innerHTML = 'El asistente de IA se está cargando...';
+          summaryBox.innerHTML = 'ERROR_SISTEMA: Chatbot no inicializado.';
       }
     };
   }

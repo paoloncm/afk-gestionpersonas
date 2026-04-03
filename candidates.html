@@ -11,56 +11,86 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
   <style>
-    .profile {
-      display: grid;
-      gap: 16px
+    :root {
+      --accent: #22d3ee;
+      --accent-glow: rgba(34, 211, 238, 0.3);
+      --bg-dark: #020617;
+      --card-bg: rgba(15, 23, 42, 0.6);
+      --stark-border: 1px solid rgba(255, 255, 255, 0.1);
+      --stark-cyan: 1px solid rgba(34, 211, 238, 0.4);
     }
 
-    .profile__header {
-      display: flex;
-      align-items: center;
-      gap: 16px
+    body {
+        background-color: var(--bg-dark);
+        background-image: radial-gradient(circle at 50% 0%, rgba(34,211,238,0.08) 0%, transparent 70%);
     }
 
-    .grid2 {
-      display: grid;
-      gap: 16px;
-      grid-template-columns: repeat(2, minmax(0, 1fr))
+    .stark-hud {
+      background: rgba(15, 23, 42, 0.4);
+      backdrop-filter: blur(16px);
+      border: var(--stark-border);
+      border-radius: 12px;
+      position: relative;
+      overflow: hidden;
+      min-height: 100vh;
     }
 
-    @media(max-width:900px) {
-      .grid2 {
-        grid-template-columns: 1fr
-      }
+    .stark-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(10px);
+      border: var(--stark-border);
+      border-radius: 16px;
+      padding: 24px;
+      transition: 0.3s;
+      position: relative;
+      overflow: hidden;
     }
 
-    .timeline {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-      display: grid;
-      gap: 10px
+    .stark-card:hover { border-color: rgba(34, 211, 238, 0.4); }
+
+    .scan-line {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      opacity: 0.1;
+      animation: scan 4s linear infinite;
+      pointer-events: none;
     }
 
-    .timeline li {
-      display: grid;
-      grid-template-columns: 120px 1fr;
-      gap: 12px;
-      padding: 10px;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      background: rgba(255, 255, 255, .03)
+    @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
+
+    .hud-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--accent);
+      background: rgba(34, 211, 238, 0.1);
+      padding: 4px 10px;
+      border-radius: 4px;
+      border: 1px solid rgba(34, 211, 238, 0.2);
+      text-transform: uppercase;
+      letter-spacing: 1px;
     }
 
-    .chart-box {
-      height: 280px;
-      width: 100%
-    }
+    .stat-label { font-size: 10px; text-transform: uppercase; color: var(--accent); opacity: 0.7; font-family: 'JetBrains Mono', monospace; margin-bottom: 4px; }
+    .stat-value { font-size: 18px; font-weight: 800; color: #fff; }
 
-    .files a {
-      display: inline-block;
-      margin: 6px 10px 6px 0
-    }
+    .grid2 { display: grid; gap: 20px; grid-template-columns: repeat(2, 1fr); }
+    @media(max-width:1024px) { .grid2 { grid-template-columns: 1fr; } }
+    
+    .profile-hero { padding: 50px 40px; position: relative; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    
+    .tech-border { position: absolute; width: 15px; height: 15px; border: 2px solid var(--accent); opacity: 0.5; }
+    .tech-tl { top: 20px; left: 20px; border-right: 0; border-bottom: 0; }
+    .tech-tr { top: 20px; right: 20px; border-left: 0; border-bottom: 0; }
+    .tech-bl { bottom: 20px; left: 20px; border-right: 0; border-top: 0; }
+    .tech-br { bottom: 20px; right: 20px; border-left: 0; border-top: 0; }
+
+    .pulse { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 10px var(--accent); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+
+    .chart-box { width: 100%; height: 250px; }
+    .pill-list { list-style:none; padding:0; display:flex; flex-wrap:wrap; gap:8px; }
+    .pill-list li { background:rgba(34,211,238,0.05); border:1px solid rgba(34,211,238,0.2); padding:4px 10px; border-radius:4px; font-size:11px; color:#fff; }
   </style>
 </head>
 
@@ -111,170 +141,144 @@
         </div>
       </div>
 
-      <div class="profile">
-        <!-- Hero del Candidato -->
-        <section class="hero-dashboard" style="display:block; padding:32px;">
-          <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:20px;">
-            <div class="hero-dashboard__text">
-              <div style="display:flex; gap:10px; align-items:center; margin-bottom:12px;">
-                <span id="phStatusBadge" class="badge badge--info">Postulado</span>
-                <span id="aiRecBadge" class="badge" style="background:var(--accent-glow); color:var(--accent); border:1px solid var(--accent);">Esperando Análisis IA</span>
+      <div class="profile stark-hud">
+        <div class="scan-line"></div>
+        
+        <!-- Hero del Candidato Stark V6 -->
+        <section class="profile-hero">
+          <div class="tech-border tech-tl"></div>
+          <div class="tech-border tech-tr"></div>
+          <div class="tech-border tech-bl"></div>
+          <div class="tech-border tech-br"></div>
+
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:30px;">
+            <div style="flex:1; min-width:300px;">
+              <div style="display:flex; gap:12px; align-items:center; margin-bottom:15px;">
+                <span id="phStatusBadge" class="hud-tag" style="background:rgba(34,211,238,0.15); font-weight:800;">VERIFICANDO...</span>
+                <span id="aiRecBadge" class="hud-tag" style="background:rgba(168,85,247,0.1); color:#a855f7; border-color:rgba(168,85,247,0.3);">INTEL_PROCESSING...</span>
               </div>
-              <h1 id="phName" style="font-size:42px; font-weight:900; margin:0; line-height:1.1;">—</h1>
-              <p id="phProf" style="font-size:20px; color:var(--text-muted); margin:8px 0 16px;">—</p>
+              <h1 id="phName" style="font-size:48px; font-weight:900; margin:0; letter-spacing:-1px; color:#fff; text-transform:uppercase;">——————</h1>
+              <div id="phProf" style="font-size:18px; color:var(--accent); font-family:'JetBrains Mono', monospace; margin-top:5px; opacity:0.8;">CANDIDATO_EXTERNO_IA</div>
               
-              <div style="display:flex; gap:20px; flex-wrap:wrap; align-items:center;">
-                <div id="phContact" style="font-size:14px; color:var(--text-muted);">—</div>
-                <div style="width:1px; height:20px; background:var(--border);"></div>
-                <div id="activeProcess" style="font-size:14px; font-weight:600; color:var(--ok);"></div>
+              <div style="display:flex; gap:30px; margin-top:25px; border-top:1px solid rgba(255,255,255,0.05); padding-top:20px;">
+                <div>
+                    <div class="stat-label">EXP_TOTAL</div>
+                    <div id="phExp" class="stat-value">—</div>
+                </div>
+                <div>
+                    <div class="stat-label">ULTIMA_ENTIDAD</div>
+                    <div id="phUltima" class="stat-value" style="font-size:14px; opacity:0.9;">—</div>
+                </div>
+                <div id="activeProcess">
+                    <!-- Dinámico -->
+                </div>
               </div>
             </div>
 
-            <div style="text-align:right; display:flex; flex-direction:column; align-items:flex-end; gap:10px;">
-               <div id="aiMatchContainer" class="card" style="background:rgba(255,255,255,0.03); border:1px solid var(--accent); padding:16px; border-radius:20px; min-width:180px;">
-                  <div style="font-size:12px; text-transform:uppercase; color:var(--text-muted); margin-bottom:4px; font-weight:700;">Match de Perfil IA</div>
-                  <div style="display:flex; align-items:baseline; gap:4px;">
-                    <span id="matchScoreVal" style="font-size:48px; font-weight:900; color:var(--accent); text-shadow:0 0 20px var(--accent-glow);">--</span>
-                    <span style="font-size:20px; font-weight:700; color:var(--accent);">%</span>
-                  </div>
-               </div>
-               <div id="phRankingBadge" style="font-size:12px; color:var(--text-muted); font-weight:600;">Ranking: #-- en la vacante</div>
+            <div style="display:flex; align-items:center; gap:25px; background:rgba(0,0,0,0.2); padding:20px; border-radius:20px; border:1px solid rgba(255,255,255,0.05);">
+                <div style="position:relative; width:100px; height:100px;">
+                   <svg width="100" height="100" viewBox="0 0 36 36">
+                     <circle cx="18" cy="18" r="16" fill="none" stroke="rgba(34,211,238,0.05)" stroke-width="2"></circle>
+                     <circle id="starkCircle" cx="18" cy="18" r="16" fill="none" stroke="var(--accent)" stroke-width="3" stroke-dasharray="0 100" transform="rotate(-90 18 18)" style="transition: stroke-dasharray 2s ease;"></circle>
+                     <text x="18" y="21" fill="#fff" font-size="8" font-weight="900" text-anchor="middle" style="font-family:'JetBrains Mono', monospace;" id="matchScoreVal">--</text>
+                   </svg>
+                   <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:80px; height:80px; border:1px dashed rgba(34,211,238,0.2); border-radius:50%; pointer-events:none;"></div>
+                </div>
+                <div>
+                    <div class="stat-label" style="margin-bottom:2px;">ÍNDICE_MÉRITO</div>
+                    <div style="font-size:11px; color:var(--muted); font-family:'JetBrains Mono', monospace;">SECURE_PROTOCOL_V6</div>
+                    <div id="phRankingBadge" style="margin-top:8px; font-size:10px; color:var(--accent);">RANKING: POS_PENDIENTE</div>
+                </div>
             </div>
           </div>
 
-          <div class="ai-command-bar" style="margin-top:32px; max-width:100%;">
-            <div class="pulse"></div>
-            <div id="aiQuickSummaryHeader" style="font-weight:700; color:#fff; font-size:15px; flex:1;">
-               <span id="aiSummaryPreview">El asistente está listo para analizar este perfil...</span>
+          <!-- AI Tactical Overlay -->
+          <div class="stark-card" style="margin-top:30px; border-color:rgba(34,211,238,0.2); background:rgba(34,211,238,0.03);">
+            <div style="display:flex; align-items:center; gap:15px;">
+                <div class="pulse"></div>
+                <div id="aiSummaryPreview" style="font-family:'JetBrains Mono', monospace; font-size:12px; color:#fff; flex:1;">JARVIS_SYSTEM: Listo para análisis de inteligencia...</div>
+                <button id="btnAiSummary" class="btn btn--mini btn--primary" style="padding:8px 20px;">DETONAR_ANÁLISIS_EXTREMO</button>
             </div>
-            <button id="btnAiSummary" class="btn btn--primary" style="border-radius:14px; padding:8px 20px;">Generar Análisis Completo</button>
           </div>
         </section>
 
-        <!-- Bloque de Inteligencia Central -->
-        <div id="aiSummaryFullCard" class="card card--success-alt" style="display:none; margin-bottom:16px;">
-           <div class="card__body">
-              <h3 style="margin:0 0 12px; font-size:16px; font-weight:800; display:flex; align-items:center; gap:8px;">
-                ✨ Resumen Ejecutivo IA
-              </h3>
-              <div id="aiSummaryContent" style="font-size:15px; line-height:1.7; color:rgba(255,255,255,0.9);">
-                 <!-- Se llena con IA -->
-              </div>
-           </div>
+
+        <!-- Bloque de Inteligencia Central Stark -->
+        <div id="aiSummaryFullCard" class="stark-card" style="display:none; margin:0 40px 25px; border-color:var(--accent);">
+            <h3 style="margin:0 0 15px; font-size:14px; font-weight:900; color:var(--accent); letter-spacing:2px; font-family:'JetBrains Mono', monospace;">
+              [ RESUMEN_EJECUTIVO_IA ]
+            </h3>
+            <div id="aiSummaryContent" style="font-size:14px; line-height:1.7; color:rgba(255,255,255,0.9);">
+               <!-- Se llena con IA -->
+            </div>
         </div>
 
-        <div class="grid2">
 
-          <div class="card">
-            <div class="card__body">
-              <h2 class="h1" style="font-size:18px">Información</h2>
+        <div class="grid2" style="padding: 0 40px 40px;">
+          <!-- Columna Left -->
+          <div style="display:flex; flex-direction:column; gap:20px;">
+            <div class="stark-card">
+              <h2 class="stat-label" style="font-size:14px; margin-bottom:20px;">➔ CAPACIDADES_Y_EXPERIENCIA</h2>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+                  <div>
+                    <div class="stat-label">PROFESIÓN_CERTIFICADA</div>
+                    <div id="phCargo" class="stat-value" style="font-size:14px;">—</div>
+                  </div>
+                  <div>
+                    <div class="stat-label">ESTADO_ACTUAL</div>
+                    <div id="phStatusSecondary" class="stat-value" style="font-size:14px;">—</div>
+                  </div>
+              </div>
+              <div style="margin-top:20px;">
+                <div class="stat-label">EXP_ESPECIFICA_IA</div>
+                <ul id="phConoc" class="pill-list" style="margin-top:8px;"></ul>
+              </div>
+            </div>
 
-              <div class="text-muted">Última empresa</div>
-              <div id="phUltima">—</div><br />
-
-              <div class="text-muted">Cargo último</div>
-              <div id="phCargo">—</div><br />
-
-              <div class="text-muted">Periodo</div>
-              <div id="phPeriodo">—</div><br />
-
-              <div class="text-muted">Años de experiencia</div>
-              <div id="phExp">—</div><br />
-
-              <div class="text-muted">Timeline laboral</div>
-              <div class="chart-box">
+            <div class="stark-card">
+              <h2 class="stat-label" style="font-size:14px; margin-bottom:20px;">➔ TRAYECTORIA_LABORAL</h2>
+              <div class="chart-box" style="height:200px;">
                 <canvas id="expTimeline"></canvas>
               </div>
             </div>
+            
+            <div class="stark-card">
+                <h2 class="stat-label" style="font-size:14px; margin-bottom:20px;">➔ EVALUACIÓN_CRÍTICA</h2>
+                <div id="phEval" style="font-size:13px; line-height:1.6; color:rgba(255,255,255,0.8); border-left:2px solid var(--accent); padding-left:15px;">—</div>
+            </div>
           </div>
 
-          <div class="card">
-            <div class="card__body">
-              <h2 class="h1" style="font-size:18px">Score</h2>
-
-              <div class="text-muted">Ranking</div>
-              <div id="phRanking">—</div><br />
-
-              <div class="text-muted">Nota</div>
-              <div id="phNota">—</div><br />
-
-              <div class="text-muted" style="margin-top:10px;">Perfil de competencias</div>
-              <div class="chart-box">
+          <!-- Columna Right -->
+          <div style="display:flex; flex-direction:column; gap:20px;">
+            <div class="stark-card">
+              <h2 class="stat-label" style="font-size:14px; margin-bottom:20px;">➔ RADAR_COMPETENCIAS</h2>
+              <div class="chart-box" style="height:250px;">
                 <canvas id="radar"></canvas>
               </div>
             </div>
-          </div>
 
-          <div class="card" style="grid-column:1 / -1">
-            <div class="card__body">
-              <h2 class="h1" style="font-size:18px">Línea de Vida Laboral</h2>
-              <div class="chart-box" style="height:140px;">
-                <canvas id="expTimeline"></canvas>
+            <div class="stark-card">
+              <h2 class="stat-label" style="font-size:14px; margin-bottom:20px;">➔ GESTIÓN_EXPEDIENTE</h2>
+              <div class="form-group">
+                <label class="stat-label">Vincular a Vacante</label>
+                <select id="selectVacancy" class="input" style="width:100%; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); color:#fff; margin-bottom:10px;"></select>
+                <button id="btnLinkVacancy" class="btn btn--primary" style="width:100%">SINCRONIZAR_VACANTE</button>
+              </div>
+              <div style="margin-top:20px;">
+                <label class="stat-label">Programar Entrevista</label>
+                <input type="datetime-local" id="interviewDate" class="input" style="width:100%; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); color:#fff; margin-bottom:10px;">
+                <button id="btnScheduleInterview" class="btn btn--primary" style="width:100%">AGENDAR_OPERACIÓN</button>
               </div>
             </div>
-          </div>
 
-          <div class="card">
-            <div class="card__body">
-              <h2 class="h1" style="font-size:18px">Gestión de Reclutamiento</h2>
-              
-              <div class="form-group" style="margin-top:12px">
-                <label style="display:block; margin-bottom:8px; color:var(--text-muted); font-size:14px;">Vincular a Vacante</label>
-                <select id="selectVacancy" class="select" style="width:100%; background:#1a1b1f; color:#fff; border:1px solid var(--border);"></select>
-                <button id="btnLinkVacancy" class="btn btn--primary" style="width:100%; margin-top:12px">Vincular</button>
-              </div>
-
-              <div style="margin-top:24px; border-top:1px solid var(--border); padding-top:16px">
-                <label style="display:block; margin-bottom:8px; color:var(--text-muted); font-size:14px;">Programar Entrevista</label>
-                <input type="datetime-local" id="interviewDate" class="input" style="width:100%; margin-top:8px; padding:10px; background:#1a1b1f; border:1px solid var(--border); border-radius:8px; color:#fff;">
-                <button id="btnScheduleInterview" class="btn btn--primary" style="width:100%; margin-top:12px">Programar</button>
-              </div>
+            <div class="stark-card">
+                <h2 class="stat-label" style="font-size:14px; margin-bottom:20px;">➔ DOCUMENTOS_IA</h2>
+                <div class="files" id="docList" style="margin-bottom:15px;"></div>
+                <iframe id="pdfViewer" style="width:100%; height:300px; border:1px solid rgba(255,255,255,0.1); border-radius:12px; background:#000;"></iframe>
             </div>
           </div>
-
-
-          <div class="card" style="grid-column:1 / -1">
-            <div class="card__body">
-              <h2 class="h1" style="font-size:18px">Historial</h2>
-              <ol id="stageTimeline" class="timeline"></ol>
-            </div>
-          </div>
-
-          <div class="card" style="grid-column:1 / -1">
-            <div class="card__body">
-              <h2 class="h1" style="font-size:18px">Evaluación general</h2>
-              <div id="phEval">—</div>
-            </div>
-          </div>
-
-          <div class="card" style="grid-column:1 / -1">
-            <div class="card__body">
-              <h2 class="h1" style="font-size:18px">Competencias y experiencia adicional</h2>
-
-              <div class="grid2" style="margin-top:8px">
-                <div>
-                  <h3 class="h1" style="font-size:14px">Experiencia específica</h3>
-                  <ul id="phConoc" class="pill-list"></ul>
-                </div>
-
-                <div>
-                  <h3 class="h1" style="font-size:14px">Otras experiencias</h3>
-                  <ul id="phOtrasExp" class="pill-list"></ul>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="card" style="grid-column:1 / -1">
-            <div class="card__body">
-              <h2 class="h1" style="font-size:18px">Documentos</h2>
-              <div class="files" id="docList"></div>
-              <iframe id="pdfViewer"
-                style="width:100%;height:380px;border:1px solid var(--border);border-radius:10px"></iframe>
-            </div>
-          </div>
-
         </div>
+
       </div>
     </main>
 
