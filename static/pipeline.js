@@ -34,6 +34,7 @@
 
         if (error) {
             console.error('Error cargando candidatos para pipeline:', error);
+            window.notificar?.('Error al conectar con el núcleo de datos: ' + error.message, 'error');
             return;
         }
         renderBoard(data || []);
@@ -59,7 +60,7 @@
             const colCandidates = candidates.filter(c => {
                 const s = String(c.status || '').trim().toLowerCase();
                 const p = phase.toLowerCase();
-                if (phase === 'Postulado' && (s === 'nuevo' || s === '' || s === 'postulado')) return true;
+                if (phase === 'Postulado' && (s === 'nuevo' || s === '' || s === 'postulado' || s === 'analizado por ia')) return true;
                 return s === p;
             });
 
