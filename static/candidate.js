@@ -12,6 +12,23 @@
     return Number.isFinite(n) ? n : 0;
   };
 
+  const calculateExperienceHeuristic = (text) => {
+    if (!text) return 0;
+    const currentYear = new Date().getFullYear();
+    // Captura rangos como 2011-2016, 2017--2020, 2021-Actualidad
+    const matches = text.matchAll(/(\d{4})[-|–|—\s]{1,2}(\d{4}|presente|actualidad)/gi);
+    let totalYears = 0;
+    for (const match of matches) {
+      const start = parseInt(match[1]);
+      let endText = match[2].toLowerCase();
+      const end = (endText.includes('presen') || endText.includes('actual')) ? currentYear : parseInt(match[2]);
+      if (end >= start && start > 1950) {
+        totalYears += (end - start);
+      }
+    }
+    return totalYears > 0 ? Math.round(totalYears * 10) / 10 : 0;
+  };
+
   const qs = new URLSearchParams(window.location.search);
   const candidateId = qs.get("id") || qs.get("trabajador_uuid") || qs.get("worker_id");
 
@@ -198,16 +215,23 @@
   // ==========================
   const set = (sel, val) => { const el = $(sel); if (el) el.innerText = val || "—"; };
   
+  // identity & stats
+  let totalExp = num(r.experiencia_total);
+  if (totalExp <= 0 && r.experiencia_general) {
+    totalExp = calculateExperienceHeuristic(r.experiencia_general);
+    console.log("🛠️ Stark Heuristic Experience:", totalExp);
+  }
+
   set('#phName', r.nombre_completo);
   set('#phProf', r.profesion || r.cargo_postulado);
-  set('#phExp', (r.experiencia_total || 0) + " AÑOS");
+  set('#phExp', totalExp + " AÑOS");
   set('#phCargoObjetivo', r.cargo_postulado);
   set('#phUltima', r.ultima_empresa);
   
   // Disponibilidad y cargos similares (Data-driven placeholders)
   set('#phDisponibilidad', "INMEDIATA");
-  set('#phExpCargo', (r.experiencia_total || 0) + " AÑOS");
-  set('#phExpSimilar', Math.max(0, num(r.experiencia_total) - 2) + " AÑOS");
+  set('#phExpCargo', totalExp + " AÑOS");
+  set('#phExpSimilar', Math.max(0, totalExp - 2) + " AÑOS");
 
 
   // Stark Benchmarks (Keep labels but use new logic)
@@ -233,21 +257,12 @@
   // ==========================
   const updateBar = (id, val) => {
     const bar = $(id);
-    if (bar) {
-      bar.style.width = val + "%";
-      const lbl = bar.parentElement.parentElement.querySelector('.val');
-      if (lbl) lbl.textContent = Math.round(val) + "%";
-      // Color
-      if (val < 40) bar.style.backgroundColor = "rgba(239, 68, 68, 0.6)"; 
-      else if (val < 75) bar.style.backgroundColor = "rgba(245, 158, 11, 0.6)";
-      else bar.style.backgroundColor = "rgba(6, 182, 212, 0.6)";
-    }
+    if (bar) bar.style.width = val + "%";
   };
 
-  updateBar("#sbExp", Math.min(100, num(r.experiencia_total) * 8));
+  updateBar("#sbExp", Math.min(100, (totalExp / 15) * 100));
   updateBar("#sbCert", credentials.length > 0 ? (compliance.ok / credentials.length) * 100 : 40);
   updateBar("#sbEst", 85);
-  // Note: updateBar("#sbFit", score) is now handled inside updateHUD()
   updateBar("#sbOtr", 70);
 
   // Initial HUD Render (Best match)
@@ -303,9 +318,16 @@
 
       // ACTUALIZAR HUD CON LA EXPERIENCIA CALCULADA
       if (result.experiencia_total !== undefined) {
-        const expEl = $('#totalExperience');
-        if (expEl) expEl.textContent = `${result.experiencia_total} AÑOS`;
-        // Actualizar objeto r local para que otros componentes lo vean
+        // EXPERIENCIA: Si la columna es 0, intentar calcular del texto historial
+        let displayedExperience = num(result.experiencia_total);
+        if (displayedExperience <= 0 && r.experiencia_general) {
+          displayedExperience = calculateExperienceHeuristic(r.experiencia_general);
+          console.log("🛠️ Stark Heuristic Experience:", displayedExperience);
+        }
+
+        $('#totalExperience').textContent = `${displayedExperience} AÑOS`;
+        const expBar = $('#expBar');
+        if (expBar) expBar.style.width = `${Math.min(100, (displayedExperience / 15) * 100)}%`;
         r.experiencia_total = result.experiencia_total;
       }
 
