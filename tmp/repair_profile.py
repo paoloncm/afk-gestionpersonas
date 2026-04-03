@@ -1,0 +1,42 @@
+html = r"""<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JARVIS Profile Redirect</title>
+    <style>
+        body { margin: 0; background: #0f172a; color: #22d3ee; font-family: 'JetBrains Mono', monospace; display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
+        .loader { text-align: center; }
+        .radar { width: 100px; height: 100px; border: 2px solid rgba(34, 211, 238, 0.2); border-radius: 50%; position: relative; margin: 0 auto 20px; }
+        .radar::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-top: 2px solid #22d3ee; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .text { font-size: 14px; letter-spacing: 2px; text-transform: uppercase; }
+    </style>
+</head>
+<body>
+    <div class="loader">
+        <div class="radar"></div>
+        <div class="text">ACCEDIENDO A EXPEDIENTE_INTEL...</div>
+    </div>
+    <script>
+        window.onload = () => {
+            const params = new URLSearchParams(window.location.search);
+            const id = params.get('id');
+            const type = params.get('type') || 'IA EXTERNO';
+            if (id) {
+                setTimeout(() => {
+                    const target = type === 'AFK' ? 'worker.html' : 'candidates.html';
+                    window.location.href = target + '?id=' + id;
+                }, 800);
+            } else {
+                window.location.href = 'index.html';
+            }
+        };
+    </script>
+</body>
+</html>
+"""
+
+with open('candidate.html', 'w', encoding='utf-8') as f:
+    f.write(html)
+print("SUCCESS: candidate.html repaired.")
