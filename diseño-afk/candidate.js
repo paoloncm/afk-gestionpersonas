@@ -97,7 +97,6 @@
     }
     fill(row);
     radar(row, row2);
-    expTimeline(row);
     renderTimeline([]);
     renderDocsFromCandidate(row);
     fillCompetencias(row);
@@ -292,24 +291,6 @@
     window._afkRadar.update();
   }
 
-  function expTimeline(r) {
-    const y = num(r.experiencia_total) || 0;
-    const el = $('#expTimeline');
-    if (!el) return;
-
-    if (window._afkExpTimeline) window._afkExpTimeline.destroy();
-    window._afkExpTimeline = new Chart(el, {
-      type: 'bar',
-      data: {
-        labels: [r.ultima_exp_laboral_empresa || 'Experiencia'],
-        datasets: [{ data: [y * 12] }]
-      },
-      options: {
-        responsive: true,
-        plugins: { legend: { display: false } }
-      }
-    });
-  }
 
   function renderTimeline(items) {
     const el = $('#stageTimeline');
