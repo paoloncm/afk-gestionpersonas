@@ -114,7 +114,7 @@
   })).sort((a,b) => b.match - a.match);
 
   // Initialize Selector
-  const vSelector = $('#vacancySelector HUD');
+  const vSelector = $('#vacancySelectorHUD');
   if (vSelector) {
     vSelector.innerHTML = scoredVacancies.length > 0 
       ? scoredVacancies.map(v => `<option value="${v.id}">${v.title.toUpperCase()} (${Math.round(v.match)}%)</option>`).join('')
