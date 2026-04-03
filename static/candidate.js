@@ -258,14 +258,79 @@
   }
 
   // ==========================
-  // IA SUMMARY INTERACTION
+  // IA SUMMARY: WEBHOOK & ANALYSIS
   // ==========================
   const aiBtn = $('#btnAiSummary');
+  const aiContent = $('#aiSummaryContent');
+  const aiPreview = $('#aiSummaryPreview');
+
+  async function triggerAiAnalysis() {
+    if (!aiBtn || !aiContent) return;
+    
+    // UI State: Loading
+    aiBtn.disabled = true;
+    const originalText = aiBtn.innerText;
+    aiBtn.innerText = "PROCESANDO... 🤖";
+    aiContent.innerHTML = `<div style="opacity:0.6;" class="pulse">Iniciando reconocimiento táctico Stark... <br><span style="font-size:11px;">Enviando datos a n8n Matrix.</span></div>`;
+    if (aiPreview) aiPreview.innerText = "SISTEMA ACTIVO — ANALIZANDO";
+
+    try {
+      // Usar el webhook definido en app.js para flujo de rrhh
+      const WEBHOOK_URL = "https://primary-production-29c40.up.railway.app/webhook/afk-preuba-rrhh";
+      
+      const response = await fetch(WEBHOOK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: r.id,
+          nombre: r.nombre_completo,
+          profesion: r.profesion,
+          cargo_postulado: r.cargo_postulado,
+          experiencia_total: r.experiencia_total,
+          evaluacion_general: r.evaluacion_general,
+          experiencia_general: r.experiencia_general,
+          resumen_ia: r.resumen_ia
+        })
+      });
+
+      if (!response.ok) throw new Error("Fallo en la comunicación con la matriz IA");
+
+      const result = await response.json();
+      console.log("Stark AI Response:", result);
+
+      // El flujo de n8n normalmente actualiza la DB, re-fetchear o usar retorno
+      window.notificar?.("ANÁLISIS COMPLETADO EXITOSAMENTE", "success");
+      
+      // Intentar extraer el resumen del retorno si n8n lo envía
+      const newSummary = (Array.isArray(result) ? result[0]?.resumen_ia : result?.resumen_ia) || "Análisis completado. Por favor, refresca el HUD para ver los detalles actualizados en la base de datos central.";
+      
+      aiContent.innerHTML = newSummary.replace(/\n/g, '<br>');
+      if (aiPreview) aiPreview.innerText = "SISTEMA LISTO — ANÁLISIS CONFIRMADO";
+
+    } catch (err) {
+      console.error("Stark AI Error:", err);
+      window.notificar?.("ERROR EN PROTOCOLO IA: " + err.message, "danger");
+      aiContent.innerHTML = `<span style="color:var(--danger);">⚠️ Error crítico en la generación del análisis. Intenta nuevamente más tarde.</span>`;
+    } finally {
+      aiBtn.disabled = false;
+      aiBtn.innerText = originalText;
+    }
+  }
+
   if (aiBtn) {
     aiBtn.onclick = () => {
-      const content = $('#aiSummaryContent');
-      if (content) content.innerHTML = r.resumen_ia ? r.resumen_ia.replace(/\n/g, '<br>') : "Procesando análisis Stark...";
+      // Si ya hay resumen, lo mostramos, pero permitimos re-generar si el usuario insiste
+      if (r.resumen_ia && aiContent.innerText.includes("Esperando")) {
+         aiContent.innerHTML = r.resumen_ia.replace(/\n/g, '<br>');
+      } else {
+         triggerAiAnalysis();
+      }
     };
+  }
+
+  // Pre-load current summary if exists
+  if (r.resumen_ia && aiContent) {
+    aiContent.innerHTML = r.resumen_ia.replace(/\n/g, '<br>');
   }
 
 })();
