@@ -131,7 +131,7 @@
     
     // Circular Chart
     const scoreVal = $('#matchScoreVal');
-    if (scoreVal) scoreVal.innerText = Math.round(score) + "%";
+    if (scoreVal) scoreVal.textContent = Math.round(score) + "%";
     const circle = $('#starkCircle');
     if (circle) circle.style.strokeDasharray = `${score} 100`;
 
@@ -236,7 +236,7 @@
     if (bar) {
       bar.style.width = val + "%";
       const lbl = bar.parentElement.parentElement.querySelector('.val');
-      if (lbl) lbl.innerText = Math.round(val) + "%";
+      if (lbl) lbl.textContent = Math.round(val) + "%";
       // Color
       if (val < 40) bar.style.backgroundColor = "rgba(239, 68, 68, 0.6)"; 
       else if (val < 75) bar.style.backgroundColor = "rgba(245, 158, 11, 0.6)";
