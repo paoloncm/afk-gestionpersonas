@@ -190,43 +190,32 @@
   }
 
   async function analyzeTenderStarkV3(text) {
-     const WEBHOOK = 'https://primary-production-aa252.up.railway.app/webhook/a35e75ae-9003-493b-a00e-8edd8bd2b12a';
-     const res = await fetch(WEBHOOK, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-             message: `ACTÚA COMO JARVIS (STARK INDUSTRIES):
-             Analiza este texto de licitación y extrae la JERARQUÍA OPERATIVA.
-             1. Resumen Ejecutivo (max 250 chars).
-             2. Lista de Roles/Vacantes Críticas. Para cada una, extrae sus REQUISITOS TÉCNICOS ESPECÍFICOS (certificaciones, años exp, etc).
-             
-             FORMATO OBLIGATORIO (JSON ESTRICTO):
-             {
-               "description": "...",
-               "vacancies": [
-                 { "title": "Nombre del Cargo", "requirements": ["Req 1", "Req 2"] }
-               ]
-             }
-             
-             TEXTO A ANALIZAR:
-             ${text.substring(0, 5000)}` 
-        })
-     });
-     const data = await res.json();
-     let payload = Array.isArray(data) ? data[0] : data;
-     let raw = payload.output || payload.text || payload.reply || "";
-     
-     let final = { description: "", vacancies: [] };
      try {
-       const sIdx = raw.indexOf('{');
-       const eIdx = raw.lastIndexOf('}') + 1;
-       final = JSON.parse(raw.substring(sIdx, eIdx));
-     } catch (e) { console.error("Parse Error", e); }
-     
-     if (!final.vacancies?.length) {
-        final.vacancies = [{ title: "PERFIL BASE CAPTURADO", requirements: ["Cumplimiento de bases técnicas"] }];
+       const res = await fetch('/api/analyze-tender', {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify({ text })
+       });
+       const data = await res.json();
+       if (!data.ok) throw new Error(data.detail || "Error en extracción Stark");
+       
+       const analysis = data.analysis;
+       // Map to internal vacancies format
+       const vacancies = (analysis.roles || []).map(r => ({
+         title: r.nombre,
+         quantity: r.cantidad || 1,
+         requirements: [...(r.requisitos || []), ...(r.certificaciones || []), r.experiencia_minima].filter(Boolean)
+       }));
+
+       return {
+         description: analysis.tender_summary,
+         global_risk: analysis.global_risk,
+         vacancies: vacancies
+       };
+     } catch (err) {
+       console.error("[Stark Analyze Error]", err);
+       throw err;
      }
-     return final;
   }
 
   function renderScanPreview(vacs) {
@@ -289,11 +278,18 @@
       const itemsAbove50 = allScores.filter(s => s >= 50).length;
       const bestScore = allScores.length ? Math.max(...allScores) : 0;
 
+      const currentShortlist = (typeof v.shortlisted_candidates === 'string') ? JSON.parse(v.shortlisted_candidates || '[]') : (v.shortlisted_candidates || []);
+      const qty = v.quantity || 1;
+      const coverage = Math.min(100, Math.round((currentShortlist.length / qty) * 100));
+
       return `
-      <div class="stark-card" style="padding:15px; margin-bottom:12px; border-left: 3px solid var(--accent); position:relative; display:flex; justify-content:space-between; align-items:center;">
+      <div class="stark-card" style="padding:15px; margin-bottom:12px; border-left: 3px solid ${coverage === 100 ? '#10b981' : 'var(--accent)'}; position:relative; display:flex; justify-content:space-between; align-items:center;">
         <button type="button" class="btn btn--mini" style="position:absolute; top:2px; right:2px; color:var(--danger); font-weight:800; background:none; border:none;" onclick="window.remV(${i})">×</button>
         <div style="flex:1;">
-            <div class="vacancy-pill" style="font-size:11px; font-weight:900; letter-spacing:1px; margin-bottom:8px;">[ ${v.title.toUpperCase()} ]</div>
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+                <div class="vacancy-pill" style="font-size:11px; font-weight:900; letter-spacing:1px; margin:0;">[ ${v.title.toUpperCase()} ]</div>
+                <span class="badge" style="font-size:9px; background:rgba(255,255,255,0.05);">${currentShortlist.length} / ${qty} CUBIERTO</span>
+            </div>
             <div style="font-size:10px; color:var(--muted); display:flex; flex-wrap:wrap; gap:4px;">
               ${v.requirements.map(r => `<span style="background:rgba(34,211,238,0.05); border:1px solid rgba(34,211,238,0.2); padding:2px 6px; border-radius:4px; color:rgba(255,255,255,0.7);">${r}</span>`).join('')}
             </div>
@@ -302,10 +298,10 @@
             <div style="display:flex; flex-direction:column; align-items:center;">
                 <svg width="40" height="40" viewBox="0 0 36 36" style="transform: rotate(-90deg);">
                     <circle cx="18" cy="18" r="16" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="3"></circle>
-                    <circle cx="18" cy="18" r="16" fill="none" stroke="var(--accent)" stroke-width="3" stroke-dasharray="${bestScore}, 100" stroke-linecap="round"></circle>
-                    <text x="18" y="20.5" fill="var(--accent)" font-size="8" font-weight="900" text-anchor="middle" transform="rotate(90 18 18)" style="font-family:monospace;">${Math.round(bestScore)}%</text>
+                    <circle cx="18" cy="18" r="16" fill="none" stroke="${coverage === 100 ? '#10b981' : 'var(--accent)'}" stroke-width="3" stroke-dasharray="${bestScore}, 100" stroke-linecap="round"></circle>
+                    <text x="18" y="20.5" fill="${coverage === 100 ? '#10b981' : 'var(--accent)'}" font-size="8" font-weight="900" text-anchor="middle" transform="rotate(90 18 18)" style="font-family:monospace;">${Math.round(bestScore)}%</text>
                 </svg>
-                <div style="font-size:9px; color:var(--muted); margin-top:4px;">${itemsAbove50} personas</div>
+                <div style="font-size:9px; color:var(--muted); margin-top:4px;">${itemsAbove50} aptos</div>
             </div>
         </div>
       </div>
@@ -374,9 +370,117 @@
     const { data: vacs } = await window.supabase.from('vacancies').select('*').eq('tender_id', tender.id);
     let active = vacs?.length ? vacs : [{ id: 'global', title: 'OPERACIÓN GLOBAL', requirements: tender.requirements || [] }];
     
+    // Connect Auto-Fill button
+    const btnAuto = $('#btnStarkAutoFill');
+    if (btnAuto) {
+        btnAuto.onclick = () => starkAutoAllocateTeam(tender, active);
+    }
+
     vacancySelector.innerHTML = active.map((v, i) => `<option value="${i}">[ ${v.title.toUpperCase()} ]</option>`).join('');
-    vacancySelector.onchange = () => evaluate(tender, active[vacancySelector.value]);
+    vacancySelector.onchange = () => {
+        evaluate(tender, active[vacancySelector.value]);
+    };
+    
+    // Update Coverage HUD
+    updateTeamStats(active);
     evaluate(tender, active[0]);
+  }
+
+  async function updateTeamStats(vacancies) {
+      const totalRequested = vacancies.reduce((acc, v) => acc + (v.quantity || 1), 0);
+      let totalAssigned = 0;
+      const missing = [];
+
+      vacancies.forEach(v => {
+          let shortlist = [];
+          try {
+              shortlist = (typeof v.shortlisted_candidates === 'string') ? JSON.parse(v.shortlisted_candidates) : (v.shortlisted_candidates || []);
+          } catch(e) {}
+          
+          totalAssigned += shortlist.length;
+          const needed = (v.quantity || 1) - shortlist.length;
+          if (needed > 0) missing.push(`${needed} ${v.title}`);
+      });
+
+      const coverage = totalRequested ? Math.round((totalAssigned / totalRequested) * 100) : 0;
+      
+      const pctEl = $('#coveragePct');
+      const fillEl = $('#coverageFill');
+      const statusEl = $('#teamStatusText');
+      const missingEl = $('#missingRolesTags');
+      const riskEl = $('#tenderRiskBadge');
+
+      if (pctEl) pctEl.textContent = `${coverage}%`;
+      if (fillEl) fillEl.style.width = `${coverage}%`;
+      
+      if (statusEl) {
+          if (coverage === 100) statusEl.textContent = "EQUIPO COMPLETO: PROTOCOLO DE DESPLIEGUE LISTO.";
+          else if (coverage > 0) statusEl.textContent = `COBERTURA PARCIAL. RECOPILANDO RECURSOS FALTANTES.`;
+          else statusEl.textContent = "ANALIZANDO BRECHAS... EQUIPO EN ESTADO DE VACANTE.";
+      }
+
+      if (missingEl) {
+          missingEl.innerHTML = missing.map(m => `<span class="badge" style="background:#f43f5e; color:#fff; border:none; font-size:9px;">FALTA: ${m.toUpperCase()}</span>`).join('');
+      }
+
+      if (riskEl) {
+          let risk = "BAJO";
+          let color = "#10b981";
+          if (coverage < 50) { risk = "ALTO"; color = "#f43f5e"; }
+          else if (coverage < 90) { risk = "MEDIO"; color = "#f59e0b"; }
+          riskEl.textContent = `RIESGO: ${risk}`;
+          riskEl.style.borderColor = color;
+          riskEl.style.color = color;
+      }
+  }
+
+  async function starkAutoAllocateTeam(tender, vacancies) {
+      window.notificar?.("INICIANDO PROTOCOLO AUTOMÁTICO DE ASIGNACIÓN...", "info");
+      
+      for (const v of vacancies) {
+          if (v.id === 'global') continue;
+          
+          let shortlist = [];
+          try {
+              shortlist = (typeof v.shortlisted_candidates === 'string') ? JSON.parse(v.shortlisted_candidates) : (v.shortlisted_candidates || []);
+          } catch(e) {}
+
+          const needed = (v.quantity || 1) - shortlist.length;
+          if (needed <= 0) continue;
+
+          // Search logic (Simplified high-match auto-approval)
+          const { data: candidates } = await window.supabase.from('candidates').select('*');
+          const rs = v.requirements || [];
+          
+          const highMatches = (candidates || []).map(c => {
+              // Basic match score logic (can be expanded to use the embedding logic)
+              const profMatch = normalizeText(c.profesion || "").includes(normalizeText(v.title)) ? 60 : 0;
+              const evalMatch = rs.filter(r => normalizeText(c.evaluacion_general || "").includes(normalizeText(r))).length;
+              const score = Math.min(100, profMatch + (rs.length ? (evalMatch / rs.length) * 40 : 0));
+              return { ...c, score };
+          })
+          .filter(c => c.score >= 80 && !shortlist.some(s => s.id === c.id))
+          .sort((a,b) => b.score - a.score)
+          .slice(0, needed);
+
+          if (highMatches.length > 0) {
+              const newList = [...shortlist, ...highMatches.map(c => ({
+                  id: c.id,
+                  name: c.nombre_completo,
+                  type: 'CANDIDATO IA',
+                  score: c.score
+              }))];
+              
+              await window.supabase.from('vacancies').update({ shortlisted_candidates: JSON.stringify(newList) }).eq('id', v.id);
+              window.notificar?.(`AUTO-ASIGNADO: ${highMatches.length} perfiles para ${v.title}`, "success");
+          }
+      }
+      
+      window.notificar?.("PROTOCOLO FINALIZADO. REINICIANDO HUD...", "success");
+      // Refresh the tender vacancies to get updated data
+      const { data: updatedVacs } = await window.supabase.from('vacancies').select('*').eq('tender_id', tender.id);
+      updateTeamStats(updatedVacs);
+      evaluate(tender, updatedVacs[vacancySelector.value]);
   }
 
   async function evaluate(tender, vacancy) {

@@ -124,6 +124,61 @@ async def match_tender_candidates(req: TenderMatchRequest):
         return JSONResponse({"ok": False, "detail": str(e)}, status_code=500)
 
 
+# --- JARVIS Tender Analysis Endpoint ---
+class AnalyzeTenderRequest(BaseModel):
+    text: str
+
+@app.post("/api/analyze-tender")
+async def analyze_tender(req: AnalyzeTenderRequest):
+    """ACTÚA COMO JARVIS: Extrae la jerarquía operativa de una licitación."""
+    try:
+        import json
+        from openai import OpenAI
+        
+        openai_key = os.getenv("OPENAI_API_KEY")
+        if not openai_key:
+            return JSONResponse({"ok": False, "detail": "Missing OpenAI Key"}, status_code=500)
+            
+        openai = OpenAI(api_key=openai_key)
+        
+        prompt = (
+            "ACTÚA COMO JARVIS (STARK INDUSTRIES). Eres un experto en licitaciones industriales y mineras.\n"
+            "Analiza el siguiente texto de licitación y extrae la JERARQUÍA OPERATIVA de forma ultra-precisa.\n\n"
+            "INSTRUCCIONES:\n"
+            "1. Identifica cada ROL o CARGO requerido.\n"
+            "2. Para cada rol, extrae: Cantidad de personas, Requisitos técnicos, Certificaciones obligatorias y Experiencia mínima.\n"
+            "3. Genera un resumen ejecutivo de la licitación (max 300 caracteres).\n"
+            "4. DETERMINA UN NIVEL DE RIESGO GLOBAL (Bajo, Medio, Alto) basado en la complejidad de los requisitos.\n\n"
+            "FORMATO DE SALIDA (JSON ESTRICTO):\n"
+            "{\n"
+            "  \"tender_summary\": \"...\",\n"
+            "  \"global_risk\": \"Bajo/Medio/Alto\",\n"
+            "  \"roles\": [\n"
+            "    { \"nombre\": \"...\", \"cantidad\": 5, \"requisitos\": [\"...\"], \"certificaciones\": [\"...\"], \"experiencia_minima\": \"3 años\" }\n"
+            "  ]\n"
+            "}\n\n"
+            f"TEXTO A ANALIZAR:\n{req.text[:8000]}"
+        )
+        
+        res = openai.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": "You are JARVIS, an elite industrial analyst. You output ONLY valid JSON."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.2,
+            response_format={"type": "json_object"}
+        )
+        
+        analysis = json.loads(res.choices[0].message.content)
+        return {"ok": True, "analysis": analysis}
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JSONResponse({"ok": False, "detail": str(e)}, status_code=500)
+
+
 # --- JARVIS CV Processing Endpoint ---
 class CVProcessRequest(BaseModel):
     candidate_id: str
