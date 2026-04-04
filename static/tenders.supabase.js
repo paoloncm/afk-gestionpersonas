@@ -1,4 +1,4 @@
-// tenders.supabase.js - Lógica Stark Intelligence V8: RECONSTRUCCIÓN NIVEL NASA
+// tenders.supabase.js - Lógica Stark Intelligence V8: RECONSTRUCCIÓN FINAL ESTABLE
 (function () {
   const $ = (s) => document.querySelector(s);
   
@@ -85,16 +85,13 @@
           let totalAssigned = 0;
           tVacs.forEach(v => {
               try {
-                  const sl = (typeof v.shortlisted_candidates === 'string') ? JSON.parse(v.shortlisted_candidates) : (v.shortlisted_candidates || []);
+                  const sl = (typeof v.shortlisted_candidates === 'string') ? JSON.parse(v.shortlisted_candidates||'[]') : (v.shortlisted_candidates || []);
                   totalAssigned += sl.length;
               } catch(e) {}
           });
 
           const coverage = totalRequested ? Math.round((totalAssigned / totalRequested) * 100) : 0;
-          let risk = "BAJO";
-          if (coverage < 50) risk = "ALTO";
-          else if (coverage < 90) risk = "MEDIO";
-
+          let risk = coverage < 50 ? 'ALTO' : (coverage < 90 ? 'MEDIO' : 'BAJO');
           return { ...t, vacancies: tVacs, coverage, risk };
       });
       renderTenders();
@@ -150,6 +147,8 @@
         detectedVacancies = data || [];
         renderDetectedVacancies();
     });
+    if (uploadZone) uploadZone.style.display = 'block';
+    if (intelPreview) intelPreview.style.display = 'none';
     openModal(tenderModal);
   };
 
@@ -159,7 +158,7 @@
     $('#viewTenderTitle').innerText = t.name;
     $('#viewTenderSummary').innerText = t.description || 'Sin resumen estratégico.';
     $('#viewTenderCoverage').innerText = `${t.coverage || 0}%`;
-    $('#viewTenderDate').innerText = `Sincronizado: ${new Date().toLocaleDateString()}`;
+    $('#viewTenderDate').innerText = `Sincronizado: ${new Date(t.created_at).toLocaleDateString()}`;
     $('#viewTenderReqs').innerHTML = (t.requirements || []).map(r => `<span class="badge">${r}</span>`).join('') || '-';
     
     const teamDiv = $('#viewTenderTeam');
@@ -197,7 +196,40 @@
     detectedVacancies = [];
     renderDetectedVacancies();
     addReqInput();
+    if (uploadZone) uploadZone.style.display = 'block';
+    if (intelPreview) intelPreview.style.display = 'none';
     openModal(tenderModal);
+  };
+
+  tenderForm.onsubmit = async (e) => {
+    e.preventDefault();
+    const id = $('#tenderId').value;
+    const name = $('#tenderName').value;
+    const desc = $('#tenderDesc').value;
+    const reqs = Array.from(document.querySelectorAll('.req-input')).map(i => i.value.trim()).filter(v => v);
+
+    const { data: tRes, error: tErr } = id ? 
+        await window.supabase.from('tenders').update({ name, description: desc, requirements: reqs }).eq('id', id).select() :
+        await window.supabase.from('tenders').insert({ name, description: desc, requirements: reqs }).select();
+
+    if (tErr) return console.error(tErr);
+    
+    let tId = id || (Array.isArray(tRes) ? tRes[0].id : tRes.id);
+    
+    if (detectedVacancies.length > 0) {
+        if (id) await window.supabase.from('vacancies').delete().eq('tender_id', tId);
+        const vacData = detectedVacancies.map(v => ({ 
+            tender_id: tId, 
+            title: v.title, 
+            quantity: parseInt(v.quantity || 1) || 1,
+            requirements: v.requirements || [] 
+        }));
+        await window.supabase.from('vacancies').insert(vacData);
+    }
+    
+    window.notificar?.("MISIÓN SINCRONIZADA", "success");
+    closeModal(tenderModal);
+    loadTenders();
   };
 
   async function updateTeamStats(vacancies) {
@@ -213,11 +245,12 @@
       const coverage = totalRequested ? Math.round((totalAssigned / totalRequested) * 100) : 0;
       if ($('#coveragePct')) $('#coveragePct').textContent = `${coverage}%`;
       if ($('#coverageFill')) $('#coverageFill').style.width = `${coverage}%`;
-      if ($('#teamStatusText')) $('#teamStatusText').textContent = coverage === 100 ? "DESPLIEGE_LISTO" : "MÁXIMO_ANÁLISIS_REQUERIDO";
+      if ($('#teamStatusText')) $('#teamStatusText').textContent = coverage === 100 ? "DESPLIEGE_LISTO" : "ESTADO_DE_VACANTE";
       if ($('#missingRolesTags')) $('#missingRolesTags').innerHTML = missing.map(m => `<span class="badge" style="background:#f43f5e; border:none;">FALTA: ${m.toUpperCase()}</span>`).join('');
       if ($('#tenderRiskBadge')) {
           const risk = coverage < 50 ? 'ALTO' : (coverage < 90 ? 'MEDIO' : 'BAJO');
           $('#tenderRiskBadge').textContent = `RIESGO: ${risk}`;
+          $('#tenderRiskBadge').style.borderColor = coverage < 50 ? '#f43f5e' : '#10b981';
           $('#tenderRiskBadge').style.color = coverage < 50 ? '#f43f5e' : '#10b981';
       }
   }
@@ -379,6 +412,96 @@
     reqContainer.appendChild(div);
   }
 
+  function renderDetectedVacancies() {
+    if (!vacanciesList) return;
+    vacanciesWrapper.style.display = (detectedVacancies||[]).length ? 'block' : 'none';
+    const list = detectedVacancies || [];
+    vacanciesList.innerHTML = list.map((v, i) => `
+      <div class="stark-card" style="padding:12px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <div style="font-weight:900; font-size:11px; color:var(--accent);">[ ${v.title.toUpperCase()} ]</div>
+          <div style="font-size:9px; opacity:0.6;">DOTA: ${v.quantity || 1}</div>
+        </div>
+        <button type="button" class="btn btn--mini" style="color:var(--danger)" onclick="window.remV(${i})">×</button>
+      </div>`).join('');
+  }
+  window.remV = (i) => { detectedVacancies.splice(i, 1); renderDetectedVacancies(); };
+
+  // --- STARK SCANNER V3 (RESTORED) ---
+  if (uploadZone && pdfInput) {
+    uploadZone.onclick = () => pdfInput.click();
+    pdfInput.onchange = (e) => { if (e.target.files[0]) handleStarkScan(e.target.files[0]); };
+    uploadZone.ondragover = (e) => { e.preventDefault(); uploadZone.style.borderColor = 'var(--accent)'; };
+    uploadZone.ondragleave = () => { uploadZone.style.borderColor = 'rgba(34,211,238,0.3)'; };
+    uploadZone.ondrop = (e) => { e.preventDefault(); if (e.dataTransfer.files[0]) handleStarkScan(e.dataTransfer.files[0]); };
+  }
+
+  async function handleStarkScan(file) {
+    if (scannerOverlay) scannerOverlay.style.display = 'flex';
+    if (radarText) radarText.textContent = "DECODIFICANDO DOCUMENTO...";
+    try {
+      const text = await extractTextFromPDF(file);
+      if (!text.trim()) throw new Error("ERROR: DOCUMENTO SIN CAPA DE TEXTO");
+
+      if (radarText) radarText.textContent = "JARVIS ANALIZANDO REQUISITOS...";
+      const aiData = await analyzeTenderStarkV3(text);
+      currentScanVacancies = aiData.vacancies || [];
+      
+      if (intelDesc) intelDesc.value = aiData.description;
+      renderScanPreview(currentScanVacancies);
+      
+      if (scannerOverlay) scannerOverlay.style.display = 'none';
+      if (uploadZone) uploadZone.style.display = 'none';
+      if (intelPreview) intelPreview.style.display = 'block';
+    } catch (err) {
+      console.error(err);
+      window.notificar?.(err.message, "error");
+      if (scannerOverlay) scannerOverlay.style.display = 'none';
+    }
+  }
+
+  async function analyzeTenderStarkV3(text) {
+     const res = await fetch('/api/analyze-tender', {
+       method: 'POST',
+       headers: { 'Content-Type': 'application/json' },
+       body: JSON.stringify({ text })
+     });
+     const data = await res.json();
+     if (!data.ok) throw new Error(data.detail || "Error en extracción");
+     const analysis = data.analysis;
+     const vacancies = (analysis.roles || []).map(r => ({
+       title: r.nombre,
+       quantity: r.cantidad || 1,
+       requirements: [...(r.requisitos || []), ...(r.certificaciones || [])].filter(Boolean)
+     }));
+     return { description: analysis.tender_summary, vacancies: vacancies };
+  }
+
+  function renderScanPreview(vacs) {
+    if (!intelReqs) return;
+    intelReqs.innerHTML = vacs.map((v, i) => `
+      <div class="stark-card" style="padding:10px; margin-bottom:10px; border:1px solid rgba(34,211,238,0.2);">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <strong style="color:var(--accent); font-size:12px;">${v.title.toUpperCase()}</strong>
+          <input type="checkbox" checked class="scan-v-check" data-vidx="${i}">
+        </div>
+        <div style="font-size:10px; opacity:0.7;">${v.requirements.join(' • ')}</div>
+      </div>
+    `).join('');
+  }
+
+  if ($('#btnImportIntel')) {
+    $('#btnImportIntel').onclick = () => {
+      const selected = Array.from(document.querySelectorAll('.scan-v-check:checked')).map(c => currentScanVacancies[parseInt(c.dataset.vidx)]);
+      detectedVacancies = [...detectedVacancies, ...selected];
+      renderDetectedVacancies();
+      if (intelDesc && $('#tenderDesc')) $('#tenderDesc').value = intelDesc.value;
+      if (intelPreview) intelPreview.style.display = 'none';
+      if (uploadZone) uploadZone.style.display = 'block';
+      window.notificar?.("IMPORTACIÓN EXITOSA", "success");
+    };
+  }
+
   async function extractTextFromPDF(file) {
     const reader = new FileReader();
     const ab = await new Promise((resolve) => { reader.onload = () => resolve(reader.result); reader.readAsArrayBuffer(file); });
@@ -394,11 +517,24 @@
     return t;
   }
 
+  async function runMatchmaking(tender) {
+    $('#matchTitle').textContent = `OPERACIÓN_HUD: ${tender.name.toUpperCase()}`;
+    openModal(matchModal);
+    if (tabWorkers) tabWorkers.click();
+    matchBodyWorkers.innerHTML = '<div style="padding:40px; text-align:center;">SINTONIZANDO SEÑAL BIOMÉTRICA...</div>';
+    const { data: vacs } = await window.supabase.from('vacancies').select('*').eq('tender_id', tender.id);
+    let active = vacs?.length ? vacs : [{ id: 'global', title: 'OPERACIÓN GLOBAL', requirements: tender.requirements || [] }];
+    const btnAuto = $('#btnStarkAutoFill');
+    if (btnAuto) btnAuto.onclick = () => starkAutoAllocateTeam(tender, active);
+    vacancySelector.innerHTML = active.map((v, i) => `<option value="${i}">[ ${v.title.toUpperCase()} ]</option>`).join('');
+    vacancySelector.onchange = () => evaluate(tender, active[vacancySelector.value]);
+    updateTeamStats(active); evaluate(tender, active[0]);
+  }
+
   window.openPersonProfile = async function(id, type, matchScore = null, matchRole = null) {
       openModal(personProfileModal);
       $('#profileScanner').style.display = 'flex';
       const existingMatch = $('#starkMatchReport'); if (existingMatch) existingMatch.remove();
-
       try {
           const table = type.includes('IA') ? 'candidates' : 'workers';
           const { data: person } = await window.supabase.from(table).select('*').eq('id', id).single();
@@ -433,4 +569,3 @@
   const escapeHtml = (u) => (u||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
   document.addEventListener('DOMContentLoaded', loadTenders);
 })();
-function renderDetectedVacancies() {} // Dummy to prevent error if called
