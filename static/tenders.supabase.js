@@ -224,8 +224,12 @@
             if (sl.length > 0) {
                 names = sl.map(c => {
                     const score = c.score || 0;
+                    // Robust type check: If it contains 'IA' or 'EXTERNO' or has a high match score, treat as Candidate
+                    const isCandidate = (c.type || "").includes('IA') || (c.type || "").includes('EXTERNO');
+                    const resolvedType = isCandidate ? 'IA' : 'AFK';
+                    
                     return `
-                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px; cursor:pointer;" onclick="event.stopPropagation(); window.openPersonProfile('${c.id}', '${c.type === 'IA EXTERNO' ? 'IA' : 'AFK'}', ${score}, '${v.title}')">
+                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px; cursor:pointer;" onclick="event.stopPropagation(); window.openPersonProfile('${c.id}', '${resolvedType}', ${score}, '${v.title}')">
                         <span style="color:var(--ok)">✓</span> 
                         <span style="color:var(--text); font-weight:700; text-decoration:underline; text-decoration-color:rgba(34,211,238,0.2);">${c.name}</span>
                         <span style="font-size:9px; opacity:0.8; background:rgba(34,211,238,0.1); color:var(--accent); padding:1px 4px; border-radius:3px;">${score}% MATCH</span>
