@@ -34,7 +34,6 @@
 
         if (error) {
             console.error('Error cargando candidatos para pipeline:', error);
-            window.notificar?.('Error al conectar con el núcleo de datos: ' + error.message, 'error');
             return;
         }
         renderBoard(data || []);
@@ -60,7 +59,7 @@
             const colCandidates = candidates.filter(c => {
                 const s = String(c.status || '').trim().toLowerCase();
                 const p = phase.toLowerCase();
-                if (phase === 'Postulado' && (s === 'nuevo' || s === '' || s === 'postulado' || s === 'analizado por ia')) return true;
+                if (phase === 'Postulado' && (s === 'nuevo' || s === '' || s === 'postulado')) return true;
                 return s === p;
             });
 
@@ -133,7 +132,7 @@
                 const newPhase = body.dataset.phase;
 
                 // Find candidate local data
-                const candi = candidates.find(item => String(item.id) === String(id));
+                const candi = candidates.find(item => item.id === id);
                 if (!candi) return;
 
                 const oldPhase = candi.status || 'Postulado';
@@ -155,7 +154,7 @@
                     console.log('✅ Estado actualizado en Supabase');
                     
                     // Update local state and re-render immediately
-                    const idx = candidates.findIndex(c => String(c.id) === String(id));
+                    const idx = candidates.findIndex(c => c.id === id);
                     if (idx !== -1) {
                         candidates[idx].status = newPhase;
                         renderBoard(candidates);
@@ -167,46 +166,6 @@
                         old_value: oldPhase,
                         new_value: newPhase
                     }]);
-
-                    if (newPhase === 'Contratado') {
-                        console.log('👷 Generando perfil de trabajador automático...');
-                        try {
-                            // 1. Obtener datos completos del candidato (especialmente el RUT)
-                            const { data: fullCand, error: candErr } = await supabase
-                                .from('candidates')
-                                .select('*')
-                                .eq('id', id)
-                                .single();
-
-                            if (candErr) throw candErr;
-
-                            // 2. Insertar en tabla workers
-                            const { error: workerErr } = await supabase
-                                .from('workers')
-                                .insert([{
-                                    full_name: fullCand.nombre_completo,
-                                    rut: fullCand.rut,
-                                    profesion: fullCand.profesion,
-                                    email: fullCand.correo,
-                                    status: 'Activo',
-                                    company_name: fullCand.cargo_a_desempenar || 'Por asignar'
-                                }]);
-
-                            if (workerErr) {
-                                // Es probable que ya exista un trabajador con ese RUT (vuelve a la empresa)
-                                if (workerErr.code === '23505') {
-                                    window.notificar?.('El trabajador ya existe en la base de datos de gestión.', 'info');
-                                } else {
-                                    throw workerErr;
-                                }
-                            } else {
-                                window.notificar?.('¡Perfil de trabajador creado automáticamente!', 'success');
-                            }
-                        } catch (err) {
-                            console.error('Error al crear trabajador:', err);
-                            window.notificar?.('Candidato contratado, pero no se pudo crear el perfil de trabajador: ' + err.message, 'warning');
-                        }
-                    }
                 }
             });
 

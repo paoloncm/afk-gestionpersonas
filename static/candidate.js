@@ -1,6 +1,7 @@
 // ==========================
-// AFK RRHH — candidate.js v6.1
-// Nivel: Enterprise / Stark Tactical HUD
+// AFK RRHH — candidate.js PRO
+// Nivel: Enterprise / Codelco Ready
+// Adaptado para: Stark Tactical HUD v6
 // ==========================
 (async function () {
 
@@ -12,74 +13,21 @@
     return Number.isFinite(n) ? n : 0;
   };
 
-  const calculateExperienceHeuristic = (text) => {
-    if (!text) return 0;
-    const currentYear = new Date().getFullYear();
-    // Captura rangos como 2011-2016, 2017--2020, 2021-Actualidad
-    const matches = text.matchAll(/(\d{4})[-|–|—\s]{1,2}(\d{4}|presente|actualidad)/gi);
-    let totalYears = 0;
-    for (const match of matches) {
-      const start = parseInt(match[1]);
-      let endText = match[2].toLowerCase();
-      const end = (endText.includes('presen') || endText.includes('actual')) ? currentYear : parseInt(match[2]);
-      if (end >= start && start > 1950) {
-        totalYears += (end - start);
-      }
-    }
-    return totalYears > 0 ? Math.round(totalYears * 10) / 10 : 0;
-  };
-
-  let starkRadar;
-  function initRadar(scores = [60, 40, 70, 50, 80]) {
-    const ctx = document.getElementById('radar');
-    if (!ctx || typeof Chart === 'undefined') return;
-    
-    // Si ya existe, solo actualizar datos
-    if (starkRadar) {
-      starkRadar.data.datasets[0].data = scores;
-      starkRadar.update();
-      return;
-    }
-
-    starkRadar = new Chart(ctx, {
-      type: 'radar',
-      data: {
-        labels: ['EXPERIENCIA', 'CERTS', 'ESTABILIDAD', 'FIT TÉCNICO', 'POTENCIAL'],
-        datasets: [{
-          label: 'PERFIL STARK',
-          data: scores,
-          backgroundColor: 'rgba(34, 211, 238, 0.2)',
-          borderColor: 'rgba(34, 211, 238, 0.8)',
-          borderWidth: 2,
-          pointBackgroundColor: '#22d3ee',
-          pointBorderColor: '#fff',
-          pointHoverBackgroundColor: '#fff',
-          pointHoverBorderColor: '#22d3ee'
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          r: {
-            angleLines: { color: 'rgba(255,255,255,0.15)' },
-            grid: { color: 'rgba(255,255,255,0.1)' },
-            pointLabels: { color: 'rgba(255,255,255,0.6)', font: { size: 10, family: "'JetBrains Mono', monospace" } },
-            suggestedMin: 0,
-            suggestedMax: 100,
-            ticks: { display: false, stepSize: 20 }
-          }
-        },
-        plugins: { legend: { display: false } }
-      }
-    });
-  }
-
   const qs = new URLSearchParams(window.location.search);
   const candidateId = qs.get("id") || qs.get("trabajador_uuid") || qs.get("worker_id");
 
   if (!candidateId) {
     console.error("❌ No se encontró ID en la URL");
+    const main = $('main');
+    if (main) {
+        main.innerHTML = `
+            <div class="stark-card" style="margin:40px auto; max-width:600px; text-align:center;">
+                <h2 class="hero-name" style="font-size:24px;">EXPEDIENTE NO IDENTIFICADO</h2>
+                <p class="soft">No se pudo encontrar el identificador del candidato en la URL.</p>
+                <a href="index.html" class="btn btn--primary" style="margin-top:20px; display:inline-block;">Volver al Dashboard</a>
+            </div>
+        `;
+    }
     return;
   }
 
@@ -88,381 +36,344 @@
   // ==========================
   async function fetchAll(id) {
     try {
-      console.log("📡 Accediendo a base de datos central...");
+        console.log("📡 Accediendo a base de datos central...");
 
-      // 1. Candidate
-      const { data: candidate, error: ce } = await supabase
-        .from('candidates')
-        .select('*')
-        .eq('id', id)
-        .single();
-      if (ce) throw ce;
-
-      // 2. Worker (si existe)
-      const { data: worker } = await supabase
-        .from('workers')
-        .select('*')
-        .eq('candidate_id', id)
-        .maybeSingle();
-
-      // 3. Credenciales reales
-      let credentials = [];
-      if (worker) {
-        const { data: creds } = await supabase
-          .from('worker_credentials')
+        // 1. Candidate
+        const { data: candidate, error: ce } = await supabase
+          .from('candidates')
           .select('*')
-          .eq('worker_id', worker.id);
-        credentials = creds || [];
-      }
+          .eq('id', id)
+          .single();
+        if (ce) throw ce;
 
-      // 4. Documentos
-      let docs = [];
-      if (worker) {
-        const { data: d } = await supabase
-          .from('documents')
+        // 2. Worker (si existe)
+        const { data: worker } = await supabase
+          .from('workers')
           .select('*')
-          .eq('worker_id', worker.id);
-        docs = d || [];
-      }
+          .eq('candidate_id', id)
+          .maybeSingle();
 
-      // 5. Vacantes Abiertas
-      const { data: vacancies } = await supabase
-        .from('vacancies')
-        .select('id, title, requirements')
-        .eq('status', 'Abierta');
+        // 3. Credenciales reales (usando ID de worker si existe)
+        let credentials = [];
+        if (worker) {
+            const { data: creds } = await supabase
+              .from('worker_credentials')
+              .select('*')
+              .eq('worker_id', worker.id);
+            credentials = creds || [];
+        }
 
-      return { candidate, worker, credentials, docs, vacancies: vacancies || [] };
+        // 4. Documentos
+        let docs = [];
+        if (worker) {
+            const { data: d } = await supabase
+              .from('documents')
+              .select('*')
+              .eq('worker_id', worker.id);
+            docs = d || [];
+        }
+
+        return { candidate, worker, credentials, docs };
     } catch (e) {
-      console.error("❌ Error fetchAll:", e);
-      return null;
+        console.error("❌ Error fetchAll:", e);
+        return { candidate: null, worker: null, credentials: [], docs: [] };
     }
   }
 
-  const data = await fetchAll(candidateId);
-  if (!data) return;
+  const { candidate: r, worker, credentials = [], docs = [] } = await fetchAll(candidateId);
 
-  const { candidate: r, worker, credentials, docs, vacancies } = data;
+  if (!r) {
+      alert("No se encontró el candidato en la base de datos.");
+      return;
+  }
+
+  // ==========================
+  // 🔥 NORMALIZACIÓN
+  // ==========================
+  const score = r.match_score || (r.nota ? r.nota * 10 : 0);
   const today = new Date();
 
   // ==========================
-  // 🏎️ ENGINE: MATCHING & HUD CACHE
-  // ==========================
-  function calculateCandidateMatch(cand, vac) {
-    if (!vac || !cand) return 0;
-    const clean = t => (t || "").toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-    const candText = clean(`${cand.profesion} ${cand.cargo_postulado} ${cand.evaluacion_general} ${cand.experiencia_general} ${cand.resumen_ia} ${cand.experiencia_tec_master}`);
-    const vacTitle = clean(vac.title);
-    const vacReqs = (vac.requirements || []).map(r => clean(r));
-
-    let tScore = 0;
-    if (candText.includes(vacTitle)) tScore = 40;
-    else if (vacTitle.split(' ').some(w => w.length > 3 && candText.includes(w))) tScore = 25;
-
-    let rHits = 0;
-    if (vacReqs.length > 0) {
-      vacReqs.forEach(req => {
-        const words = req.split(' ').filter(w => w.length > 3);
-        if (candText.includes(req) || words.some(w => candText.includes(w))) rHits++;
-      });
-      rHits = (rHits / vacReqs.length) * 60;
-    } else { rHits = 30; }
-
-    return Math.min(100, tScore + rHits);
-  }
-
-  // Pre-calculate scores for all vacancies
-  const scoredVacancies = vacancies.map(v => ({
-    ...v,
-    match: calculateCandidateMatch(r, v)
-  })).sort((a,b) => b.match - a.match);
-
-  // Initialize Selector
-  const vSelector = $('#vacancySelectorHUD');
-  if (vSelector) {
-    vSelector.innerHTML = scoredVacancies.length > 0 
-      ? scoredVacancies.map(v => `<option value="${v.id}">${v.title.toUpperCase()} (${Math.round(v.match)}%)</option>`).join('')
-      : '<option value="">SIN VACANTES DISPONIBLES</option>';
-    
-    vSelector.onchange = () => {
-      const selected = scoredVacancies.find(x => x.id === vSelector.value);
-      if (selected) {
-        updateHUD(selected);
-        updateBenchmarking(selected.id);
-      }
-    };
-  }
-
-  async function updateBenchmarking(vId) {
-    if (!vId) return;
-    try {
-      const { data, error } = await supabase.table("candidates").select("id, match_score").eq("vacancy_id", vId).order("match_score", { ascending: false }).execute();
-      if (error || !data) return;
-      
-      const total = data.length;
-      const index = data.findIndex(c => c.id === r.id);
-      const rank = index >= 0 ? index + 1 : "--";
-      const percentile = total > 1 ? Math.round(((total - (index)) / total) * 100) : 100;
-
-      set('#kvRanking', `#${rank} de ${total}`);
-      set('#kvPercentile', `${percentile}%`);
-      set('#benchMatch', `${percentile}%`);
-      
-      // Cálculo de GAP de experiencia
-      const avgExp = data.reduce((acc, c) => acc + (num(c.experiencia_total) || 5), 0) / total;
-      const myExp = num(totalExp) || 0;
-      const gap = (myExp - avgExp).toFixed(1);
-      set('#benchExp', `${gap >= 0 ? '+' : ''}${gap} AÑOS vs PROM.`);
-      set('#benchCert', credentials.length > 0 ? "VALIDADO (" + credentials.length + ")" : "SIN REGISTROS");
-      set('#benchEst', myExp > 5 ? "ESTABLE" : "MOVILIDAD ALTA");
-
-      if (percentile > 80) {
-        set('#benchConclusion', "Candidato en el TOP 20% de la vacante. Perfil altamente competitivo con excedente técnico.");
-      } else if (percentile > 50) {
-        set('#benchConclusion', "Candidato sobre el promedio. Cumple con los requisitos operativos base.");
-      } else {
-        set('#benchConclusion', "Candidato por debajo del percentil crítico. Requiere auditoría técnica adicional.");
-      }
-    } catch (err) { console.error("Benchmarking Error:", err); }
-  }
-
-  function updateHUD(vac) {
-    const score = vac ? vac.match : num(r.match_score);
-    
-    // Circular Chart
-    const scoreVal = $('#matchScoreVal');
-    if (scoreVal) scoreVal.textContent = Math.round(score) + "%";
-    const circle = $('#starkCircle');
-    if (circle) circle.style.strokeDasharray = `${score} 100`;
-
-    // Ranking/Merit Labels
-    const badge = $('#phRankingBadge');
-    if (badge) {
-      badge.innerText = score > 85 ? "TOP MATCH" : score > 70 ? "HIGH AFINITY" : "EVALUATION REQUIRED";
-      badge.style.color = score > 85 ? "var(--ok)" : score > 70 ? "var(--accent)" : "var(--warn)";
-    }
-    
-    const context = $('#rankingContext');
-    if (context) context.innerText = vac ? `Afinidad con: ${vac.title}` : "Análisis táctico completado.";
-
-    // Decision Logic
-    const decEl = $('#decisionState');
-    const bStatus = $('#phStatusBadge');
-    const compliance = evaluateCompliance(credentials);
-
-    if (decEl) {
-      if (compliance.danger > 0) {
-        decEl.innerText = "NO APTO"; decEl.className = "text-4xl font-black text-red-500 tracking-tighter";
-      } else if (score >= 80 && compliance.status === "ok") {
-        decEl.innerText = "APTO"; decEl.className = "text-4xl font-black text-green-500 tracking-tighter shadow-green-500/50";
-      } else {
-        decEl.innerText = "EN RIESGO"; decEl.className = "text-4xl font-black text-amber-500 tracking-tighter shadow-amber-500/50";
-      }
-    }
-
-    if (bStatus) {
-      bStatus.innerText = score >= 80 ? "PRECISION MATCH" : "REVIEW NEEDED";
-      bStatus.className = `px-3 py-1 ${score >= 80 ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/50' : 'bg-amber-500/20 text-amber-400 border-amber-500/50'} border rounded-full text-[10px] font-bold tracking-widest uppercase`;
-    }
-
-    // Update process state in hero summary
-    const statusSec = $('#phStatusSecondary');
-    if (statusSec) statusSec.innerText = vac ? vac.title : "Sin vacante vinculada";
-
-    // Update bars
-    updateBar("#sbFit", score);
-  }
-
-  // ==========================
-  // 🦾 ENGINE: COMPLIANCE
+  // 🔥 CUMPLIMIENTO REAL
   // ==========================
   function evaluateCompliance(creds) {
     let ok = 0, warn = 0, danger = 0;
+
     const rows = creds.map(c => {
-      const expiry = c.expiry_date ? new Date(c.expiry_date) : null;
-      if (!expiry) { warn++; return { name: c.credential_name, state: "warn", txt: "PENDIENTE", date: "-", obs: "Revisar" }; }
-      
+      if (!c.expiry_date) {
+        warn++;
+        return {
+          name: c.credential_name || "Documento sin nombre",
+          state: "warn",
+          txt: "Sin fecha",
+          date: "-",
+          obs: "Revisar manualmente"
+        };
+      }
+
+      const expiry = new Date(c.expiry_date);
       const diffDays = (expiry - today) / (1000 * 60 * 60 * 24);
-      if (diffDays < 0) { danger++; return { name: c.credential_name, state: "danger", txt: "VENCIDO", date: c.expiry_date, obs: "BLOQUEADO" }; }
-      if (diffDays < 30) { warn++; return { name: c.credential_name, state: "warn", txt: "PRÓXIMO", date: c.expiry_date, obs: `${Math.round(diffDays)}d` }; }
-      
-      ok++; return { name: c.credential_name, state: "ok", txt: "VIGENTE", date: c.expiry_date, obs: "OK" };
+
+      if (diffDays < 0) {
+        danger++;
+        return {
+          name: c.credential_name,
+          state: "danger",
+          txt: "Vencido",
+          date: c.expiry_date,
+          obs: "Bloquea ingreso"
+        };
+      }
+
+      if (diffDays < 30) {
+        warn++;
+        return {
+          name: c.credential_name,
+          state: "warn",
+          txt: "Próximo",
+          date: c.expiry_date,
+          obs: `${Math.round(diffDays)} días`
+        };
+      }
+
+      ok++;
+      return {
+        name: c.credential_name,
+        state: "ok",
+        txt: "Vigente",
+        date: c.expiry_date,
+        obs: "OK"
+      };
     });
-    return { rows, ok, warn, danger, status: danger > 0 ? "danger" : warn > 0 ? "warn" : "ok" };
+
+    let status = "ok";
+    if (danger > 0) status = "danger";
+    else if (warn > 0) status = "warn";
+
+    return { rows, ok, warn, danger, status };
   }
 
   const compliance = evaluateCompliance(credentials);
 
   // ==========================
-  // 🖥️ RENDER: HEADER & IDENTITY
+  // 🔥 RENDER HEADER
   // ==========================
-  const set = (sel, val) => { const el = $(sel); if (el) el.innerText = val || "—"; };
-  
-  // identity & stats
-  let totalExp = num(r.experiencia_total);
-  if (totalExp <= 0 && r.experiencia_general) {
-    totalExp = calculateExperienceHeuristic(r.experiencia_general);
-    console.log("🛠️ Stark Heuristic Experience:", totalExp);
-  }
+  if ($('#phName')) $('#phName').textContent = r.nombre_completo || "SIN NOMBRE";
+  if ($('#phProf')) $('#phProf').textContent = r.profesion || r.cargo_postulado || "Sin profesión definida";
+  if ($('#phExp')) $('#phExp').textContent = (r.experiencia_total || 0) + " años";
+  if ($('#phCargoObjetivo')) $('#phCargoObjetivo').textContent = r.cargo_postulado || "No especificado";
+  if ($('#phUltima')) $('#phUltima').textContent = r.ultima_empresa || "Sin datos";
 
-  set('#phName', r.nombre_completo);
-  set('#phProf', r.profesion || r.cargo_postulado);
-  set('#phExp', totalExp + " AÑOS");
-  set('#phCargoObjetivo', r.cargo_postulado);
-  set('#phUltima', r.ultima_empresa);
-  
-  if (r.vacancy_id) updateBenchmarking(r.vacancy_id);
-
-  // Radar Inicial (con datos disponibles o default)
-  initRadar([
-    Math.min(100, (totalExp / 15) * 100),
-    credentials.length > 0 ? (compliance.ok / credentials.length) * 100 : 40,
-    85, 50, 70
-  ]);
-
-  // Disponibilidad y cargos similares (Data-driven placeholders)
-  set('#phDisponibilidad', "INMEDIATA");
-  set('#phExpCargo', totalExp + " AÑOS");
-  set('#phExpSimilar', Math.max(0, totalExp - 2) + " AÑOS");
-
-
-  // Stark Benchmarks (Keep labels but use new logic)
-  set('#phRankingBadge', "SCANNING...");
-  set('#kvRanking', "TOP 3"); // Placeholder logic can stay in secondary panels
-  set('#kvPercentile', "98%");
-
-  // Fortalezas y Brechas (Parsing IA)
-  const fortEl = $('#kvFortaleza');
-  const brecEl = $('#kvBrecha');
-  if (r.experiencia_tec_master) {
-    const lines = r.experiencia_tec_master.split('\n').filter(l => l.trim().length > 10);
-    if (fortEl) fortEl.innerText = lines[0] || "Alta especialización técnica";
-    if (brecEl) brecEl.innerText = lines[lines.length - 1] || "Certificaciones pendientes";
-  }
-
-  // Benchmark (Placeholders)
-  set('#benchExp', "+2.5 AÑOS vs PROM.");
-  set('#benchMatch', "+15% vs RIVALES");
-
-  // ==========================
-  // 🖥️ RENDER: MATCH BARS
-  // ==========================
-  const updateBar = (id, val) => {
-    const bar = $(id);
-    if (bar) bar.style.width = val + "%";
-  };
-
-  updateBar("#sbExp", Math.min(100, (totalExp / 15) * 100));
-  updateBar("#sbCert", credentials.length > 0 ? (compliance.ok / credentials.length) * 100 : 40);
-  updateBar("#sbEst", 85);
-  updateBar("#sbOtr", 70);
-
-  // Initial HUD Render (Best match)
-  if (scoredVacancies.length > 0) {
-    updateHUD(scoredVacancies[0]);
-  } else {
-    updateHUD(null);
+  // SCORE
+  if ($('#matchScoreVal')) $('#matchScoreVal').textContent = Math.round(score) + "%";
+  if ($('#starkCircle')) {
+      const circle = $('#starkCircle');
+      circle.style.strokeDasharray = `${score} 100`;
   }
 
   // ==========================
-  // IA SUMMARY: WEBHOOK & ANALYSIS
+  // 🔥 DECISION ENGINE
   // ==========================
-  const aiBtn = $('#btnAiSummary');
-  const aiContent = $('#aiSummaryContent');
-  const aiPreview = $('#aiSummaryPreview');
+  const decision = (() => {
+    if (compliance.danger > 0) {
+      return {
+        state: "NO APTO",
+        color: "danger",
+        text: "Tiene documentos vencidos críticos"
+      };
+    }
 
-  async function triggerAiAnalysis() {
-    if (!aiBtn || !aiContent) return;
-    
-    // UI State: Loading
-    aiBtn.disabled = true;
-    const originalText = aiBtn.innerText;
-    aiBtn.innerText = "PROCESANDO... 🤖";
-    aiContent.innerHTML = `<div style="opacity:0.6;" class="pulse">Iniciando reconocimiento táctico Stark... <br><span style="font-size:11px;">Enviando datos a n8n Matrix.</span></div>`;
-    if (aiPreview) aiPreview.innerText = "SISTEMA ACTIVO — ANALIZANDO";
+    if (score >= 85 && compliance.status === "ok") {
+      return {
+        state: "APTO",
+        color: "ok",
+        text: "Cumple técnica y documentalmente"
+      };
+    }
 
-    try {
-      // LLAMADA AL MOTOR INTERNO (FASTAPI) — EVITA CORS Y USA GPT-4o DIRECTAMENTE
-      const API_URL = `${window.location.origin}/api/generate-candidate-summary`;
-      
-      const response = await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          candidate_id: r.id
-        })
+    if (score >= 70) {
+      return {
+        state: "EN RIESGO",
+        color: "warn",
+        text: "Buen perfil pero faltan validaciones"
+      };
+    }
+
+    return {
+      state: "NO APTO",
+      color: "danger",
+      text: "Bajo match con la vacante"
+    };
+  })();
+
+  if ($('#decisionState')) $('#decisionState').textContent = decision.state;
+  if ($('#decisionTitle')) $('#decisionTitle').textContent = decision.text;
+
+  const dot = $('#decisionDot');
+  if (dot) dot.style.background = `var(--${decision.color})`;
+
+  // ==========================
+  // 🔥 ALERTAS INTELIGENTES
+  // ==========================
+  function renderAlerts() {
+    const alerts = [];
+
+    if (compliance.danger > 0) {
+      alerts.push({
+        type: "danger",
+        title: "Documentos vencidos",
+        text: `${compliance.danger} credenciales críticas vencidas`
       });
+    }
 
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.detail || "Fallo en la comunicación con el motor Stark IA");
-      }
+    if (compliance.warn > 0) {
+      alerts.push({
+        type: "warn",
+        title: "Documentos por vencer",
+        text: `${compliance.warn} requieren renovación inmediata`
+      });
+    }
 
-      const result = await response.json();
-      console.log("Stark Internal AI Response:", result);
+    if (!worker) {
+      alerts.push({
+        type: "warn",
+        title: "Perfil Externo",
+        text: "Candidato no registrado como trabajador activo"
+      });
+    }
 
-      window.notificar?.("INFORME DE INTELIGENCIA Y AUDITORÍA COMPLETADA", "success");
-      
-      const newSummary = result.resumen_ia || "Análisis completado sin datos de respuesta.";
-      
-      aiContent.innerHTML = newSummary.replace(/\n/g, '<br>');
-      if (aiPreview) aiPreview.innerText = "SISTEMA LISTO — ANÁLISIS CONFIRMADO";
+    if (alerts.length === 0) {
+      alerts.push({
+        type: "ok",
+        title: "Integridad Confirmada",
+        text: "Sin riesgos operativos detectados"
+      });
+    }
 
-      // ACTUALIZAR HUD CON LA EXPERIENCIA CALCULADA
-      if (result.experiencia_total !== undefined) {
-        // EXPERIENCIA: Si la columna es 0, intentar calcular del texto historial
-        let displayedExperience = num(result.experiencia_total);
-        if (displayedExperience <= 0 && r.experiencia_general) {
-          displayedExperience = calculateExperienceHeuristic(r.experiencia_general);
-          console.log("🛠️ Stark Heuristic Experience:", displayedExperience);
-        }
-
-        $('#totalExperience').textContent = `${displayedExperience} AÑOS`;
-        const expBar = $('#expBar');
-        if (expBar) expBar.style.width = `${Math.min(100, (displayedExperience / 15) * 100)}%`;
-        r.experiencia_total = result.experiencia_total;
-      }
-
-      // ACTUALIZAR BARRAS DE COMPETENCIA (RADAR)
-      if (result.score_estabilidad) updateBar("#sbEst", result.score_estabilidad);
-      if (result.score_fit_tecnico) updateBar("#sbFit", result.score_fit_tecnico);
-      if (result.score_certificaciones) updateBar("#sbCert", result.score_certificaciones);
-      
-      // ACTUALIZAR RADAR CON SCORES IA
-      initRadar([
-        Math.min(100, (displayedExperience / 15) * 100),
-        result.score_certificaciones || 50,
-        result.score_estabilidad || 50,
-        result.score_fit_tecnico || 50,
-        75
-      ]);
-
-      // RE-CALCULAR RANKING
-      if (r.vacancy_id) updateBenchmarking(r.vacancy_id);
-
-    } catch (err) {
-      console.error("Stark AI Error:", err);
-      window.notificar?.("ERROR EN PROTOCOLO IA: " + err.message, "danger");
-      aiContent.innerHTML = `<span style="color:var(--danger);">⚠️ Error crítico en la generación del análisis. Intenta nuevamente más tarde.</span>`;
-    } finally {
-      aiBtn.disabled = false;
-      aiBtn.innerText = originalText;
+    const container = $('#criticalAlerts');
+    if (container) {
+        container.innerHTML = alerts.map(a => `
+          <div class="alert-item alert-item--${a.type}">
+            <span class="alert-bullet alert-bullet--${a.type}"></span>
+            <div>
+              <b style="color:#fff;">${a.title}</b>
+              <div class="soft" style="font-size:12px;">${a.text}</div>
+            </div>
+          </div>
+        `).join('');
     }
   }
 
-  if (aiBtn) {
-    aiBtn.onclick = () => {
-      // Si ya hay resumen, lo mostramos, pero permitimos re-generar si el usuario insiste
-      if (r.resumen_ia && aiContent.innerText.includes("Esperando")) {
-         aiContent.innerHTML = r.resumen_ia.replace(/\n/g, '<br>');
-      } else {
-         triggerAiAnalysis();
-      }
-    };
+  renderAlerts();
+
+  // ==========================
+  // 🔥 DOCUMENTOS REALES
+  // ==========================
+  function renderDocs() {
+    const tbody = $('#documentsTableBody');
+    if (tbody) {
+        if (compliance.rows.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-dim);">No hay credenciales registradas para este expediente.</td></tr>`;
+        } else {
+            tbody.innerHTML = compliance.rows.map(d => `
+              <tr>
+                <td><b style="color:#fff;">${d.name}</b></td>
+                <td><span class="status-chip status-chip--${d.state}">${d.txt}</span></td>
+                <td style="font-family:monospace;">${d.date}</td>
+                <td class="soft">${d.obs}</td>
+              </tr>
+            `).join('');
+        }
+    }
+
+    if ($('#docOkCount')) $('#docOkCount').textContent = compliance.ok;
+    if ($('#docWarnCount')) $('#docWarnCount').textContent = compliance.warn;
+    if ($('#docFailCount')) $('#docFailCount').textContent = compliance.danger;
+
+    if ($('#docGlobalStatus')) {
+        $('#docGlobalStatus').textContent =
+          compliance.status === "danger" ? "🔴 BLOQUEADO" :
+          compliance.status === "warn" ? "🟡 EN RIESGO" : "🟢 HABILITADO";
+    }
   }
 
-  // Pre-load current summary if exists
-  if (r.resumen_ia && aiContent) {
-    aiContent.innerHTML = r.resumen_ia.replace(/\n/g, '<br>');
+  renderDocs();
+
+  // ==========================
+  // 🔥 SCORE BREAKDOWN REALISTA
+  // ==========================
+  function updateScoreBars() {
+    const set = (id, val) => {
+      const bar = $(id);
+      if (bar) {
+          bar.style.width = val + '%';
+          const valLabel = bar.parentElement.parentElement.querySelector('.val');
+          if (valLabel) valLabel.textContent = Math.round(val) + '%';
+      }
+    };
+
+    // Mapeo a los IDs actuales en candidatos.html
+    set("#sbExp", Math.min(100, (r.experiencia_total || 0) * 8));
+    set("#sbCert", compliance.ok > 0 ? (compliance.ok / (compliance.ok + compliance.warn + compliance.danger)) * 100 : 0);
+    set("#sbEst", score * 0.9);
+    set("#sbFit", score);
+    set("#sbOtr", 40);
+  }
+
+  updateScoreBars();
+
+  // ==========================
+  // 🔥 SKILLS & EVALUACIÓN
+  // ==========================
+  function renderSkills() {
+      const container = $('#phConoc');
+      if (container && r.conocimientos) {
+          const skills = Array.isArray(r.conocimientos) ? r.conocimientos : String(r.conocimientos).split(',').map(s => s.trim());
+          container.innerHTML = skills.map(s => `<li>${s}</li>`).join('');
+      }
+
+      const evalText = $('#phEval');
+      if (evalText) {
+          evalText.textContent = r.resumen_ia || "Análisis técnico pendiente de validación por IA Stark.";
+      }
+  }
+  renderSkills();
+
+  // ==========================
+  // 🔥 IA RESUMEN REAL
+  // ==========================
+  const aiBtn = $('#btnAiSummary');
+  if (aiBtn) {
+      aiBtn.onclick = async () => {
+        const content = $('#aiSummaryContent');
+        if (content) content.innerHTML = "<em>Procesando datos con Stark Intelligence...</em>";
+
+        const prompt = `
+            Analiza con rigor táctico este candidato:
+            Nombre: ${r.nombre_completo}
+            Profesión: ${r.profesion}
+            Experiencia: ${r.experiencia_total} años
+            Score Técnico: ${score}%
+            Estado Doc: ${compliance.status.toUpperCase()}
+            Credenciales OK: ${compliance.ok}
+            Vencidas: ${compliance.danger}
+
+            Entrega un informe estructurado:
+            1. DIAGNÓSTICO OPERATIVO
+            2. FORTALEZAS CLAVE
+            3. RIESGOS DE SEGURIDAD/CUMPLIMIENTO
+            4. RECOMENDACIÓN FINAL
+        `;
+
+        if (window.afkChatSend) {
+          window.afkChatSend(prompt, (res) => {
+            if (content) content.innerHTML = res.replace(/\n/g, "<br>");
+          });
+        } else {
+            console.warn("afkChatSend no disponible");
+            if (content) content.innerHTML = "Error: El motor de chat IA no está disponible en este momento.";
+        }
+      };
   }
 
 })();

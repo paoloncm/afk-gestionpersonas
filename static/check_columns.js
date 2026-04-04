@@ -7,8 +7,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 async function run() {
     const { data, error } = await supabase.from('candidates').select('*').limit(1);
     if (data && data[0]) {
-        console.log("COLUMNS:");
-        Object.keys(data[0]).forEach(k => console.log("- " + k));
+        console.log("COLUMNS:", Object.keys(data[0]).join(', '));
     } else {
         console.log("EMPTY OR ERROR:", error?.message);
     }

@@ -18,220 +18,158 @@
     init();
 
     async function loadVacancies() {
-        if (container) container.innerHTML = '<div style="padding:40px; text-align:center;">SINCRONIZANDO MATRIZ DE VACANTES...</div>';
+        const { data: vacancies, error } = await supabase
+            .from('vacancies')
+            .select('*')
+            .order('created_at', { ascending: false });
 
-        // Fetch Tenders, Vacancies, and Candidates
-        const { data: tenders, error: tErr } = await supabase.from('tenders').select('id, name').order('name');
-        const { data: vacancies, error: vErr } = await supabase.from('vacancies').select('*').order('created_at', { ascending: false });
-        const { data: allCandi } = await supabase.from('candidates').select('*').not('vacancy_id', 'is', null);
-
-        if (vErr) {
-            console.error('Error cargando vacantes:', vErr);
-            if (vErr.code === '42P01') renderSetupMessage(vErr);
+        if (error) {
+            console.error('Error cargando vacantes:', error);
+            if (error.code === '42P01') renderSetupMessage(error);
             return;
         }
 
-        // Grouping Logic
-        const grouped = {};
+        // Fetch all candidates to join manually (fallback for lack of FK)
+        const { data: allCandi } = await supabase.from('candidates').select('*').not('vacancy_id', 'is', null);
         
-        // Ensure "Global" group exists first
-        grouped['GLOBAL'] = { name: '[ OPERACIONES_GLOBALES ]', vacancies: [] };
-        
-        (tenders || []).forEach(t => {
-            grouped[t.id] = { name: `OPERACIÓN: ${t.name.toUpperCase()}`, vacancies: [] };
-        });
-
-        (vacancies || []).forEach(v => {
-            const vWithCandi = {
-                ...v,
-                candidates: (allCandi || []).filter(c => c.vacancy_id === v.id)
-            };
-            const targetGroup = v.tender_id && grouped[v.tender_id] ? v.tender_id : 'GLOBAL';
-            grouped[targetGroup].vacancies.push(vWithCandi);
-        });
-
-        renderGroupedVacancies(grouped);
-    }
-
-    function renderGroupedVacancies(grouped) {
-        container.innerHTML = `<h1 class="h1">Gestión de Vacantes</h1>`;
-
-        Object.keys(grouped).forEach(groupId => {
-            const group = grouped[groupId];
-            if (group.vacancies.length === 0) return; // Skip empty groups
-
-            const section = document.createElement('section');
-            section.className = 'tender-group';
-            section.style.marginBottom = '40px';
-            section.style.animation = 'fadeIn 0.6s ease';
-
-            const header = document.createElement('div');
-            header.className = 'stark-group-header';
-            header.style.display = 'flex';
-            header.style.alignItems = 'center';
-            header.style.gap = '15px';
-            header.style.padding = '15px 20px';
-            header.style.background = 'linear-gradient(90deg, rgba(34,211,238,0.1), transparent)';
-            header.style.borderLeft = '4px solid var(--accent)';
-            header.style.marginBottom = '8px';
-            header.style.borderRadius = '0 8px 8px 0';
-            header.style.cursor = 'pointer';
-            header.style.userSelect = 'none';
-            header.title = 'Click para expandir/contraer';
-
-            header.innerHTML = `
-                <div style="font-family:'JetBrains Mono', monospace; font-size:10px; color:var(--accent); font-weight:800; border:1px solid var(--accent); padding:2px 6px; border-radius:4px;">GRUP_ID: ${groupId.substring(0,4)}</div>
-                <h2 style="margin:0; font-size:18px; letter-spacing:1px; color:var(--text);">${group.name}</h2>
-                <div style="margin-left:auto; display:flex; align-items:center; gap:20px;">
-                    <div style="font-size:10px; color:var(--muted);">${group.vacancies.length} POSICIONES ACTIVAS</div>
-                    <span class="stark-chevron" style="color:var(--accent); font-size:20px; transition:0.3s; transform:rotate(180deg);">▼</span>
-                </div>
-            `;
-            section.appendChild(header);
-
-            const gridContainer = document.createElement('div');
-            gridContainer.className = 'grid-container';
-            gridContainer.style.display = 'none'; // Collapsed by default
-            gridContainer.style.marginTop = '20px';
-
-            const grid = document.createElement('div');
-            grid.className = 'grid-2'; 
-            grid.style.display = 'grid';
-            grid.style.gap = '20px';
-
-            group.vacancies.forEach(v => {
-                const card = createVacancyCard(v);
-                grid.appendChild(card);
-            });
-
-            gridContainer.appendChild(grid);
-            section.appendChild(gridContainer);
-
-            // Toggle Logic
-            header.onclick = () => {
-                const isHidden = gridContainer.style.display === 'none';
-                gridContainer.style.display = isHidden ? 'block' : 'none';
-                header.querySelector('.stark-chevron').style.transform = isHidden ? 'rotate(0deg)' : 'rotate(180deg)';
-                header.style.background = isHidden ? 'linear-gradient(90deg, rgba(34,211,238,0.2), transparent)' : 'linear-gradient(90deg, rgba(34,211,238,0.1), transparent)';
-            };
-
-            container.appendChild(section);
-        });
-    }
-
-    function createVacancyCard(v) {
-        const card = document.createElement('div');
-        card.className = 'card stark-card';
-        card.style.cursor = 'default';
-        card.style.background = 'rgba(15,23,42,0.4)';
-        card.style.backdropFilter = 'blur(10px)';
-        
-        let shortlist = [];
-        try {
-            if (typeof v.shortlisted_candidates === 'string') shortlist = JSON.parse(v.shortlisted_candidates);
-            else if (Array.isArray(v.shortlisted_candidates)) shortlist = v.shortlisted_candidates;
-        } catch(e) {}
-
-        const oldCandidates = (v.candidates || []).map(c => ({
-            id: c.id,
-            name: c.nombre_completo,
-            type: 'AFK LEGACY',
-            score: 'N/A',
-            status: c.status || c.estado || 'Postulado'
+        const vacanciesWithCandi = vacancies.map(v => ({
+            ...v,
+            candidates: (allCandi || []).filter(c => c.vacancy_id === v.id)
         }));
 
-        const combinedList = [...oldCandidates, ...shortlist].reduce((acc, curr) => {
-            if(!acc.some(item => item.id === curr.id)) acc.push(curr);
-            return acc;
-        }, []);
+        renderVacancies(vacanciesWithCandi);
+    }
 
-        const candidatesCount = combinedList.length;
-        const candidatesHtml = combinedList.map(c => `
-            <div style="display:flex; justify-content:space-between; font-size:12px; padding: 12px 8px; border-bottom: 1px dashed rgba(255,255,255,0.05); align-items:center;">
-                <div style="display:flex; flex-direction:column; gap:4px;">
-                    <span style="color:var(--primary); font-weight:700;">${(c.name || '').toUpperCase()}</span>
-                    <span style="font-size:9px; color:var(--muted); opacity:0.8;">[ TIPO: ${c.type || 'AFK'} ]</span>
-                </div>
-                <div style="text-align:right;">
-                    <span class="tag" style="font-size:10px; padding: 4px 8px; background:rgba(34,211,238,0.1); border:1px solid rgba(34,211,238,0.3); color:var(--accent)">
-                        MATCH: ${c.score || '0'}%
-                    </span>
+    function renderSetupMessage(error) {
+        const isTableMissing = error.code === '42P01';
+        const msg = isTableMissing 
+            ? `Faltan tablas básicas (vacancies o candidates).` 
+            : `Faltan columnas necesarias para el reclutamiento (ej. vacancy_id en candidates).`;
+
+        container.innerHTML = `
+            <h1 class="h1">Configuración requerida</h1>
+            <div class="card">
+                <div class="card__body">
+                    <p>${msg}</p>
+                    <p>Por favor, ejecuta el script SQL actualizado en el editor para corregir la base de datos.</p>
                 </div>
             </div>
-        `).join('');
+        `;
+    }
 
-        card.innerHTML = `
-            <div class="card__body">
-                <div style="display:flex; justify-content:space-between; align-items:start;">
-                    <div>
-                        <h2 class="h1" style="font-size:20px; margin-bottom:4px;">${v.title}</h2>
-                        <div class="text-muted" style="font-size:12px;">SLA_ESTIMADO: ${v.sla_days} días</div>
+    function renderVacancies(vacancies) {
+        // Limpiamos el contenido actual (excepto el título si queremos mantenerlo, pero mejor reconstruir)
+        container.innerHTML = `<h1 class="h1">Gestión de Vacantes</h1>`;
+
+        const grid = document.createElement('div');
+        grid.className = 'grid-2'; // Usamos la clase grid-2 definida en styles.css (o similar)
+        grid.style.display = 'grid';
+        grid.style.gap = '20px';
+        grid.style.marginTop = '20px';
+
+        vacancies.forEach(v => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.style.cursor = 'default';
+            
+            const candidatesCount = (v.candidates || []).length;
+            const candidatesHtml = (v.candidates || []).map(c => {
+                const stage = c.status || c.estado || 'Postulado';
+                return `
+                    <div style="display:flex; justify-content:space-between; font-size:12px; padding: 8px 0; border-bottom: 1px dashed rgba(255,255,255,0.05);">
+                        <a href="candidates.html?id=${c.id}" style="color:var(--primary); text-decoration:none; font-weight:600;">${c.nombre_completo}</a>
+                        <span class="tag" style="font-size:10px; padding: 2px 6px; background:rgba(255,255,255,0.05)">${stage}</span>
                     </div>
-                    <div style="display:flex; flex-direction:column; align-items:end; gap:8px;">
-                        <div class="tag" style="background: ${v.status === 'Abierta' ? 'rgba(0,255,100,0.1)' : 'rgba(255,255,255,0.05)'}; color: ${v.status === 'Abierta' ? '#00ff64' : '#fff'}">
-                            ${v.status.toUpperCase()}
+                `;
+            }).join('');
+
+            card.innerHTML = `
+                <div class="card__body">
+                    <div style="display:flex; justify-content:space-between; align-items:start;">
+                        <div>
+                            <h2 class="h1" style="font-size:20px; margin-bottom:4px;">${v.title}</h2>
+                            <div class="text-muted" style="font-size:12px;">SLA: ${v.sla_days} días</div>
                         </div>
-                        <div style="display:flex; gap:4px;">
-                            <button class="btn btn-edit-vac" style="padding:4px 8px; font-size:10px; background:rgba(255,255,255,0.05)">Editar</button>
-                            <button class="btn btn-delete-vac" style="padding:4px 8px; font-size:10px; background:rgba(255,100,100,0.1); color:#f44">Eliminar</button>
+                        <div style="display:flex; flex-direction:column; align-items:end; gap:8px;">
+                            <div class="tag" style="background: ${v.status === 'Abierta' ? 'rgba(0,255,100,0.1)' : 'rgba(255,255,255,0.05)'}; color: ${v.status === 'Abierta' ? '#00ff64' : '#fff'}">
+                                ${v.status}
+                            </div>
+                            <div style="display:flex; gap:4px;">
+                                <button class="btn btn-edit-vac" style="padding:4px 8px; font-size:10px; background:rgba(255,255,255,0.05)">Editar</button>
+                                <button class="btn btn-delete-vac" style="padding:4px 8px; font-size:10px; background:rgba(255,100,100,0.1); color:#f44">Eliminar</button>
+                            </div>
                         </div>
                     </div>
-                </div>
-                
-                <div style="margin-top:16px;">
-                    <button class="btn toggle-candi" style="width:100%; font-size:12px; padding: 10px; justify-content:space-between; background:rgba(255,255,255,0.03); display:flex; align-items:center; border:1px solid rgba(255,255,255,0.05); border-radius:4px;">
-                        <span style="font-weight:700;">CANDIDATOS EN PROCESO (${candidatesCount})</span>
-                        <span class="icon">▼</span>
-                    </button>
                     
-                    <div class="candi-list" style="display:none; margin-top:12px; padding: 0 8px;">
-                        ${candidatesHtml || '<div class="text-muted" style="font-size:12px; font-style:italic; padding:8px 0;">No hay candidatos vinculados</div>'}
+                    <div style="margin-top:16px;">
+                        <button class="btn toggle-candi" style="width:100%; font-size:12px; padding: 8px; justify-content:space-between; background:rgba(255,255,255,0.03); display:flex; align-items:center;">
+                            <span>Candidatos en proceso (${candidatesCount})</span>
+                            <span class="icon">▼</span>
+                        </button>
                         
-                        <div style="margin-top:12px; border-top:1px solid var(--border); padding-top:12px;">
-                            <label style="display:block; font-size:11px; color:var(--text-muted); margin-bottom:4px; font-family:'JetBrains Mono', monospace;">[ ASIGNAR_POSTULACIÓN ]</label>
-                            <div style="display:flex; gap:8px;">
-                                <select class="select candi-select" style="flex:1; font-size:12px; padding:4px; background:rgba(0,0,0,0.4); border:1px solid var(--border); color:#fff; border-radius:4px;">
-                                    <option value="">Elegir...</option>
-                                </select>
-                                <button class="btn btn--primary btn-link-candi" style="font-size:11px; padding:4px 8px;">Vincular</button>
+                        <div class="candi-list" style="display:none; margin-top:12px; padding: 0 8px;">
+                            ${candidatesHtml || '<div class="text-muted" style="font-size:12px; font-style:italic; padding:8px 0;">No hay candidatos vinculados</div>'}
+                            
+                            <div style="margin-top:12px; border-top:1px solid var(--border); padding-top:12px;">
+                                <label style="display:block; font-size:11px; color:var(--text-muted); margin-bottom:4px;">Asignar candidato:</label>
+                                <div style="display:flex; gap:8px;">
+                                    <select class="select candi-select" style="flex:1; font-size:12px; padding:4px; background:rgba(0,0,0,0.2); border:1px solid var(--border); color:#fff; border-radius:4px;">
+                                        <option value="">Cargando...</option>
+                                    </select>
+                                    <button class="btn btn--primary btn-link-candi" style="font-size:11px; padding:4px 8px;">Ok</button>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        `;
+            `;
 
-        // Toggle logic
-        const btnToggle = card.querySelector('.toggle-candi');
-        const list = card.querySelector('.candi-list');
-        btnToggle.onclick = () => {
-            const isHidden = list.style.display === 'none';
-            list.style.display = isHidden ? 'block' : 'none';
-            btnToggle.querySelector('.icon').textContent = isHidden ? '▲' : '▼';
-            btnToggle.style.background = isHidden ? 'rgba(34,211,238,0.05)' : 'rgba(255,255,255,0.03)';
-            btnToggle.style.borderColor = isHidden ? 'var(--accent)' : 'rgba(255,255,255,0.05)';
-        };
+            // Toggle logic
+            const btnToggle = card.querySelector('.toggle-candi');
+            const list = card.querySelector('.candi-list');
+            btnToggle.onclick = () => {
+                const isHidden = list.style.display === 'none';
+                list.style.display = isHidden ? 'block' : 'none';
+                btnToggle.querySelector('.icon').textContent = isHidden ? '▲' : '▼';
+            };
 
-        // Link candidate logic
-        const sel = card.querySelector('.candi-select');
-        const btnLk = card.querySelector('.btn-link-candi');
-        populateCandiSelect(sel, v.id);
+            // Link candidate logic
+            const sel = card.querySelector('.candi-select');
+            const btnLk = card.querySelector('.btn-link-candi');
+            
+            populateCandiSelect(sel, v.id);
 
-        btnLk.onclick = async () => {
-            const cid = sel.value;
-            if (!cid) return;
-            const { error } = await supabase.from('candidates').update({ vacancy_id: v.id }).eq('id', cid);
-            if (error) alert('Error: ' + error.message);
-            else loadVacancies();
-        };
+            btnLk.onclick = async () => {
+                const cid = sel.value;
+                if (!cid) return;
+                
+                // Get old vacancy if any for logging
+                const { data: candi } = await supabase.from('candidates').select('vacancy_id').eq('id', cid).single();
+                const oldVid = candi?.vacancy_id || 'Ninguna';
 
-        // Edit & Delete logic
-        card.querySelector('.btn-edit-vac').onclick = () => openEditModal(v);
-        card.querySelector('.btn-delete-vac').onclick = () => deleteVacancy(v.id, v.title);
+                const { error } = await supabase.from('candidates').update({ vacancy_id: v.id }).eq('id', cid);
+                
+                if (error) alert('Error: ' + error.message);
+                else {
+                    await supabase.from('candidate_history').insert([{
+                        candidate_id: cid,
+                        event_type: 'vacancy_link',
+                        old_value: oldVid,
+                        new_value: v.id
+                    }]);
+                    loadVacancies();
+                }
+            };
 
-        return card;
+            // Edit & Delete logic
+            card.querySelector('.btn-edit-vac').onclick = () => openEditModal(v);
+            card.querySelector('.btn-delete-vac').onclick = () => deleteVacancy(v.id, v.title);
+
+            grid.appendChild(card);
+        });
+
+        container.appendChild(grid);
     }
-
 
     async function deleteVacancy(id, title) {
         if (!confirm(`¿Estás seguro de eliminar la vacante "${title}"?`)) return;

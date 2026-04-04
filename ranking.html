@@ -2,41 +2,21 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>AFK RRHH — Ranking</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/static/styles.css">
+<link rel="stylesheet" href="styles.css">
 </head><body><div class="dashboard">
-  <aside class="sidebar" aria-label="Navegación">
-      <div class="brand">
-        <div class="logo">AFK</div>
-        <span>RRHH</span>
-      </div>
-
-      <nav class="nav">
-        <div class="nav-category">Admisión y selección</div>
-        <a href="index.html"><span class="label">Dashboard</span></a>
-        <a href="vacancies.html"><span class="label">Vacantes</span></a>
-        <a href="interviews.html"><span class="label">Entrevistas</span></a>
-        <a href="pipeline.html"><span class="label">Pipeline</span></a>
-
-        <div class="nav-category">Gestión</div>
-        <a href="workers.html"><span class="label">Trabajadores</span></a>
-        <a href="alerts.html"><span class="label">Alertas</span></a>
-        <a href="documents.html"><span class="label">Documentos</span></a>
-        <a href="reports.html"><span class="label">Reportes</span></a>
-        <a id="openChatbot" href="#chatbot"><span class="label">Chatbot</span></a>
-
-        <div class="nav-category">Analítica e Inteligencia</div>
-        <a href="analytics.html"><span class="label">People Analytics</span></a>
-      </nav>
-    </aside>
-  <header class="topbar">
-      <button class="btn-menu" aria-label="Abrir menú">☰</button>
-      <div style="display:flex; gap:10px; margin-left:auto; flex-wrap:wrap;">
-        <button id="btnGenerateTec02FromCandidates" class="btn">Generar TEC-02</button>
-        <button id="btnGenerateTec02AFromCandidates" class="btn">Generar TEC-02-A</button>
-        <button class="btn" onclick="location.href='documents.html'">Subir documentos</button>
-        <button class="btn btn--primary" id="btnChat">Abrir Chatbot</button>
-      </div>
-    </header>
+  <aside class="sidebar"><div class="brand"><div class="logo">AFK</div><span>RRHH</span></div>
+    <nav class="nav">
+      <a href="index.html"><span class="label">Dashboard</span></a>
+      <a href="workers.html"><span class="label">Trabajadores</span></a>
+      <a href="vacancies.html"><span class="label">Vacantes</span></a>
+      <a class="is-active" href="interviews.html"><span class="label">Entrevistas</span></a>
+      <a href="alerts.html"><span class="label">Alertas</span></a>
+      <a href="reports.html"><span class="label">Reportes</span></a>
+      <a href="documents.html"><span class="label">Documentos</span></a>
+      <a id="openChatbot" href="#chatbot"><span class="label">Chatbot</span></a>
+    </nav>
+  </aside>
+  <header class="topbar"><button class="btn-menu" aria-label="Abrir menú">☰</button><div class="btn" onclick="location.href='documents.html'">Subir documentos</div><div class="btn" id="btnChat">Abrir Chatbot</div></header>
   <main class="main">
     <h1 class="h1">Entrevistas</h1>
     <div class="card"><div class="card__body">
@@ -61,9 +41,6 @@ d.getElementById('closeChat').onclick=()=>dr.classList.remove('is-open');
 d.getElementById('chatSend').onclick=()=>{const v=i.value.trim();if(!v)return;const m=d.createElement('div');m.className='chat-msg user';m.textContent=v;b.appendChild(m);i.value='';};
 i.onkeydown=e=>{if(e.key==='Enter')d.getElementById('chatSend').click()};
 </script>
-<script defer src="/static/responsive.js?v=2.0"></script>
-  <script defer src="/static/chat.js?v=5.0"></script>
+<script defer src="responsive.js?v=2.0"></script>
 </body></html>
     
-
-

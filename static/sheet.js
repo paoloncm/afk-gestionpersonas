@@ -8,7 +8,6 @@ const num = x => (x == null || x === '') ? NaN : Number(String(x).replace(',','.
 
 let allRows = [];
 let selectedCandidates = [];
-let availableVacancies = [];
 
 function updateCompareButton() {
   const btn = $('#btnCompare');
@@ -75,12 +74,7 @@ function addRow(c){
       </a>
     </div>
     <div class="t-col-prof" data-label="Profesión">${c.profesion ?? '—'}</div>
-    <div class="t-col-vac" data-label="Vacante">
-      <select class="select vacancy-select" data-id="${c.id}" style="font-size:12px; padding:2px 6px; border-radius:6px; background:rgba(255,255,255,0.1); color:#fff; border:1px solid var(--border); width:100%">
-        <option value="">Sin asignar</option>
-        ${availableVacancies.map(v => `<option value="${v.id}" ${v.id === c.vacancy_id ? 'selected' : ''}>${v.title}</option>`).join('')}
-      </select>
-    </div>
+    <div class="t-col-vac" data-label="Vacante">${c.vacancies?.title ?? 'Sin asignar'}</div>
     <div class="t-col-score" data-label="Score"><strong>${c.nota ?? '—'}</strong></div>
     <div class="t-col-exp" data-label="Exp">${getExperiencia(c)}</div>
     <div class="t-col-status" data-label="Estado">
@@ -89,32 +83,6 @@ function addRow(c){
       </select>
     </div>
   `;
-
-  // Listener para cambiar vacante
-  const vacSelect = row.querySelector('.vacancy-select');
-  vacSelect.onchange = async (e) => {
-    const newVid = e.target.value || null;
-    const oldVid = c.vacancy_id;
-    const cid = c.id;
-
-    const { error } = await supabase
-      .from('candidates')
-      .update({ vacancy_id: newVid })
-      .eq('id', cid);
-
-    if (error) {
-      alert('Error al actualizar vacante: ' + error.message);
-      e.target.value = oldVid || '';
-    } else {
-      c.vacancy_id = newVid;
-      await supabase.from('candidate_history').insert([{
-        candidate_id: cid,
-        event_type: 'vacancy_link',
-        old_value: oldVid || 'Ninguna',
-        new_value: newVid || 'Ninguna'
-      }]);
-    }
-  };
 
   // Listener para cambiar estado desde la tabla
   const select = row.querySelector('.status-select');
@@ -230,17 +198,8 @@ $('#btnResetFilters')?.addEventListener('click', () => {
     onFilterChange();
 });
 
-async function loadAvailableVacancies() {
-  const { data, error } = await supabase.from('vacancies').select('id, title').eq('status', 'Abierta');
-  if (!error && data) availableVacancies = data;
-}
-
 async function loadFromSupabase(append = false){
   console.log('⏳ Cargando candidatos (Server-side)…');
-  
-  if (availableVacancies.length === 0) {
-    await loadAvailableVacancies();
-  }
   
   const term = $('#candSearch')?.value || '';
   const statusFilter = $('#filterEstado')?.value || '';
@@ -257,7 +216,6 @@ async function loadFromSupabase(append = false){
       experiencia_total,
       nota,
       status,
-      vacancy_id,
       vacancies!fk_vacancy(title)
     `, { count: 'exact' });
 

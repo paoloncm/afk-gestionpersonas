@@ -1,295 +1,144 @@
-// comparison.js - Stark Decision Intelligence Matrix
-(function() {
+// comparison.js
+(async function() {
     const $ = s => document.querySelector(s);
     const container = $('#comparisonContainer');
-    const matrixHeader = $('#matrixHeader');
-    const matrixBody = $('#matrixBody');
-    
-    // Decision Hub Elements
-    const winnerName = $('#winnerName');
-    const winnerConfidence = $('#winnerConfidence');
-    const winnerMatch = $('#winnerMatch');
-    const winnerReason = $('#winnerReason');
-    const top3List = $('#top3List');
-    const riskLevel = $('#riskLevel');
-    const riskLabel = $('#riskLabel');
-    const riskDetails = $('#riskDetails');
 
     const qs = new URLSearchParams(window.location.search);
     const ids = (qs.get('ids') || '').split(',').filter(Boolean);
 
-    let allCandidates = [];
-    let currentFilter = 'all';
-
     if (ids.length === 0) {
-        if (container) container.innerHTML = '<p>No se seleccionaron candidatos para comparar.</p>';
+        container.innerHTML = '<p>No se seleccionaron candidatos para comparar.</p>';
         return;
     }
 
-    async function init() {
-        if (!window.supabase) {
-            setTimeout(init, 200);
+    async function fetchData() {
+        const { data, error } = await supabase
+            .from('candidates')
+            .select('*')
+            .in('id', ids);
+
+        if (error) {
+            console.error('Error fetching comparison data:', error);
             return;
         }
-        setupFilterListeners();
-        await fetchData();
+
+        renderComparison(data);
     }
 
-    function setupFilterListeners() {
-        const filters = {
-            'filterAll': 'all',
-            'filterAptos': 'aptos',
-            'filterDocs': 'docs',
-            'filterTop10': 'top10'
-        };
+    function renderComparison(candidates) {
+        container.innerHTML = '';
 
-        Object.keys(filters).forEach(id => {
-            const btn = document.getElementById(id);
-            if (btn) {
-                btn.onclick = () => {
-                    // Update UI active state
-                    document.querySelectorAll('.btn-ghost-accent').forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
+        candidates.forEach((c, idx) => {
+            const seed = encodeURIComponent(c.nombre_completo || 'AFK');
+            const avatar = `https://i.pravatar.cc/72?u=${seed}`;
+            
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.style.height = '100%';
+            
+            // Tokenizar habilidades
+            const skills = (c.experiencia_especifica || '')
+                .split(/,|\n|;/)
+                .map(s => s.trim())
+                .filter(Boolean)
+                .slice(0, 6);
+
+            card.innerHTML = `
+                <div class="card__body" style="display:flex; flex-direction:column; align-items:flex-start; text-align:left; height:100%;">
+                    <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px; width:100%;">
+                        <img src="${avatar}" class="avatar" style="width:48px; height:48px;">
+                        <div>
+                            <h3 class="h1" style="font-size:18px; margin:0;">${c.nombre_completo}</h3>
+                            <div class="text-muted" style="font-size:12px;">${c.profesion || 'Sin cargo'}</div>
+                        </div>
+                    </div>
                     
-                    currentFilter = filters[id];
-                    renderAll();
-                };
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; width:100%; gap:12px; margin-bottom:16px; border-top:1px solid var(--border); padding-top:12px;">
+                        <div>
+                            <div class="comp-value" style="font-size:20px; font-weight:800; color:var(--accent);">${c.nota || '—'}</div>
+                            <div class="comp-label" style="font-size:10px; text-transform:uppercase; color:var(--muted);">Nota</div>
+                        </div>
+                        <div>
+                            <div class="comp-value" style="font-size:20px; font-weight:800;">${c.experiencia_total || '0'}</div>
+                            <div class="comp-label" style="font-size:10px; text-transform:uppercase; color:var(--muted);">Años Exp.</div>
+                        </div>
+                    </div>
+
+                    <div style="width:100%; margin-bottom:16px;">
+                        <div class="text-muted" style="font-size:11px; margin-bottom:4px; text-transform:uppercase;">Resumen Ejecutivo</div>
+                        <div style="font-size:13px; line-height:1.4; color:var(--text); max-height:80px; overflow:hidden; display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical;">
+                            ${c.evaluacion_general || 'No hay un resumen disponible para este candidato.'}
+                        </div>
+                    </div>
+
+                    <div style="width:100%; margin-bottom:16px;">
+                        <div class="text-muted" style="font-size:11px; margin-bottom:8px; text-transform:uppercase;">Conocimientos Clave</div>
+                        <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                            ${skills.length > 0 
+                                ? skills.map(s => `<span class="pill" style="font-size:10px;">${s}</span>`).join('')
+                                : '<span class="text-muted" style="font-size:12px;">Sin datos</span>'
+                            }
+                        </div>
+                    </div>
+
+                    <div class="radar-box" style="width:100%; height:180px; margin-bottom:16px;">
+                        <canvas id="radar-${idx}"></canvas>
+                    </div>
+
+                    <div style="margin-top:auto; width:100%; display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+                        <button class="btn" style="padding:8px;" onclick="location.href='candidates.html?id=${c.id}'">Perfil</button>
+                        ${c.cv_url 
+                            ? `<a href="${c.cv_url}" target="_blank" class="btn btn--primary" style="padding:8px; text-decoration:none; justify-content:center;">Ver CV</a>`
+                            : `<button class="btn btn--disabled" disabled style="padding:8px; opacity:0.5;">Sin CV</button>`
+                        }
+                    </div>
+                </div>
+            `;
+            container.appendChild(card);
+
+            // Render matching radar for individual context
+            renderMiniRadar(`radar-${idx}`, c);
+        });
+    }
+
+    function renderMiniRadar(canvasId, row) {
+        const labels = ['Exp.', 'Edad', 'Técnica', 'Ranking', 'Nota'];
+        const clamp = (v, min, max) => Math.max(min, Math.min(max, Number.isFinite(v) ? v : 0));
+        
+        const expN = clamp((Number(row.experiencia_total) || 0) / 2, 0, 10);
+        const notaN = clamp(Number(row.nota) || 0, 0, 10);
+        const rankingN = clamp(Number(row.ranking) || 0, 0, 10);
+        
+        const data = [expN, 5, notaN, rankingN, notaN]; // Mock age to 5 for now
+
+        new Chart(document.getElementById(canvasId), {
+            type: 'radar',
+            data: {
+                labels,
+                datasets: [{
+                    data,
+                    borderWidth: 2,
+                    fill: true,
+                    backgroundColor: 'rgba(230, 2, 91, 0.2)',
+                    borderColor: '#e6025b'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    r: {
+                        min: 0,
+                        max: 10,
+                        ticks: { display: false },
+                        grid: { color: 'rgba(255,255,255,0.05)' },
+                        pointLabels: { color: '#aaa', font: { size: 10 } }
+                    }
+                }
             }
         });
     }
 
-    async function fetchData() {
-        try {
-            // 1. Fetch Candidates
-            const { data: candData, error: candErr } = await window.supabase
-                .from('candidates')
-                .select('*')
-                .in('id', ids);
-
-            if (candErr) throw candErr;
-
-            // 2. Fetch Credentials for Risk Audit
-            const { data: credData, error: credErr } = await window.supabase
-                .from('credentials')
-                .select('*')
-                .in('candidate_id', ids);
-
-            // Attach credentials to candidates
-            allCandidates = candData.map(c => ({
-                ...c,
-                credentials: (credData || []).filter(cr => cr.candidate_id === c.id)
-            }));
-
-            // 3. Initial Sort (System Best Choice)
-            allCandidates.sort((a, b) => {
-                const scoreA = calculateDeepScore(a);
-                const scoreB = calculateDeepScore(b);
-                return scoreB - scoreA;
-            });
-
-            renderAll();
-
-        } catch (err) {
-            console.error('Error in decision hub init:', err);
-        }
-    }
-
-    function calculateDeepScore(c) {
-        const match = Number(c.match_score) || 0;
-        const nota = Number(String(c.nota || '0').replace(',', '.'));
-        // Weighted formula: 70% Match IA + 30% Nota (normalized to 100)
-        return (match * 0.7) + ((nota / 7) * 30);
-    }
-
-    function calculateRisk(c) {
-        if (!c.credentials || c.credentials.length === 0) return { level: 'LOW', color: 'var(--muted)', msg: 'SIN AUDITORÍA DOCUMENTAL' };
-        
-        const now = new Date();
-        const thirtyDaysOut = new Date();
-        thirtyDaysOut.setDate(now.getDate() + 30);
-
-        let expiredCount = 0;
-        let warningCount = 0;
-
-        c.credentials.forEach(cred => {
-            if (!cred.expiry_date) return;
-            const exp = new Date(cred.expiry_date);
-            if (exp < now) expiredCount++;
-            else if (exp < thirtyDaysOut) warningCount++;
-        });
-
-        if (expiredCount > 0) return { level: 'HIGH', color: '#ef4444', msg: `${expiredCount} DOCS VENCIDOS` };
-        if (warningCount > 0) return { level: 'MED', color: '#f59e0b', msg: `${warningCount} DOCS POR VENCER` };
-        return { level: 'LOW', color: '#10b981', msg: 'CUMPLIMIENTO TOTAL' };
-    }
-
-    function renderAll() {
-        let filtered = [...allCandidates];
-
-        if (currentFilter === 'aptos') {
-            filtered = filtered.filter(c => calculateDeepScore(c) >= 80);
-        } else if (currentFilter === 'docs') {
-            filtered = filtered.filter(c => calculateRisk(c).level === 'LOW');
-        } else if (currentFilter === 'top10') {
-            filtered = filtered.slice(0, 10);
-        }
-
-        renderDecisionHub();
-        renderMatrix(filtered);
-        renderDetailedGrid(filtered);
-    }
-
-    function renderDecisionHub() {
-        const winner = allCandidates[0];
-        if (!winner) return;
-
-        // Banner Winner
-        if (winnerName) winnerName.textContent = winner.nombre_completo;
-        if (winnerConfidence) winnerConfidence.textContent = `CONFIANZA STARK: ${Math.round(calculateDeepScore(winner))}%`;
-        if (winnerMatch) winnerMatch.textContent = `MATCH IA: ${winner.match_score || 85}%`;
-        
-        if (winnerReason) {
-            const nota = Number(String(winner.nota || '0').replace(',', '.'));
-            winnerReason.innerHTML = `
-                <b>MOTIVO DE SELECCIÓN:</b> ${winner.nombre_completo} presenta el mayor equilibrio operativo. 
-                Con <b>${winner.experiencia_total || 'N/A'} años</b> de trayectoria y una nota operacional de <b>${nota}</b>, 
-                representa el menor riesgo de integración y el mayor expertiz técnico para la vacante.
-            `;
-        }
-
-        // Top 3 List
-        if (top3List) {
-            top3List.innerHTML = allCandidates.slice(0, 3).map((c, i) => `
-                <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.03); padding:6px 12px; border-radius:6px; border-left:3px solid ${i===0?'#10b981':'#22d3ee'};">
-                   <div style="font-size:12px; font-weight:bold;">${i+1}. ${c.nombre_completo.split(' ')[0]} ${c.nombre_completo.split(' ')[1] || ''}</div>
-                   <div style="font-size:10px; font-family:'JetBrains Mono'; color:var(--accent);">${Math.round(calculateDeepScore(c))}%</div>
-                </div>
-            `).join('');
-        }
-
-        // Global Audit Risk (Worst case among top 3)
-        const top3Risks = allCandidates.slice(0, 3).map(calculateRisk);
-        const worstRisk = top3Risks.sort((a,b) => {
-            const weights = { 'HIGH': 3, 'MED': 2, 'LOW': 1 };
-            return weights[b.level] - weights[a.level];
-        })[0];
-
-        if (riskLevel) {
-            riskLevel.textContent = worstRisk.level;
-            riskLevel.style.color = worstRisk.color;
-        }
-        if (riskLabel) {
-            riskLabel.textContent = worstRisk.msg;
-            riskLabel.style.color = worstRisk.color;
-        }
-
-        // Action Buttons Setup
-        const btnHire = $('#btnHireWinner');
-        const btnSend = $('#btnSendToClient');
-
-        if (btnHire) {
-            btnHire.onclick = () => updateCandidateStatus(winner.id, 'Contratado', winner.nombre_completo);
-        }
-        if (btnSend) {
-            btnSend.onclick = () => updateCandidateStatus(winner.id, 'Presentado a Cliente', winner.nombre_completo);
-        }
-    }
-
-    async function updateCandidateStatus(id, status, name) {
-        if (!confirm(`¿Confirmar acción operativa: [${status}] para ${name}?`)) return;
-        
-        const { error } = await window.supabase
-            .from('candidates')
-            .update({ status: status })
-            .eq('id', id);
-
-        if (error) {
-            alert('Error en protocolo: ' + error.message);
-        } else {
-            alert(`SISTEMA: ${name} ha sido marcado como "${status.toUpperCase()}".`);
-            location.reload();
-        }
-    }
-
-    function renderMatrix(candidates) {
-        if (!matrixHeader || !matrixBody) return;
-
-        let headHtml = '<th>FACTOR TÁCTICO</th>';
-        candidates.forEach(c => {
-            headHtml += `<th style="text-align:center;">${c.nombre_completo.split(' ')[0]}</th>`;
-        });
-        matrixHeader.innerHTML = headHtml;
-
-        const factors = [
-            { label: 'EXPERIENCIA', key: 'experiencia_total', suffix: ' AÑOS' },
-            { label: 'CALIFICACIÓN', key: 'nota', prefix: '⭐ ' },
-            { label: 'STARK MATCH', key: 'match_score', suffix: '%' },
-            { label: 'AUDIT DOCS', val: (c) => calculateRisk(c).level }
-        ];
-
-        let bodyHtml = '';
-        factors.forEach(f => {
-            bodyHtml += `<tr><td style="font-size:10px; font-weight:800; opacity:0.6;">${f.label}</td>`;
-            candidates.forEach(c => {
-                let val = f.val ? f.val(c) : ((f.prefix || '') + (c[f.key] || '—') + (f.suffix || ''));
-                let color = '#fff';
-                if (val === 'HIGH') color = '#ef4444';
-                else if (val === 'MED') color = '#f59e0b';
-                else if (val === 'LOW' || val.includes('7') || (f.key === 'match_score' && Number(val.replace('%','')) > 80)) color = '#10b981';
-                
-                bodyHtml += `<td style="text-align:center; color:${color}; font-weight:bold; font-size:12px;">${val}</td>`;
-            });
-            bodyHtml += '</tr>';
-        });
-        matrixBody.innerHTML = bodyHtml;
-    }
-
-    function renderDetailedGrid(candidates) {
-        if (!container) return;
-        container.innerHTML = '';
-
-        candidates.forEach((c, idx) => {
-            const confidence = calculateDeepScore(c);
-            const risk = calculateRisk(c);
-            const isWinner = allCandidates[0].id === c.id;
-
-            const div = document.createElement('div');
-            div.className = `card stark-card ${isWinner ? 'winner-card' : ''}`;
-            div.style.border = isWinner ? '1px solid var(--ok)' : '1px solid rgba(255,255,255,0.05)';
-
-            div.innerHTML = `
-                ${isWinner ? '<div class="best-option-badge" style="background:var(--ok); color:#000; font-weight:900; font-size:9px; padding:2px 8px; position:absolute; top:-10px; left:20px; border-radius:4px;">RECOMENDACIÓN_TOP</div>' : ''}
-                <div class="card__body" style="padding:20px; display:flex; flex-direction:column; height:100%;">
-                    <div class="stark-header" style="margin-bottom:15px; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:10px;">
-                        <div style="font-size:9px; opacity:0.5; font-family:'JetBrains Mono';">RANKING: #${allCandidates.findIndex(x => x.id === c.id)+1}</div>
-                        <h4 style="margin:5px 0; font-size:16px; color:${isWinner?'var(--ok)':'#fff'};">${c.nombre_completo}</h4>
-                        <div style="font-size:10px; color:${risk.color}; font-weight:bold;">AUDIT: ${risk.level}</div>
-                    </div>
-
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:15px;">
-                        <div style="background:rgba(255,255,255,0.03); padding:10px; border-radius:8px; text-align:center; border:1px solid rgba(255,255,255,0.05);">
-                            <div style="font-size:18px; font-weight:900; color:var(--accent);">${Math.round(confidence)}%</div>
-                            <div style="font-size:9px; opacity:0.5;">CONFIANZA</div>
-                        </div>
-                        <div style="background:rgba(255,255,255,0.03); padding:10px; border-radius:8px; text-align:center; border:1px solid rgba(255,255,255,0.05);">
-                            <div style="font-size:18px; font-weight:900;">${c.nota || '—'}</div>
-                            <div style="font-size:9px; opacity:0.5;">NOTA_OP</div>
-                        </div>
-                    </div>
-
-                    <div style="margin-bottom:20px; font-size:12px; line-height:1.5; color:rgba(255,255,255,0.7); overflow:hidden; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical;">
-                        ${c.evaluacion_general || 'Análisis ejecutivo pendiente de sincronización profunda...'}
-                    </div>
-
-                    <div style="margin-top:auto; display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-                        <button class="btn btn-sm" style="background:rgba(255,255,255,0.05); font-size:10px;" onclick="location.href='candidates.html?id=${c.id}'">VER MÁS</button>
-                        <button class="btn btn-sm" style="background:#10b981; color:#000; border:none; font-weight:bold; font-size:10px;" onclick="updateCandidateStatus('${c.id}', 'Contratado', '${c.nombre_completo}')">CONTRATAR</button>
-                    </div>
-                </div>
-            `;
-            container.appendChild(div);
-        });
-    }
-
-    init();
+    fetchData();
 })();
