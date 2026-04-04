@@ -1,10 +1,10 @@
-// tenders.supabase.js - Lógica Stark Intelligence V8: RECONSTRUCCIÓN NIVEL GOD
+// tenders.supabase.js - Lógica Stark Intelligence V8: RECONSTRUCCIÓN NIVEL NASA
 (function () {
   const $ = (s) => document.querySelector(s);
   
   // Stark Utility: Robust Text Normalization
   const normalizeText = (t) => (t||"").toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9 ]/g, " ").trim();
-  
+
   // UI - Dash & Modals
   const tenderModal = $('#tenderModal');
   const tenderForm = $('#tenderForm');
@@ -44,6 +44,26 @@
   document.querySelectorAll('.close-modal').forEach(b => {
     b.onclick = () => { closeModal(tenderModal); closeModal(matchModal); closeModal(personProfileModal); };
   });
+
+  // Tab Switch HUD
+  if (tabWorkers && tabCandidates) {
+    tabWorkers.onclick = () => {
+        matchBodyWorkers.style.display = 'block';
+        matchBodyCandidates.style.display = 'none';
+        tabWorkers.style.color = 'var(--accent)';
+        tabCandidates.style.color = 'var(--muted)';
+        tabWorkers.style.borderBottom = '2px solid var(--accent)';
+        tabCandidates.style.borderBottom = '2px solid transparent';
+    };
+    tabCandidates.onclick = () => {
+        matchBodyWorkers.style.display = 'none';
+        matchBodyCandidates.style.display = 'block';
+        tabWorkers.style.color = 'var(--muted)';
+        tabCandidates.style.color = 'var(--accent)';
+        tabWorkers.style.borderBottom = '2px solid transparent';
+        tabCandidates.style.borderBottom = '2px solid var(--accent)';
+    };
+  }
 
   // Tab Switch HUD
   if (tabWorkers && tabCandidates) {
@@ -950,7 +970,6 @@
   }
 
   const escapeHtml = (u) => (u||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
-  const normalizeText = (t) => (t||"").toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim();
 
   document.addEventListener('DOMContentLoaded', loadTenders);
 })();
