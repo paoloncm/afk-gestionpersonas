@@ -11,6 +11,7 @@
   const reqContainer = $('#reqContainer');
   const matchModal = $('#matchModal');
   const personProfileModal = $('#personProfileModal');
+  const viewTenderModal = $('#viewTenderModal');
   const tendersBody = $('#tendersBody');
   const searchInput = $('#searchTender');
 
@@ -42,7 +43,12 @@
   const closeModal = (m) => m?.classList.remove('is-open');
 
   document.querySelectorAll('.close-modal').forEach(b => {
-    b.onclick = () => { closeModal(tenderModal); closeModal(matchModal); closeModal(personProfileModal); };
+    b.onclick = () => { 
+      closeModal(tenderModal); 
+      closeModal(matchModal); 
+      closeModal(personProfileModal); 
+      closeModal(viewTenderModal);
+    };
   });
 
   // Tab Switch HUD
