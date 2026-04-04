@@ -2,7 +2,7 @@ import os
 import threading
 from fastapi import FastAPI, BackgroundTasks, HTTPException
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from pydantic import BaseModel
 from pathlib import Path
 from typing import Optional
@@ -13,36 +13,48 @@ FRONTEND_DIR = Path(__file__).resolve().parent
 
 # --- HTML Routes ---
 
-@app.get("/", response_class=HTMLResponse)
+@app.get("/", response_class=FileResponse)
 def index():
-    index_file = FRONTEND_DIR / "index.html"
-    if not index_file.exists():
-        return HTMLResponse("index.html not found", status_code=404)
-    return index_file.read_text(encoding="utf-8")
+    file_path = FRONTEND_DIR / "index.html"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="index.html not found")
+    return FileResponse(file_path)
 
-@app.get("/{page}.html", response_class=HTMLResponse)
+@app.get("/{page}.html", response_class=FileResponse)
 def get_html_page(page: str):
     """Serves HTML files directly (e.g., /candidates.html)."""
     file_path = FRONTEND_DIR / f"{page}.html"
     if not file_path.exists():
         raise HTTPException(status_code=404, detail="Page not found")
-    return file_path.read_text(encoding="utf-8")
+    return FileResponse(file_path)
 
-@app.get("/candidates", response_class=HTMLResponse)
+@app.get("/candidates", response_class=FileResponse)
 def candidates():
-    return (FRONTEND_DIR / "candidates.html").read_text(encoding="utf-8")
+    file_path = FRONTEND_DIR / "candidates.html"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="candidates.html not found")
+    return FileResponse(file_path)
 
-@app.get("/comparison", response_class=HTMLResponse)
+@app.get("/comparison", response_class=FileResponse)
 def comparison():
-    return (FRONTEND_DIR / "comparison.html").read_text(encoding="utf-8")
+    file_path = FRONTEND_DIR / "comparison.html"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="comparison.html not found")
+    return FileResponse(file_path)
 
-@app.get("/workers", response_class=HTMLResponse)
+@app.get("/workers", response_class=FileResponse)
 def workers():
-    return (FRONTEND_DIR / "workers.html").read_text(encoding="utf-8")
+    file_path = FRONTEND_DIR / "workers.html"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="workers.html not found")
+    return FileResponse(file_path)
 
-@app.get("/tenders", response_class=HTMLResponse)
+@app.get("/tenders", response_class=FileResponse)
 def tenders():
-    return (FRONTEND_DIR / "tenders.html").read_text(encoding="utf-8")
+    file_path = FRONTEND_DIR / "tenders.html"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="tenders.html not found")
+    return FileResponse(file_path)
 
 # --- AI Semantic Matchmaking Endpoint ---
 class TenderMatchRequest(BaseModel):
