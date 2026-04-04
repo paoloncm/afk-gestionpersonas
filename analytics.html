@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
-  <title>AFK RRHH — People Analytics</title>
+  <title>AFK RRHH ÔÇö People Analytics</title>
 
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/styles.css">
@@ -15,33 +15,33 @@
 
 <body>
   <div class="dashboard">
-    <aside class="sidebar" aria-label="Navegación">
+    <aside class="sidebar" aria-label="Navegaci├│n">
       <div class="brand">
         <div class="logo">AFK</div>
         <span>RRHH</span>
       </div>
 
       <nav class="nav">
-        <div class="nav-category">Admisión y selección</div>
+        <div class="nav-category">Admisi├│n y selecci├│n</div>
         <a href="index.html"><span class="label">Dashboard</span></a>
         <a href="vacancies.html"><span class="label">Vacantes</span></a>
         <a href="interviews.html"><span class="label">Entrevistas</span></a>
         <a href="pipeline.html"><span class="label">Pipeline</span></a>
 
-        <div class="nav-category">Gestión</div>
+        <div class="nav-category">Gesti├│n</div>
         <a href="workers.html"><span class="label">Trabajadores</span></a>
         <a href="alerts.html"><span class="label">Alertas</span></a>
         <a href="documents.html"><span class="label">Documentos</span></a>
         <a href="reports.html"><span class="label">Reportes</span></a>
         <a id="openChatbot" href="#chatbot"><span class="label">Chatbot</span></a>
 
-        <div class="nav-category">Analítica e Inteligencia</div>
+        <div class="nav-category">Anal├¡tica e Inteligencia</div>
         <a class="is-active" href="analytics.html"><span class="label">People Analytics</span></a>
       </nav>
     </aside>
 
     <header class="topbar">
-      <button class="btn-menu" aria-label="Abrir menú">☰</button>
+      <button class="btn-menu" aria-label="Abrir men├║">Ôÿ░</button>
       <div style="display:flex; gap:10px; margin-left:auto; flex-wrap:wrap;">
         <button id="btnGenerateTec02FromCandidates" class="btn">Generar TEC-02</button>
         <button id="btnGenerateTec02AFromCandidates" class="btn">Generar TEC-02-A</button>
@@ -55,18 +55,18 @@
       <section class="hero-dashboard" style="background: linear-gradient(135deg, rgba(225, 29, 72, 0.15), rgba(0, 0, 0, 0.4)); border-color: rgba(225, 29, 72, 0.3);">
         <div class="hero-dashboard__text">
           <h2 style="font-size: 34px; letter-spacing: -1px;">People Analytics</h2>
-          <p style="color: #fff; font-weight: 600; font-size: 18px; margin-top: 5px;">Inteligencia de dotación para decisiones estratégicas.</p>
+          <p style="color: #fff; font-weight: 600; font-size: 18px; margin-top: 5px;">Inteligencia de dotaci├│n para decisiones estrat├®gicas.</p>
           <div id="dynamicInsight" class="card" style="margin-top:20px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 12px 20px; border-radius: 12px;">
              <div style="display:flex; align-items:center; gap:12px;">
-                <span style="font-size:24px;">💡</span>
+                <span style="font-size:24px;">­ƒÆí</span>
                 <span id="headerInsightText" style="font-size:14px; color:rgba(255,255,255,0.9); font-style:italic;">
-                   Analizando tendencias de la dotación actual...
+                   Analizando tendencias de la dotaci├│n actual...
                 </span>
              </div>
           </div>
         </div>
         <div class="hero-dashboard__visual">
-           <div class="badge badge--success" style="font-size:14px; padding:6px 16px;">✨ Datos en Tiempo Real</div>
+           <div class="badge badge--success" style="font-size:14px; padding:6px 16px;">Ô£¿ Datos en Tiempo Real</div>
         </div>
       </section>
 
@@ -76,26 +76,26 @@
           <div class="card__body kpi">
             <span class="label">Total Personal</span>
             <span id="kpi_total_workers" class="value">0</span>
-            <div style="font-size:11px; color:var(--ok); margin-top:5px;">Dotación total vigente</div>
+            <div style="font-size:11px; color:var(--ok); margin-top:5px;">Dotaci├│n total vigente</div>
           </div>
         </div>
         <div class="card">
           <div class="card__body kpi">
             <span class="label">Edad Promedio</span>
             <span id="kpi_avg_age" class="value">--</span>
-            <div style="font-size:11px; color:var(--muted); margin-top:5px;">Años</div>
+            <div style="font-size:11px; color:var(--muted); margin-top:5px;">A├▒os</div>
           </div>
         </div>
         <div class="card">
           <div class="card__body kpi">
-            <span class="label">Antigüedad Promedio</span>
+            <span class="label">Antig├╝edad Promedio</span>
             <span id="kpi_avg_seniority" class="value">--</span>
             <div style="font-size:11px; color:var(--muted); margin-top:5px;">Meses en la empresa</div>
           </div>
         </div>
         <div class="card">
           <div class="card__body kpi">
-            <span class="label">Certificación Crítica</span>
+            <span class="label">Certificaci├│n Cr├¡tica</span>
             <span id="kpi_critical_cert_pct" class="value">0%</span>
             <div style="font-size:11px; color:var(--ok); margin-top:5px;">Personal habilitado</div>
           </div>
@@ -104,13 +104,13 @@
           <div class="card__body kpi">
             <span class="label">Riesgo de Vacancia</span>
             <span id="kpi_vacancy_risk" class="value">0</span>
-            <div style="font-size:11px; color:rgba(255,255,255,0.6); margin-top:5px;">Perfiles críticos por vencer</div>
+            <div style="font-size:11px; color:rgba(255,255,255,0.6); margin-top:5px;">Perfiles cr├¡ticos por vencer</div>
           </div>
         </div>
       </section>
 
-      <!-- Block 1: Composición Demográfica -->
-      <h3 class="h1" style="margin-top:40px;">1. Composición Demográfica</h3>
+      <!-- Block 1: Composici├│n Demogr├ífica -->
+      <h3 class="h1" style="margin-top:40px;">1. Composici├│n Demogr├ífica</h3>
       <section class="section grid-3">
         <div class="card">
           <div class="card__body">
@@ -121,13 +121,13 @@
         </div>
         <div class="card" style="grid-column: span 2;">
           <div class="card__body">
-            <h4 style="margin:0 0 15px; font-size:14px; font-weight:900; color:var(--muted); text-transform:uppercase;">Geolocalización Táctica de Candidatos</h4>
+            <h4 style="margin:0 0 15px; font-size:14px; font-weight:900; color:var(--muted); text-transform:uppercase;">Geolocalizaci├│n T├íctica de Candidatos</h4>
             <div id="map_candidates" style="height:220px; width:100%;"></div>
           </div>
         </div>
         <div class="card">
           <div class="card__body">
-            <h4 style="margin:0 0 15px; font-size:14px; font-weight:900; color:var(--muted); text-transform:uppercase;">Antigüedad</h4>
+            <h4 style="margin:0 0 15px; font-size:14px; font-weight:900; color:var(--muted); text-transform:uppercase;">Antig├╝edad</h4>
             <div style="height:220px;"><canvas id="chart_seniority_dist"></canvas></div>
           </div>
         </div>
@@ -145,9 +145,9 @@
         </div>
         <div class="card">
           <div class="card__body">
-            <h4 style="margin:0 0 15px; font-size:14px; font-weight:900; color:var(--muted); text-transform:uppercase;">Perfiles Críticos vs Escasos</h4>
+            <h4 style="margin:0 0 15px; font-size:14px; font-weight:900; color:var(--muted); text-transform:uppercase;">Perfiles Cr├¡ticos vs Escasos</h4>
             <div id="criticalProfilesList" class="toplist" style="margin-top:10px;">
-               <!-- Lista dinámica -->
+               <!-- Lista din├ímica -->
             </div>
           </div>
         </div>
@@ -158,15 +158,15 @@
       <section class="section grid-2">
         <div class="card card--critical">
           <div class="card__body">
-            <h4 style="margin:0 0 15px; font-size:14px; font-weight:900; color:#fca5a5; text-transform:uppercase;">Concentración de Riesgo por Faena</h4>
+            <h4 style="margin:0 0 15px; font-size:14px; font-weight:900; color:#fca5a5; text-transform:uppercase;">Concentraci├│n de Riesgo por Faena</h4>
             <div style="height:250px;"><canvas id="chart_risk_locations"></canvas></div>
           </div>
         </div>
         <div class="card card--warning-alt">
           <div class="card__body">
-            <h4 style="margin:0 0 15px; font-size:14px; font-weight:900; color:#fbbf24; text-transform:uppercase;">Brechas de Licitación</h4>
+            <h4 style="margin:0 0 15px; font-size:14px; font-weight:900; color:#fbbf24; text-transform:uppercase;">Brechas de Licitaci├│n</h4>
             <div id="licitationGaps" style="font-size:13px; margin-top:10px;">
-               <!-- Texto dinámico -->
+               <!-- Texto din├ímico -->
                <div class="loading-state">Calculando capacidad operativa...</div>
             </div>
           </div>
@@ -178,14 +178,14 @@
       <section class="card card--success-alt" style="margin-bottom:60px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(0,0,0,0.6)); border: 1px solid rgba(16, 185, 129, 0.3);">
           <div class="card__body">
               <div style="display:flex; gap:25px; align-items:flex-start;">
-                  <div style="font-size:48px; filter: drop-shadow(0 0 10px var(--ok));">🧠</div>
+                  <div style="font-size:48px; filter: drop-shadow(0 0 10px var(--ok));">­ƒºá</div>
                   <div style="flex:1;">
                      <h4 style="margin:0; font-size:18px; font-weight:900; color:var(--ok); text-transform:uppercase; letter-spacing:1px;">Acciones Recomendadas para Gerencia</h4>
                      <ul id="aiRecommendationsList" style="margin:15px 0 0; padding-left:20px; color:rgba(255,255,255,0.9); font-size:15px; line-height:1.8;">
-                        <li>Analizando datos estratégicos para generar recomendaciones...</li>
+                        <li>Analizando datos estrat├®gicos para generar recomendaciones...</li>
                      </ul>
                   </div>
-                  <button id="btnTriggerRecs" class="btn btn--primary" style="border-radius:12px; padding:12px 24px; font-weight:800;">Ejecutar Plan de Acción</button>
+                  <button id="btnTriggerRecs" class="btn btn--primary" style="border-radius:12px; padding:12px 24px; font-weight:800;">Ejecutar Plan de Acci├│n</button>
               </div>
           </div>
       </section>
@@ -199,7 +199,7 @@
       </div>
       <div id="chatBody" class="chatbot__body"></div>
       <div class="chatbot__input">
-        <input id="chatInput" placeholder="Escribe y presiona Enter…" />
+        <input id="chatInput" placeholder="Escribe y presiona EnterÔÇª" />
         <button class="btn btn--primary" id="chatSend">Enviar</button>
       </div>
     </aside>

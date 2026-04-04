@@ -1,10 +1,10 @@
-<!-- AFK RRHH — index.html -->
+<!-- AFK RRHH ÔÇö index.html -->
 <!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>AFK RRHH — Dashboard</title>
+  <title>AFK RRHH ÔÇö Dashboard</title>
 
   <!-- Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
@@ -20,7 +20,7 @@
   <div class="dashboard">
 
     <!-- Sidebar -->
-    <aside class="sidebar" aria-label="Navegación">
+    <aside class="sidebar" aria-label="Navegaci├│n">
       <div class="brand">
         <div class="logo">AFK</div>
         <span>RRHH</span>
@@ -41,7 +41,7 @@
 
     <!-- Topbar -->
     <header class="topbar">
-      <button class="btn-menu" aria-label="Abrir menú">☰</button>
+      <button class="btn-menu" aria-label="Abrir men├║">Ôÿ░</button>
       <button class="btn" onclick="location.href='documents.html'">
         Subir documentos
       </button>
@@ -55,7 +55,7 @@
 
       <h1 class="h1">Dashboard</h1>
 
-      <!-- ✅ FILTROS -->
+      <!-- Ô£à FILTROS -->
       <section class="toolbar">
         <div class="toolbar__left" style="display:flex; gap:12px; flex-wrap:wrap;">
           <select id="filterEstado" class="select">
@@ -75,28 +75,28 @@
         <div class="card">
           <div class="card__body kpi">
             <span class="label">Total candidatos</span>
-            <span id="kpi_total" class="value">—</span>
+            <span id="kpi_total" class="value">ÔÇö</span>
           </div>
         </div>
 
         <div class="card">
           <div class="card__body kpi">
             <span class="label">Promedio nota</span>
-            <span id="kpi_prom_nota" class="value">—</span>
+            <span id="kpi_prom_nota" class="value">ÔÇö</span>
           </div>
         </div>
 
         <div class="card">
           <div class="card__body kpi">
             <span class="label">Experiencia promedio</span>
-            <span id="kpi_prom_exp" class="value">—</span>
+            <span id="kpi_prom_exp" class="value">ÔÇö</span>
           </div>
         </div>
 
         <div class="card">
           <div class="card__body kpi">
-            <span class="label">% Nota ≥ 6</span>
-            <span id="kpi_pct_n6" class="value">—</span>
+            <span class="label">% Nota ÔëÑ 6</span>
+            <span id="kpi_pct_n6" class="value">ÔÇö</span>
           </div>
         </div>
       </section>
@@ -105,7 +105,7 @@
       <section class="section grid-3">
         <div class="card">
           <div class="card__body">
-            <div class="text-muted">Distribución de notas</div>
+            <div class="text-muted">Distribuci├│n de notas</div>
             <div class="chart-box">
               <canvas id="chart_notas"></canvas>
             </div>
@@ -156,8 +156,8 @@
         <div class="toolbar">
           <div class="toolbar__left">
             <div class="input">
-              <span class="input__icon">🔎</span>
-              <input id="candSearch" type="search" placeholder="Buscar candidato…" />
+              <span class="input__icon">­ƒöÄ</span>
+              <input id="candSearch" type="search" placeholder="Buscar candidatoÔÇª" />
             </div>
           </div>
           <div class="toolbar__right">
@@ -171,13 +171,13 @@
             <div class="t-head">
               <div class="t-col-cb"></div>
               <div class="t-col-name">Nombre</div>
-              <div class="t-col-prof">Profesión</div>
+              <div class="t-col-prof">Profesi├│n</div>
               <div class="t-col-vac">Vacante a postular</div>
               <div class="t-col-score">Puntaje</div>
-              <div class="t-col-exp">Años exp.</div>
+              <div class="t-col-exp">A├▒os exp.</div>
               <div class="t-col-status">Estado</div>
             </div>
-            <!-- filas dinámicas -->
+            <!-- filas din├ímicas -->
           </div>
         </div>
       </section>
@@ -193,7 +193,7 @@
       <div id="chatBody" class="chatbot__body"></div>
 
       <div class="chatbot__input">
-        <input id="chatInput" placeholder="Escribe y presiona Enter…" />
+        <input id="chatInput" placeholder="Escribe y presiona EnterÔÇª" />
         <button class="btn btn--primary" id="chatSend">Enviar</button>
       </div>
     </aside>
@@ -209,11 +209,11 @@
         <form id="candidateForm">
           <div class="form-group">
             <label>Nombre Completo</label>
-            <input name="nombre_completo" required class="input" placeholder="Ej: Juan Pérez">
+            <input name="nombre_completo" required class="input" placeholder="Ej: Juan P├®rez">
           </div>
           <div class="grid-2">
             <div class="form-group">
-              <label>Profesión</label>
+              <label>Profesi├│n</label>
               <input name="profesion" class="input" placeholder="Ej: Desarrollador">
             </div>
             <div class="form-group">
@@ -227,7 +227,7 @@
               <input name="correo" type="email" class="input" placeholder="correo@ejemplo.com">
             </div>
             <div class="form-group">
-              <label>Teléfono</label>
+              <label>Tel├®fono</label>
               <input name="telefono" class="input" placeholder="+56 9 ...">
             </div>
           </div>
@@ -255,10 +255,10 @@
   <script src="/static/auth.js"></script>
 
   <!-- App scripts -->
-  <script defer src="sheet.js?v=2.0"></script>
-  <script defer src="candidates.supabase.js?v=2.0"></script>
-  <script defer src="charts.js?v=2.0"></script>
-  <script defer src="chat.js?v=2.0"></script>
-  <script defer src="responsive.js?v=2.0"></script>
+  <script defer src="/static/sheet.js?v=2.0"></script>
+  <script defer src="/static/candidates.supabase.js?v=2.0"></script>
+  <script defer src="/static/charts.js?v=2.0"></script>
+  <script defer src="/static/chat.js?v=2.0"></script>
+  <script defer src="/static/responsive.js?v=2.0"></script>
 </body>
 </html>
