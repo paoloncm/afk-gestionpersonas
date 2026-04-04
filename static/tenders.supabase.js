@@ -95,9 +95,33 @@
       }
       if (tendersBody) tendersBody.innerHTML = '<div style="padding:40px; text-align:center;">SINCRONIZANDO NÚCLEO...</div>';
       
-      const { data, error } = await window.supabase.from('tenders').select('*').order('created_at', { ascending: false });
-      if (error) throw error;
-      allTenders = data || [];
+      const { data: tenders, error: tErr } = await window.supabase.from('tenders').select('*').order('created_at', { ascending: false });
+      if (tErr) throw tErr;
+
+      // Fetch all vacancies for these tenders to calculate stats
+      const { data: allVacs, error: vErr } = await window.supabase.from('vacancies').select('*');
+      if (vErr) throw vErr;
+
+      allTenders = (tenders || []).map(t => {
+          const tVacs = (allVacs || []).filter(v => v.tender_id === t.id);
+          const totalRequested = tVacs.reduce((acc, v) => acc + (v.quantity || 1), 0);
+          let totalAssigned = 0;
+          
+          tVacs.forEach(v => {
+              try {
+                  const sl = (typeof v.shortlisted_candidates === 'string') ? JSON.parse(v.shortlisted_candidates) : (v.shortlisted_candidates || []);
+                  totalAssigned += sl.length;
+              } catch(e) {}
+          });
+
+          const coverage = totalRequested ? Math.round((totalAssigned / totalRequested) * 100) : 0;
+          let risk = "BAJO";
+          if (coverage < 50) risk = "ALTO";
+          else if (coverage < 90) risk = "MEDIO";
+
+          return { ...t, vacancies: tVacs, coverage, risk };
+      });
+
       renderTenders();
     } catch (err) { console.error('[Stark] Error loadTenders:', err); }
   }
@@ -109,21 +133,32 @@
 
     tendersBody.innerHTML = filtered.map(t => {
       const topReqs = (t.requirements || []).slice(0, 3).map(r => `<span class="badge" style="font-size:10px; border-color:rgba(34,211,238,0.2)">${r}</span>`).join('');
+      
+      const riskColor = t.risk === "ALTO" ? "#f43f5e" : (t.risk === "MEDIO" ? "#f59e0b" : "#10b981");
+      const coverageColor = t.coverage === 100 ? "#10b981" : "var(--accent)";
+
       return `
-        <div class="t-row stark-card" style="margin-bottom:10px; padding: 18px 20px; display:flex; align-items: center; border: 1px solid rgba(255,255,255,0.05); transition:all 0.4s;" onclick="window.editTenderById('${t.id}')">
+        <div class="t-row stark-card" style="margin-bottom:10px; padding: 18px 20px; display:flex; align-items: center; border: 1px solid rgba(255,255,255,0.05); border-left: 3px solid ${coverageColor}; transition:all 0.4s;" onclick="window.editTenderById('${t.id}')">
           <div style="flex: 0 0 25%;">
             <div style="font-weight: 800; color:var(--text); font-size:15px; letter-spacing:0.5px;">${escapeHtml(t.name)}</div>
+            <div style="margin-top:5px; font-size:9px; color:${riskColor}; font-weight:900; letter-spacing:1px;">RIESGO_${t.risk}</div>
           </div>
           <div style="flex: 0 0 35%; padding-right:15px;">
             <div style="color: var(--muted); font-size: 11px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height:1.4;">
               ${escapeHtml(t.description || 'Sin descripción estratégica')}
             </div>
           </div>
-          <div style="flex: 1; display:flex; flex-wrap:wrap; gap:5px;">
-            ${topReqs || '<span style="color:rgba(255,255,255,0.1); font-size:10px;">SIN REQUISITOS CAPTURADOS</span>'}
+          <div style="flex: 1; display:flex; flex-wrap:wrap; gap:5px; align-items:center;">
+            <div style="width:100%; margin-bottom:5px; display:flex; align-items:center; gap:10px;">
+                <div style="background:rgba(255,255,255,0.05); height:4px; flex:1; border-radius:2px; overflow:hidden;">
+                    <div style="background:${coverageColor}; height:100%; width:${t.coverage}%;"></div>
+                </div>
+                <span style="font-size:10px; color:var(--text); font-family:monospace; font-weight:800;">${t.coverage}%</span>
+            </div>
+            ${topReqs || ''}
           </div>
           <div style="flex: 0 0 150px; display: flex; gap:8px; justify-content: flex-end;">
-            <button class="btn btn--mini btn--primary btn-match" data-id="${t.id}" style="font-weight:900; box-shadow: 0 0 10px rgba(34,211,238,0.1);">[ OPERATIVO ]</button>
+            <button class="btn btn--mini btn--primary btn-match" data-id="${t.id}" style="font-weight:900; box-shadow: 0 0 10px rgba(34,211,238,0.1); background:${t.coverage === 100 ? '#10b981' : ''}">${t.coverage === 100 ? '[ DESPLEGADO ]' : '[ OPERATIVO ]'}</button>
             <button class="btn btn--mini btn-delete" data-id="${t.id}" style="color:var(--danger); opacity:0.6; hover:opacity:1;">🗑️</button>
           </div>
         </div>
