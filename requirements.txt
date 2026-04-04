@@ -1,3 +1,7 @@
 fastapi
 uvicorn
 jinja2
+supabase
+openai
+pydantic
+python-dotenv
