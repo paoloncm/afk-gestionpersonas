@@ -1,11 +1,12 @@
 import os
 import threading
-from fastapi import FastAPI, BackgroundTasks, HTTPException
+from fastapi import FastAPI, BackgroundTasks, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
+from fastapi.responses import HTMLResponse, JSONResponse, FileResponse, RedirectResponse
 from pydantic import BaseModel
 from pathlib import Path
 from typing import Optional
+from supabase import create_client
 
 app = FastAPI(title="AFK RRHH")
 
