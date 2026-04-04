@@ -357,23 +357,33 @@
     }
     
     if (!tId) {
-        console.error("[Stark] Fallo catastrófico de ID.", tRes);
-        alert("ERROR: No se detectó ID de licitación.");
+        console.error("[Stark] Fallo catastrófico de ID. tRes:", tRes);
+        alert("ERROR: No se pudo obtener el ID del proyecto. Sincronización abortada.");
         return;
     }
     
     if (detectedVacancies.length > 0) {
-        if (id) await window.supabase.from('vacancies').delete().eq('tender_id', id);
+        console.log(`[Stark] Sincronizando ${detectedVacancies.length} vacantes para Proyecto ID: ${tId}`);
+        
+        // Clean old vacancies if editing
+        if (id) {
+            const { error: dErr } = await window.supabase.from('vacancies').delete().eq('tender_id', tId);
+            if (dErr) console.warn("[Stark] Advertencia limpieza vacantes:", dErr);
+        }
+
         const vacData = detectedVacancies.map(v => ({ 
             tender_id: tId, 
             title: v.title, 
-            quantity: v.quantity || 1,
-            requirements: v.requirements 
+            quantity: parseInt(v.quantity || 1) || 1, // FORCE INTEGER
+            requirements: Array.isArray(v.requirements) ? v.requirements : [] 
         }));
+
         const { error: vErr } = await window.supabase.from('vacancies').insert(vacData);
         if (vErr) {
-            console.error("[Stark] ERROR INSERTANDO VACANTES:", vErr);
-            alert("ALERTA: Vacantes fallaron: " + vErr.message);
+            console.error("[Stark] ERROR PERSISTIENDO VACANTES:", vErr);
+            alert("ALERTA DE SEGURIDAD: El proyecto se guardó pero las VACANTES fallaron: " + vErr.message);
+        } else {
+            console.log("[Stark] Vacantes sincronizadas exitosamente.");
         }
     }
     
