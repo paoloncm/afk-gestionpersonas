@@ -516,10 +516,6 @@
           .sort((a,b) => b.score - a.score)
           .slice(0, needed);
 
-          console.log(`[Stark AutoFill] Candidatos seleccionados para ${v.title}: ${bestAvailable.length}`);
-
-          console.log(`[Stark AutoFill] Candidatos encontrados para ${v.title}: ${highMatches.length}`);
-
           if (bestAvailable.length > 0) {
               const newList = [...shortlist, ...bestAvailable.map(c => ({
                   id: c.id,
