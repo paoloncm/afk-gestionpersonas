@@ -453,5 +453,5 @@ def get_static_or_html(file_name: str):
     
     raise HTTPException(status_code=404)
 
-# Compatibilidad con /static para rutas heredadas
+# Compatibilidad con /static para rutas heredadas (mapea /static a la raíz)
 app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static_dir")
