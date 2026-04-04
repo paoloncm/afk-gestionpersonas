@@ -2,6 +2,9 @@
 (function () {
   const $ = (s) => document.querySelector(s);
   
+  // Stark Utility: Robust Text Normalization
+  const normalizeText = (t) => (t||"").toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9 ]/g, " ").trim();
+  
   // UI - Dash & Modals
   const tenderModal = $('#tenderModal');
   const tenderForm = $('#tenderForm');
@@ -459,7 +462,7 @@
               const score = Math.min(100, profMatch + (rs.length ? (evalMatch / rs.length) * 40 : 0));
               return { ...c, score };
           })
-          .filter(c => c.score >= 80 && !shortlist.some(s => s.id === c.id))
+          .filter(c => c.score >= 65 && !shortlist.some(s => s.id === c.id))
           .sort((a,b) => b.score - a.score)
           .slice(0, needed);
 
