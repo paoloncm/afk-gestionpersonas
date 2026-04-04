@@ -168,15 +168,41 @@
 
     <!-- Modal Matchmaking (Resultados) -->
     <div id="matchModal" class="modal">
-      <div class="modal__content stark-hud" style="max-width:1000px;">
-        <div class="modal__header" style="border-bottom:none; padding-bottom:5px;">
-          <h2 class="h1" style="margin-bottom: 2px;" id="matchTitle">Aptitud Licitación</h2>
-          <div style="font-size:12px; color:var(--muted); margin-bottom:8px;">Selecciona la vacante a evaluar:</div>
-          <select id="vacancySelector" class="input" style="width:100%; max-width:400px; padding: 6px; font-size:13px; background:rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.1); color:var(--text); border-radius:4px;">
-              <option value="">Cargando vacantes...</option>
-          </select>
-          <button class="close-modal" style="position:absolute; top:15px; right:15px;">&times;</button>
+        <div class="modal__content stark-hud" style="max-width:1000px;">
+        <div style="position:absolute; top:20px; right:20px;">
+            <button class="close-modal" style="background:none; border:none; color:var(--muted); font-size:24px; cursor:pointer;">&times;</button>
         </div>
+
+        <div class="modal-stark-header" style="margin-bottom:20px;">
+           <div class="stark-id-badge" style="font-size:9px; border:1px solid rgba(34,211,238,0.2); width:fit-content; padding:2px 8px; border-radius:4px; opacity:0.6;">MISIÓN: SELECCIÓN_EQUIPO</div>
+           <h2 id="matchTitle" style="margin:10px 0; font-size:26px;">OPERACIÓN_HUD: LICITACIÓN</h2>
+        </div>
+
+        <!-- STARK TEAM COVERAGE HUD -->
+        <div id="starkCoverageHUD" class="stark-card" style="margin-bottom:24px; display:grid; grid-template-columns: 1fr 2fr 1.2fr; gap:20px; border:1px solid var(--accent); background:rgba(34,211,238,0.05); padding:20px; border-radius:12px; position:relative; overflow:hidden;">
+          <div style="text-align:center; border-right:1px solid rgba(255,255,255,0.1); padding-right:10px;">
+            <div class="section-kicker" style="font-size:9px; letter-spacing:1px; opacity:0.6;">COBERTURA_EQUIPO</div>
+            <div id="coveragePct" style="font-size:42px; font-weight:900; color:var(--accent); line-height:1.2; font-family:'Outfit', sans-serif;">0%</div>
+            <div style="width:100%; height:4px; background:rgba(255,255,255,0.1); margin-top:8px; border-radius:2px; overflow:hidden;">
+              <div id="coverageFill" style="width:0%; height:100%; background:var(--accent); transition:width 1s cubic-bezier(0.4, 0, 0.2, 1);"></div>
+            </div>
+          </div>
+          <div style="border-right:1px solid rgba(255,255,255,0.1); padding:0 15px;">
+            <div class="section-kicker" style="font-size:9px; letter-spacing:1px; opacity:0.6;">AUDITORÍA_OPERATIVA</div>
+            <div id="teamStatusText" style="font-size:12px; margin:8px 0; opacity:0.8; height:36px; overflow:hidden; font-family:'JetBrains Mono', monospace;">Sincronizando perfiles para licitación...</div>
+            <div id="missingRolesTags" style="display:flex; flex-wrap:wrap; gap:4px;"></div>
+          </div>
+          <div style="display:flex; flex-direction:column; justify-content:center; align-items:center; gap:8px; padding-left:10px;">
+            <div id="tenderRiskBadge" style="font-size:10px; font-weight:900; padding:4px 10px; border-radius:4px; background:rgba(255,255,255,0.05); border:1px solid var(--accent); color:var(--accent);">RIESGO: --</div>
+            <button id="btnStarkAutoFill" class="btn btn--primary" style="width:100%; font-size:10px; font-weight:900; background:#10b981; border:none; color:#000; box-shadow: 0 0 15px rgba(16,185,129,0.2);">⚡ COMPLETAR_EQUIPO</button>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:20px; align-items:center; margin-bottom:20px; background:rgba(255,255,255,0.03); padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.05);">
+          <div style="font-size:10px; opacity:0.6; font-family:'JetBrains Mono', monospace; font-weight:bold;">VACANTE_ESTRATEGICA:</div>
+          <select id="vacancySelector" class="stark-input" style="flex:1; border:none; background:transparent; font-weight:900; color:var(--accent); cursor:pointer; list-style:none; outline:none; -webkit-appearance:none;"></select>
+        </div>
+
         <div style="padding:15px 20px; border-bottom:1px solid rgba(255,255,255,0.1); display:flex; gap:20px; background: rgba(0,0,0,0.2);">
            <button class="btn btn--mini" id="tabWorkers" style="background:transparent; color:var(--accent); border-bottom:2px solid var(--accent); padding:10px 0; border-radius:0; font-weight:800; font-size:11px; letter-spacing:1px;">[ 👷 TRABAJADORES AFK ]</button>
            <button class="btn btn--mini" id="tabCandidates" style="background:transparent; color:var(--muted); border-bottom:2px solid transparent; padding:10px 0; border-radius:0; font-weight:800; font-size:11px; letter-spacing:1px;">[ 🦸 CANDIDATOS IA ]</button>
