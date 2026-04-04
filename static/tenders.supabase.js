@@ -428,8 +428,9 @@
       vacancies.forEach(v => {
           let shortlist = [];
           try {
-              shortlist = (typeof v.shortlisted_candidates === 'string') ? JSON.parse(v.shortlisted_candidates) : (v.shortlisted_candidates || []);
-          } catch(e) {}
+              const raw = v.shortlisted_candidates;
+              shortlist = (typeof raw === 'string') ? JSON.parse(raw) : (raw || []);
+          } catch(e) { console.warn("[Stark] Error parseando shortlist:", e); }
           
           totalAssigned += shortlist.length;
           const needed = (v.quantity || 1) - shortlist.length;
@@ -524,7 +525,8 @@
                   score: c.score
               }))];
               
-              await window.supabase.from('vacancies').update({ shortlisted_candidates: JSON.stringify(newList) }).eq('id', v.id);
+              // Update using plain object for JSONB compatibility
+              await window.supabase.from('vacancies').update({ shortlisted_candidates: newList }).eq('id', v.id);
               window.notificar?.(`AUTO-ASIGNADO: ${highMatches.length} perfiles para ${v.title}`, "success");
           }
       }
