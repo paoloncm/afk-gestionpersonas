@@ -222,13 +222,15 @@
             const sl = (typeof v.shortlisted_candidates === 'string') ? JSON.parse(v.shortlisted_candidates) : (v.shortlisted_candidates || []);
             
             if (sl.length > 0) {
-                names = sl.map(c => `
-                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                names = sl.map(c => {
+                    const score = c.score || 0;
+                    return `
+                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px; cursor:pointer;" onclick="event.stopPropagation(); window.openPersonProfile('${c.id}', '${c.type === 'IA EXTERNO' ? 'IA' : 'AFK'}', ${score}, '${v.title}')">
                         <span style="color:var(--ok)">✓</span> 
-                        <span style="color:var(--text); font-weight:700;">${c.name}</span>
-                        <span style="font-size:9px; opacity:0.5; background:rgba(255,255,255,0.05); padding:1px 4px; border-radius:3px;">${c.type || 'OPERATIVO'}</span>
+                        <span style="color:var(--text); font-weight:700; text-decoration:underline; text-decoration-color:rgba(34,211,238,0.2);">${c.name}</span>
+                        <span style="font-size:9px; opacity:0.8; background:rgba(34,211,238,0.1); color:var(--accent); padding:1px 4px; border-radius:3px;">${score}% MATCH</span>
                     </div>
-                `).join('');
+                `}).join('');
             }
 
             return `
@@ -1011,10 +1013,14 @@
   }
 
   // --- STARK BIOMETRIC PROTOCOL ---
-  window.openPersonProfile = async function(id, type) {
+  window.openPersonProfile = async function(id, type, matchScore = null, matchRole = null) {
       openModal(personProfileModal);
       $('#profileScanner').style.display = 'flex';
       
+      // Reset match section
+      const existingMatch = $('#starkMatchReport');
+      if (existingMatch) existingMatch.remove();
+
       try {
           let person = null;
           if (type === 'AFK') {
@@ -1024,17 +1030,22 @@
                   $('#profileType').textContent = '[ OPERARIO AFK ]';
                   $('#profileName').textContent = person.full_name.toUpperCase();
                   $('#profileRut').textContent = person.rut || '-';
-                  $('#profileProfession').textContent = person.position || 'Operativo AFK';
+                  const profession = person.position || 'Operativo AFK';
+                  $('#profileProfession').textContent = profession;
                   $('#profileCompany').textContent = person.company_name || 'AFK RRHH';
                   $('#profileEmail').textContent = person.email || '-';
                   $('#profilePhone').textContent = person.phone || '-';
                   $('#profileCvSummary').innerHTML = `<p style="color:var(--muted); font-style:italic;">Accediendo a base de datos de cumplimiento AFK... No se detecta resumen de CV IA para este operario activo. Sin embargo, su estatus es: ${person.status}.</p>`;
-                   $('#profileAcademic').textContent = person.academic_info || 'Información académica no centralizada.';
-                   $('#profileStatus').textContent = `● ${person.status || 'HABILITADO'}`;
-                   $('#profileStatus').style.color = (person.status === 'Bloqueado') ? 'var(--danger)' : 'var(--ok)';
-                   const expEl = $('#profileExp');
-                   if (expEl) expEl.textContent = (person.experiencia_total || '0') + ' años';
-                   $('#profileEditBtn').onclick = () => window.location.href = `worker.html?id=${id}`;
+                  $('#profileAcademic').textContent = person.academic_info || 'Información académica no centralizada.';
+                  $('#profileStatus').textContent = `● ${person.status || 'HABILITADO'}`;
+                  $('#profileStatus').style.color = (person.status === 'Bloqueado') ? 'var(--danger)' : 'var(--ok)';
+                  const expEl = $('#profileExp');
+                  if (expEl) expEl.textContent = (person.experiencia_total || '0') + ' años';
+                  $('#profileEditBtn').onclick = () => window.location.href = `worker.html?id=${id}`;
+
+                  if (matchScore) {
+                      injectMatchReport(matchScore, matchRole, profession);
+                  }
                }
            } else {
                const { data } = await window.supabase.from('candidates').select('*').eq('id', id).single();
@@ -1043,7 +1054,8 @@
                    $('#profileType').textContent = '[ CANDIDATO EXTERNO IA ]';
                    $('#profileName').textContent = (person.nombre_completo || 'SIN NOMBRE').toUpperCase();
                    $('#profileRut').textContent = person.rut || '-';
-                   $('#profileProfession').textContent = person.profesion || 'Candidato Externo';
+                   const profession = person.profesion || 'Candidato Externo';
+                   $('#profileProfession').textContent = profession;
                    $('#profileCompany').textContent = 'FUERZA EXTERNA';
                    $('#profileEmail').textContent = person.correo || '-';
                    $('#profilePhone').textContent = person.telefono || '-';
@@ -1059,6 +1071,10 @@
                    $('#profileStatus').textContent = `● ÍNDICE DE MÉRITO: ${person.nota || '5.0'}`;
                    $('#profileStatus').style.color = 'var(--accent)';
                    $('#profileEditBtn').onclick = () => window.location.href = `candidate.html?id=${id}`;
+
+                   if (matchScore) {
+                       injectMatchReport(matchScore, matchRole, profession);
+                   }
                }
            }
        } catch (err) { 
@@ -1070,6 +1086,36 @@
            }, 800);
        }
   };
+
+  function injectMatchReport(score, role, profession) {
+      const modalBody = document.querySelector('#personProfileModal .modal__body');
+      const report = document.createElement('div');
+      report.id = 'starkMatchReport';
+      report.style.gridColumn = '1 / -1';
+      report.style.background = 'rgba(34,211,238,0.08)';
+      report.style.border = '1px solid var(--accent)';
+      report.style.borderRadius = '8px';
+      report.style.padding = '15px';
+      report.style.marginBottom = '20px';
+      report.style.display = 'flex';
+      report.style.alignItems = 'center';
+      report.style.gap = '20px';
+      
+      const reasoning = score > 80 ? "Alta coincidencia en perfil técnico y experiencia requerida." : 
+                        (score > 50 ? "Perfil compatible con brechas menores en certificaciones." : "Asignación de emergencia: Se recomienda capacitación o reclutamiento externo.");
+
+      report.innerHTML = `
+          <div style="text-align:center;">
+              <div style="font-size:9px; opacity:0.6; margin-bottom:5px;">STARK_MATCH_SCORE</div>
+              <div style="font-size:32px; font-weight:900; color:var(--accent);">${Math.round(score)}%</div>
+          </div>
+          <div style="flex:1;">
+              <div style="font-size:11px; font-weight:900; color:var(--text); margin-bottom:5px;">POR QUÉ JARVIS ELIGIÓ ESTE PERFIL PARA: <span style="color:var(--accent)">${role.toUpperCase()}</span></div>
+              <div style="font-size:12px; color:var(--text); opacity:0.8; font-style:italic;">"${reasoning}"</div>
+          </div>
+      `;
+      modalBody.prepend(report);
+  }
 
   // --- VECTOR SEARCH CORE (STARK V12) ---
   async function getEmbedding(text) {
