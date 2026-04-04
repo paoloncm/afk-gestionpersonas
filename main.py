@@ -72,41 +72,20 @@ def index():
         raise HTTPException(status_code=404, detail="index.html not found")
     return FileResponse(file_path)
 
-@app.get("/{page}.html", response_class=FileResponse)
-def get_html_page(page: str):
-    """Serves HTML files directly (e.g., /candidates.html)."""
-    file_path = FRONTEND_DIR / f"{page}.html"
-    if not file_path.exists():
-        raise HTTPException(status_code=404, detail="Page not found")
-    return FileResponse(file_path)
+# Servir archivos estáticos y rutas dinámicas
+@app.get("/{file_name}")
+def get_static_or_html(file_name: str):
+    # Intentar buscar el HTML en la raíz
+    file_path = FRONTEND_DIR / file_name
+    if file_name.endswith(".html"):
+        if not file_path.exists():
+            raise HTTPException(status_code=404, detail="Página no encontrada.")
+        return FileResponse(file_path)
+    
+    raise HTTPException(status_code=404)
 
-@app.get("/candidates", response_class=FileResponse)
-def candidates():
-    file_path = FRONTEND_DIR / "candidates.html"
-    if not file_path.exists():
-        raise HTTPException(status_code=404, detail="candidates.html not found")
-    return FileResponse(file_path)
-
-@app.get("/comparison", response_class=FileResponse)
-def comparison():
-    file_path = FRONTEND_DIR / "comparison.html"
-    if not file_path.exists():
-        raise HTTPException(status_code=404, detail="comparison.html not found")
-    return FileResponse(file_path)
-
-@app.get("/workers", response_class=FileResponse)
-def workers():
-    file_path = FRONTEND_DIR / "workers.html"
-    if not file_path.exists():
-        raise HTTPException(status_code=404, detail="workers.html not found")
-    return FileResponse(file_path)
-
-@app.get("/tenders", response_class=FileResponse)
-def tenders():
-    file_path = FRONTEND_DIR / "tenders.html"
-    if not file_path.exists():
-        raise HTTPException(status_code=404, detail="tenders.html not found")
-    return FileResponse(file_path)
+# Montar estrictamente la carpeta /static
+app.mount("/static", StaticFiles(directory=FRONTEND_DIR / "static"), name="static")
 
 # --- Session Support: Secure Cookie Bridge (HttpOnly) ---
 
