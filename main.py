@@ -65,12 +65,10 @@ async def auth_middleware(request: Request, call_next):
 
 # --- HTML Routes ---
 
+# Montar los estáticos al inicio para evitar conflictos de rutas
+app.mount("/static", StaticFiles(directory=FRONTEND_DIR / "static"), name="static")
+
 @app.get("/", response_class=FileResponse)
-def index():
-    file_path = FRONTEND_DIR / "index.html"
-    if not file_path.exists():
-        raise HTTPException(status_code=404, detail="index.html not found")
-    return FileResponse(file_path)
 
 # Servir archivos estáticos y rutas dinámicas
 @app.get("/{file_name}")
