@@ -299,7 +299,50 @@
              <button id="profileEditBtn" class="btn btn--mini" style="background:transparent; border:1px solid var(--accent); color:var(--accent);">ACCEDER A EXPEDIENTE COMPLETO</button>
         </div>
       </div>
+      </div>
+    
+    <!-- New Modal: Stark Intelligence Report (View Mode) -->
+    <div id="viewTenderModal" class="modal">
+      <div class="modal__content stark-hud" style="max-width:900px; border:1px solid var(--accent) !important;">
+        <div class="modal__header" style="border-bottom:1px solid rgba(34,211,238,0.2); padding-bottom:15px; display:flex; justify-content:space-between; align-items:flex-start;">
+          <div>
+            <div class="stark-id-badge" style="margin-bottom:5px;">[ INFORME ESTRATÉGICO STARK ]</div>
+            <h2 id="viewTenderTitle" style="font-size:28px; margin:0; letter-spacing:1px; text-transform:uppercase;">DETALLE DE MISIÓN</h2>
+          </div>
+          <button class="close-modal" id="btnCloseView" style="font-size:32px; background:none; border:none; color:var(--muted); cursor:pointer;">&times;</button>
+        </div>
+        
+        <div class="modal__body" style="padding:20px 0; display:grid; grid-template-columns: 1fr 1.5fr; gap:30px;">
+          <!-- Left Column: Summary & Stats -->
+          <div style="border-right:1px solid rgba(255,255,255,0.05); padding-right:20px;">
+            <div class="stark-summary-label" style="font-size:10px; opacity:0.6; margin-bottom:10px;">RESUMEN DE INTELIGENCIA AI</div>
+            <div id="viewTenderSummary" style="font-size:13px; line-height:1.6; color:var(--text); background:rgba(255,255,255,0.02); padding:15px; border-radius:8px; border:1px solid rgba(255,255,255,0.05); margin-bottom:20px;">
+                Analizando datos estratégicos...
+            </div>
+            
+            <div class="stark-summary-label" style="font-size:10px; opacity:0.6; margin-bottom:10px;">REQUISITOS OPERATIVOS</div>
+            <div id="viewTenderReqs" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
+          </div>
+          
+          <!-- Right Column: Assigned Team Matrix -->
+          <div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <div class="stark-summary-label" style="font-size:10px; opacity:0.6;">MATRIZ DE PERSONAL ASIGNADO</div>
+                <div id="viewTenderCoverage" style="font-weight:900; color:var(--accent); font-family:monospace; font-size:14px;">0%</div>
+            </div>
+            <div id="viewTenderTeam" style="max-height:400px; overflow-y:auto; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.05); border-radius:8px; display:flex; flex-direction:column; gap:1px;">
+                <!-- Team Rows Generated Dynamically -->
+            </div>
+          </div>
+        </div>
+        
+        <div class="modal__footer" style="margin-top:20px; border-top:1px solid rgba(255,255,255,0.05); padding-top:15px; display:flex; justify-content:space-between; align-items:center;">
+             <div style="font-size:10px; color:var(--accent); font-family:monospace; opacity:0.4;">SISTEMA_STARK // v10.4 // ACCESO_LECTURA</div>
+             <div id="viewTenderDate" style="font-size:11px; opacity:0.6;">Sincronizado: --/--/----</div>
+        </div>
+      </div>
     </div>
+  </div>
   </div>
 
   <!-- Scripts Logic -->

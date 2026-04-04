@@ -140,7 +140,13 @@
       return `
         <div class="t-row stark-card" style="margin-bottom:10px; padding: 18px 20px; display:flex; align-items: center; border: 1px solid rgba(255,255,255,0.05); border-left: 3px solid ${coverageColor}; transition:all 0.4s;" onclick="window.editTenderById('${t.id}')">
           <div style="flex: 0 0 25%;">
-            <div style="font-weight: 800; color:var(--text); font-size:15px; letter-spacing:0.5px;">${escapeHtml(t.name)}</div>
+            <div 
+                class="stark-tender-link" 
+                style="font-weight: 800; color:var(--accent); font-size:15px; letter-spacing:0.5px; cursor:pointer; text-decoration:underline; text-decoration-color:rgba(34,211,238,0.3); text-underline-offset:4px;" 
+                onclick="event.stopPropagation(); window.starkViewTender('${t.id}')"
+            >
+                ${escapeHtml(t.name)}
+            </div>
             <div style="margin-top:5px; font-size:9px; color:${riskColor}; font-weight:900; letter-spacing:1px;">RIESGO_${t.risk}</div>
           </div>
           <div style="flex: 0 0 35%; padding-right:15px;">
@@ -188,6 +194,62 @@
     });
     openModal(tenderModal);
   };
+
+  window.starkViewTender = async (id) => {
+    const t = allTenders.find(x => x.id === id);
+    if (!t) return;
+    
+    $('#viewTenderTitle').innerText = t.name;
+    $('#viewTenderSummary').innerText = t.description || 'Sin resumen estratégico disponible.';
+    $('#viewTenderCoverage').innerText = `${t.coverage || 0}%`;
+    $('#viewTenderDate').innerText = `Sincronizado: ${new Date(t.created_at).toLocaleDateString()}`;
+    
+    // Requirements
+    const reqsDiv = $('#viewTenderReqs');
+    reqsDiv.innerHTML = (t.requirements || []).map(r => `<span class="badge" style="border-color:var(--accent)">${r}</span>`).join('') || '<span style="opacity:0.4; font-size:11px;">Sin requisitos específicos.</span>';
+    
+    // Team Matrix (View Mode)
+    const teamDiv = $('#viewTenderTeam');
+    teamDiv.innerHTML = '<div style="padding:20px; text-align:center; opacity:0.6;">Cargando matriz de personal...</div>';
+    
+    const { data: vacs } = await window.supabase.from('vacancies').select('*').eq('tender_id', t.id);
+    
+    if (!vacs || vacs.length === 0) {
+        teamDiv.innerHTML = '<div style="padding:20px; text-align:center; opacity:0.4;">No se han detectado vacantes para esta misión.</div>';
+    } else {
+        teamDiv.innerHTML = vacs.map(v => {
+            let names = '<span style="color:var(--danger); font-size:10px; font-weight:900;">[ FALTA PERSONAL ]</span>';
+            const sl = (typeof v.shortlisted_candidates === 'string') ? JSON.parse(v.shortlisted_candidates) : (v.shortlisted_candidates || []);
+            
+            if (sl.length > 0) {
+                names = sl.map(c => `
+                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                        <span style="color:var(--ok)">✓</span> 
+                        <span style="color:var(--text); font-weight:700;">${c.name}</span>
+                        <span style="font-size:9px; opacity:0.5; background:rgba(255,255,255,0.05); padding:1px 4px; border-radius:3px;">${c.type || 'OPERATIVO'}</span>
+                    </div>
+                `).join('');
+            }
+
+            return `
+                <div style="padding:15px; border-bottom:1px solid rgba(255,255,255,0.05); background:rgba(255,255,255,0.01);">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                        <div style="font-weight:900; color:var(--accent); font-size:12px; letter-spacing:0.5px;">${v.title}</div>
+                        <div style="font-size:10px; opacity:0.6;">DOTA: ${sl.length}/${v.quantity || 1}</div>
+                    </div>
+                    <div style="padding-left:10px; border-left:1px solid rgba(34,211,238,0.2);">
+                        ${names}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+    
+    openModal($('#viewTenderModal'));
+  };
+
+  const btnCloseView = $('#btnCloseView');
+  if(btnCloseView) btnCloseView.onclick = () => closeModal($('#viewTenderModal'));
 
   async function deleteTender(id) {
     if (!confirm('¿DESACTIVAR PROYECTO?')) return;
