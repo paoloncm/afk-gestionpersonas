@@ -367,6 +367,7 @@
         const vacData = detectedVacancies.map(v => ({ 
             tender_id: tId, 
             title: v.title, 
+            quantity: v.quantity || 1,
             requirements: v.requirements 
         }));
         const { error: vErr } = await window.supabase.from('vacancies').insert(vacData);
@@ -471,20 +472,39 @@
           const needed = (v.quantity || 1) - shortlist.length;
           if (needed <= 0) continue;
 
-          // Search logic (Simplified high-match auto-approval)
           const { data: candidates } = await window.supabase.from('candidates').select('*');
           const rs = v.requirements || [];
           
+          console.log(`[Stark AutoFill] Buscando para ${v.title} (${needed} faltan). Reqs: ${rs.length}`);
+
           const highMatches = (candidates || []).map(c => {
-              // Basic match score logic (can be expanded to use the embedding logic)
-              const profMatch = normalizeText(c.profesion || "").includes(normalizeText(v.title)) ? 60 : 0;
-              const evalMatch = rs.filter(r => normalizeText(c.evaluacion_general || "").includes(normalizeText(r))).length;
-              const score = Math.min(100, profMatch + (rs.length ? (evalMatch / rs.length) * 40 : 0));
+              // Master Match Heuristic
+              const p = normalizeText(c.profesion || "");
+              const vt = normalizeText(v.title || "");
+              
+              const titleHit = p.includes(vt) || vt.includes(p);
+              const profMatch = titleHit ? 70 : 0;
+              
+              // Keywords title bonus
+              let kwBonus = 0;
+              const vtWords = vt.split(' ').filter(w => w.length > 3);
+              if (!titleHit && vtWords.length > 0) {
+                  const hits = vtWords.filter(w => p.includes(w)).length;
+                  kwBonus = (hits / vtWords.length) * 40;
+              }
+
+              const evalText = normalizeText(c.evaluacion_general || "") + " " + normalizeText(c.experiencia_general || "");
+              const reqHits = rs.filter(r => evalText.includes(normalizeText(r))).length;
+              const reqScore = rs.length ? (reqHits / rs.length) * 40 : 0;
+              
+              const score = Math.min(100, Math.round(profMatch + kwBonus + reqScore));
               return { ...c, score };
           })
-          .filter(c => c.score >= 65 && !shortlist.some(s => s.id === c.id))
+          .filter(c => c.score >= 55 && !shortlist.some(s => s.id === c.id))
           .sort((a,b) => b.score - a.score)
           .slice(0, needed);
+
+          console.log(`[Stark AutoFill] Candidatos encontrados para ${v.title}: ${highMatches.length}`);
 
           if (highMatches.length > 0) {
               const newList = [...shortlist, ...highMatches.map(c => ({
