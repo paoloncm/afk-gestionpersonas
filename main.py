@@ -11,6 +11,57 @@ app = FastAPI(title="AFK RRHH")
 
 FRONTEND_DIR = Path(__file__).resolve().parent
 
+# --- Security Dependencies ---
+
+def get_supabase_client():
+    url = os.getenv("SUPABASE_URL")
+    key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if not url or not key:
+        raise HTTPException(status_code=500, detail="Missing Supabase configuration")
+    return create_client(url, key)
+
+async def get_current_user(request: Request):
+    """Verifica el JWT de Supabase desde la cookie segura."""
+    token = request.cookies.get("sb-access-token")
+    if not token:
+        raise HTTPException(status_code=401, detail="No session found")
+    try:
+        supabase = get_supabase_client()
+        user_res = supabase.auth.get_user(token)
+        if not user_res.user:
+            raise HTTPException(status_code=401, detail="Invalid session")
+        return user_res.user
+    except Exception:
+        raise HTTPException(status_code=401, detail="Authentication failed")
+
+# --- Middleware: HTML Route Protection (Stark-Gatekeeper) ---
+
+@app.middleware("http")
+async def auth_middleware(request: Request, call_next):
+    path = request.url.path
+    
+    # Public routes
+    PUBLIC_PATHS = ["/login.html", "/landing.html", "/static", "/favicon.ico", "/api/auth/session"]
+    
+    # Check if it's a private HTML node or the root
+    is_private_html = (path.endswith(".html") or path == "/") and not any(path.startswith(p) for p in PUBLIC_PATHS)
+
+    if is_private_html:
+        token = request.cookies.get("sb-access-token")
+        if not token:
+            return RedirectResponse(url="/login.html")
+            
+        try:
+            supabase = get_supabase_client()
+            user_res = supabase.auth.get_user(token)
+            if not user_res.user:
+                raise Exception("Invalid Session")
+        except Exception:
+            return RedirectResponse(url="/login.html")
+
+    response = await call_next(request)
+    return response
+
 # --- HTML Routes ---
 
 @app.get("/", response_class=FileResponse)
@@ -55,6 +106,39 @@ def tenders():
     if not file_path.exists():
         raise HTTPException(status_code=404, detail="tenders.html not found")
     return FileResponse(file_path)
+
+# --- Session Support: Secure Cookie Bridge (HttpOnly) ---
+
+class SessionRequest(BaseModel):
+    access_token: str
+
+@app.post("/api/auth/session")
+async def set_session(req: SessionRequest):
+    """Sella la sesión en una cookie HttpOnly."""
+    try:
+        supabase = get_supabase_client()
+        user_res = supabase.auth.get_user(req.access_token)
+        if not user_res.user: raise Exception("Invalid Token")
+        
+        response = JSONResponse({"ok": True})
+        response.set_cookie(
+            key="sb-access-token",
+            value=req.access_token,
+            httponly=True,
+            secure=True,
+            samesite="lax",
+            path="/"
+        )
+        return response
+    except Exception:
+        raise HTTPException(status_code=401, detail="Session Rejected")
+
+@app.delete("/api/auth/session")
+async def clear_session():
+    """Purga la cookie de sesión."""
+    response = JSONResponse({"ok": True})
+    response.delete_cookie(key="sb-access-token", path="/")
+    return response
 
 # --- AI Semantic Matchmaking Endpoint ---
 class TenderMatchRequest(BaseModel):
@@ -349,7 +433,24 @@ async def sync_drive(background_tasks: BackgroundTasks):
     return {"ok": True, "message": "Google Drive sync started in background."}
 
 
-# IMPORTANTE: Montar archivos estáticos después de las rutas HTML
-# Usamos /static para evitar servir archivos sensibles de la raíz
-# Nota: Path(__file__).resolve().parent asegura que la ruta sea absoluta y robusta en Railway
-app.mount("/static", StaticFiles(directory=FRONTEND_DIR / "static"), name="static")
+# Servir archivos estáticos y rutas dinámicas
+@app.get("/{file_name}")
+def get_static_or_html(file_name: str):
+    file_path = FRONTEND_DIR / file_name
+    
+    # 1. HTML Nodes: Protegidos por el Middleware
+    if file_name.endswith(".html"):
+        if not file_path.exists():
+            raise HTTPException(status_code=404, detail="Página no encontrada.")
+        return FileResponse(file_path)
+    
+    # 2. Static Nodes: Acceso directo (CSS, JS, Imágenes)
+    authorized_extensions = [".css", ".js", ".png", ".jpg", ".svg", ".ico", ".json", ".webp", ".txt", ".mp4"]
+    if any(file_name.endswith(ext) for ext in authorized_extensions):
+        if file_path.exists():
+            return FileResponse(file_path)
+    
+    raise HTTPException(status_code=404)
+
+# Compatibilidad con /static para rutas heredadas
+app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static_dir")
