@@ -142,15 +142,16 @@ async def analyze_tender(req: AnalyzeTenderRequest):
         openai = OpenAI(api_key=openai_key)
         
         prompt = (
-            "ACTÚA COMO JARVIS (STARK INDUSTRIES). Eres un ANALISTA MASTER de licitaciones industriales (NIVEL NASA/TESLA/SPACE-X).\n"
-            "Analiza el siguiente texto de licitación con una EXHAUSTIVIDAD TOTAL. No dejes pasar ni un solo cargo.\n\n"
-            "INSTRUCCIONES CRÍTICAS:\n"
-            "1. ESCANEO TOTAL: Identifica TODOS los cargos, roles o perfiles mencionados en las bases técnicas.\n"
-            "2. EXTRACCIÓN DE CANTIDADES: Busca específicamente el número de personas solicitadas por cada cargo.\n"
-            "3. MATRIZ DE CERTIFICACIONES: Enumera CADA curso, licencia o certificado obligatorio mencionado (ej: Altura Física, SERNAGEOMIN, Licencia D, etc).\n"
-            "4. EXPERIENCIA Y REQUISITOS: Detalla los años mínimos de experiencia y habilidades técnicas específicas.\n"
-            "5. CRITICIDAD OPERATIVA: Clasifica cada rol como 'Primario' (core del proyecto) o 'Secundario' (soporte).\n"
-            "6. RESUMEN ESTRATÉGICO: Define el objetivo del proyecto y los riesgos clave de contratación en un párrafo potente.\n\n"
+            "ACTÚA COMO JARVIS (STARK INDUSTRIES). Eres un ANALISTA MASTER de licitaciones industriales (NIVEL NASA/TESLA/SPACE-X/ZERO-COMPRESSION).\n"
+            "Analiza el siguiente texto de licitación con una EXHAUSTIVIDAD TOTAL Y ABSOLUTA. No dejes pasar ni un solo cargo.\n\n"
+            "INSTRUCCIONES CRÍTICAS (PROTOCOLO STARK-ZERO):\n"
+            "1. ESCANEO TOTAL Y DETALLADO: Identifica TODOS Y CADA UNO de los cargos, roles o perfiles mencionados.\n"
+            "   - SI EL DOCUMENTO LISTA 50 CARGOS DIFERENTES, DEBES CREAR 50 OBJETOS EN EL ARRAY 'roles'. No resumas.\n"
+            "2. NO AGRUPAR: Está estrictamente prohibido agrupar cargos. (Ej: Si dice 'Soldador de Cañería' y 'Soldador de Estructura' deben ser dos vacantes distintas).\n"
+            "3. EXTRACCIÓN DE CANTIDADES: Busca específicamente el número de personas solicitadas por cada cargo. No lo omitas.\n"
+            "4. MATRIZ DE CERTIFICACIONES: Enumera CADA curso, licencia o certificado obligatorio mencionado por cargo.\n"
+            "5. CRITICIDAD Y EXPERIENCIA: Clasifica cada rol y extrae los años mínimos de experiencia.\n"
+            "6. RESUMEN ESTRATÉGICO: Define el objetivo del proyecto y riesgos clave en un párrafo potente.\n\n"
             "FORMATO DE SALIDA (JSON ESTRICTO DE ALTA FIDELIDAD):\n"
             "{\n"
             "  \"tender_summary\": \"...\",\n"
@@ -167,7 +168,7 @@ async def analyze_tender(req: AnalyzeTenderRequest):
             "    }\n"
             "  ]\n"
             "}\n\n"
-            f"TEXTO ESTRATÉGICO A ESCANEAR:\n{req.text[:12000]}"
+            f"TEXTO ESTRATÉGICO A ESCANEAR (MÁXIMA COBERTURA):\n{req.text[:15000]}"
         )
         
         res = openai.chat.completions.create(
