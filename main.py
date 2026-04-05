@@ -286,3 +286,41 @@ def run_drive_sync():
 async def sync_drive(background_tasks: BackgroundTasks):
     background_tasks.add_task(run_drive_sync)
     return {"ok": True, "message": "Google Drive sync started in background."}
+
+# --- STARK REPORTABILITY ENGINE (TEC-02 / TEC-02A) ---
+
+class BulkReportRequest(BaseModel):
+    ids: list[str]
+    report_type: str # 'tec02' or 'tec02a'
+
+@app.post("/api/reports/bulk-generate")
+async def bulk_generate_reports(req: BulkReportRequest):
+    """JARVIS: Genera un lote de reportes técnicos industriales."""
+    try:
+        from report_gen import StarkReportGenerator
+        from fastapi.responses import StreamingResponse
+        
+        supabase = get_supabase_client()
+        
+        # 1. Fetch Candidates
+        res = supabase.table("candidates").select("*").in_("id", req.ids).execute()
+        candidates = res.data
+        
+        if not candidates:
+            raise HTTPException(status_code=404, detail="No se encontraron candidatos seleccionados.")
+            
+        # 2. Generate ZIP
+        gen = StarkReportGenerator()
+        zip_buffer = gen.create_bulk_zip(candidates, req.report_type)
+        
+        # 3. Stream Response
+        return StreamingResponse(
+            zip_buffer,
+            media_type="application/x-zip-compressed",
+            headers={"Content-Disposition": f"attachment; filename=Stark_Reports_{req.report_type}.zip"}
+        )
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Falla del motor de reportabilidad: {str(e)}")

@@ -83,13 +83,14 @@ async function loadKPIs() {
     }
 }
 
+let selectedCandidateIds = new Set();
+
 async function loadRecentCandidates() {
     const tbody = $('#candidates-tbody');
     if (!tbody) return;
 
     console.log("[JARVIS] 📋 Cargando expediente de candidatos...");
 
-    // Aumentamos el límite de 8 a 50 para una visión más completa del pipeline
     const { data: candidates, error } = await supabase
         .from('candidates')
         .select('id, nombre_completo, profesion, cargo_a_desempenar, nota, status')
@@ -104,12 +105,19 @@ async function loadRecentCandidates() {
     tbody.innerHTML = '';
     candidates.forEach(cand => {
         const tr = document.createElement('tr');
+        tr.dataset.id = cand.id;
         tr.style.cursor = 'pointer';
+        
+        const isChecked = selectedCandidateIds.has(cand.id);
+
         tr.onclick = (e) => {
+            if (e.target.tagName === 'INPUT' && e.target.type === 'checkbox') return;
             if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A' || e.target.closest('button') || e.target.closest('a')) return;
             window.location.href = `candidate.html?id=${cand.id}`;
         };
+
         tr.innerHTML = `
+            <td><input type="checkbox" class="cand-select" ${isChecked ? 'checked' : ''} data-id="${cand.id}"></td>
             <td>${cand.nombre_completo || '—'}</td>
             <td class="text-cyan">${cand.profesion || '—'}</td>
             <td>${cand.cargo_a_desempenar || '—'}</td>
@@ -119,6 +127,32 @@ async function loadRecentCandidates() {
         `;
         tbody.appendChild(tr);
     });
+
+    // Delegación para checkboxes
+    tbody.querySelectorAll('.cand-select').forEach(cb => {
+        cb.onchange = (e) => {
+            const id = e.target.dataset.id;
+            if (e.target.checked) selectedCandidateIds.add(id);
+            else selectedCandidateIds.delete(id);
+            updateBulkBar();
+        };
+    });
+}
+
+function updateBulkBar() {
+    const bar = $('#bulk-actions-bar');
+    const countEl = $('#selected-count');
+    if (!bar || !countEl) return;
+
+    const count = selectedCandidateIds.size;
+    if (count > 0) {
+        bar.style.display = 'flex';
+        countEl.innerText = count;
+    } else {
+        bar.style.display = 'none';
+        const master = $('#master-select');
+        if (master) master.checked = false;
+    }
 }
 
 async function loadPipeline() {
@@ -136,14 +170,11 @@ async function loadPipeline() {
         return;
     }
 
-    // Actualizamos la barra táctica
     const bar = container.querySelector('div');
     if (bar) {
-        // Asignamos una altura basada en el volumen (proporcional: max 120px)
         const height = Math.min(100, (tenderCount || 0) * 10) + "px";
-        const width = "85%"; // Ancho fijo por diseño
         bar.style.height = height;
-        bar.style.width = width;
+        bar.style.width = "85%";
         bar.title = `${tenderCount} Licitaciones activas`;
     }
 }
@@ -189,30 +220,79 @@ function setupEventListeners() {
              try {
                 const res = await fetch('/api/sync-drive', { method: 'POST' });
                 const data = await res.json();
-                if (data.ok) {
-                    alert("JARVIS: Sincronización iniciada en segundo plano con Google Drive.");
-                } else {
-                    alert("JARVIS: Error al iniciar sincronización: " + data.detail);
-                }
-             } catch (e) {
-                alert("JARVIS: Error de comunicación con el núcleo.");
-             } finally {
-                btnSync.disabled = false;
-                btnSync.innerText = "Sincronizar Drive";
-                // Recargar KPIs después de un tiempo prudencial
-                setTimeout(loadKPIs, 5000);
-             }
+                if (data.ok) alert("JARVIS: Sincronización iniciada.");
+                else alert("JARVIS: Error: " + data.detail);
+             } catch (e) { alert("JARVIS: Error de comunicación."); }
+             finally { btnSync.disabled = false; btnSync.innerText = "Sincronizar Drive"; setTimeout(loadKPIs, 5000); }
         };
     }
 
-    // Chatbot Sidebar
-    const btnChatbot = $('#side-btn-chatbot');
-    if (btnChatbot) {
-        btnChatbot.onclick = (e) => {
-            e.preventDefault();
-            window.dispatchEvent(new CustomEvent('afk:open-chatbot'));
+    // Maestro Select
+    const master = $('#master-select');
+    if (master) {
+        master.onchange = (e) => {
+            const checkboxes = document.querySelectorAll('.cand-select');
+            checkboxes.forEach(cb => {
+                cb.checked = e.target.checked;
+                const id = cb.dataset.id;
+                if (e.target.checked) selectedCandidateIds.add(id);
+                else selectedCandidateIds.delete(id);
+            });
+            updateBulkBar();
         };
     }
+
+    // Botones Bulk
+    $('#btn-bulk-clear')?.addEventListener('click', () => {
+        selectedCandidateIds.clear();
+        document.querySelectorAll('.cand-select').forEach(cb => cb.checked = false);
+        updateBulkBar();
+    });
+
+    const generateReport = async (type) => {
+        if (selectedCandidateIds.size === 0) return;
+        const btn = type === 'tec02' ? $('#btn-bulk-tec02') : $('#btn-bulk-tec02a');
+        const oldText = btn.innerText;
+        btn.disabled = true;
+        btn.innerText = "Generando...";
+
+        try {
+            const res = await fetch('/api/reports/bulk-generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ids: Array.from(selectedCandidateIds),
+                    report_type: type
+                })
+            });
+            
+            if (res.ok) {
+                const blob = await res.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Reportes_${type}_${new Date().getTime()}.zip`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+            } else {
+                const err = await res.json();
+                alert("Error generando reportes: " + (err.detail || "Falla desconocida"));
+            }
+        } catch (e) { alert("Error de red al generar reportes."); }
+        finally { btn.disabled = false; btn.innerText = oldText; }
+    };
+
+    $('#btn-bulk-tec02')?.addEventListener('click', () => generateReport('tec02'));
+    $('#btn-bulk-tec02a')?.addEventListener('click', () => generateReport('tec02a'));
+
+    // Chatbot Sidebar
+    $('#side-btn-chatbot')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.dispatchEvent(new CustomEvent('afk:open-chatbot'));
+    });
 }
+
+document.addEventListener('DOMContentLoaded', initDashboard);
 
 document.addEventListener('DOMContentLoaded', initDashboard);

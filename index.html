@@ -706,9 +706,21 @@
         </div>
       </div>
 
+      <div id="bulk-actions-bar" class="stark-card bulk-bar" style="display:none; margin-bottom:15px; background:rgba(34, 211, 238, 0.1); border-color:var(--cyan); padding:12px 20px; align-items:center; justify-content:space-between;">
+        <div style="display:flex; align-items:center; gap:15px;">
+           <span id="selected-count" style="font-weight:900; color:var(--cyan); font-size:16px;">0</span>
+           <span style="font-size:12px; text-transform:uppercase; letter-spacing:1px; color:var(--muted);">Candidatos seleccionados</span>
+        </div>
+        <div style="display:flex; gap:10px;">
+           <button class="btn btn--mini" id="btn-bulk-tec02">Generar TEC-02</button>
+           <button class="btn btn--mini" id="btn-bulk-tec02a">Generar TEC-02A</button>
+           <button class="btn btn--mini btn--danger" id="btn-bulk-clear">Limpiar</button>
+        </div>
+      </div>
+
       <section class="table-wrap">
         <div class="table-toolbar">
-          <input type="text" placeholder="Buscar candidatos..." />
+          <input type="text" placeholder="Buscar candidatos..." id="search-input" />
           <div class="section-tools">
             <button class="btn">Filtrar</button>
             <button class="btn">Exportar</button>
@@ -718,6 +730,7 @@
         <table>
           <thead>
             <tr>
+              <th style="width:40px;"><input type="checkbox" id="master-select"></th>
               <th>Candidato</th>
               <th>Profesión</th>
               <th>Cargo destino</th>
