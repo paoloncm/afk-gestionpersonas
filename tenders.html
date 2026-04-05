@@ -1,381 +1,148 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
-  <title>AFK RRHH ÔÇö Licitaciones</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/styles.css">
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AFK RRHH — Gestión de Licitaciones (Nivel Stark)</title>
+  <link rel="stylesheet" href="static/styles.css">
   <style>
-    /* Stark HUD Level Tonny Stark */
-    .stark-hud { background: rgba(15, 23, 42, 0.7) !important; backdrop-filter: blur(16px) saturate(180%); border: 1px solid rgba(34, 211, 238, 0.4) !important; box-shadow: 0 0 50px rgba(34, 211, 238, 0.15), inset 0 0 20px rgba(34, 211, 238, 0.05); border-radius: 16px !important; }
-    .stark-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); position: relative; overflow: hidden; }
-    .stark-card:hover { border-color: var(--accent); background: rgba(34, 211, 238, 0.08); transform: translateY(-3px) scale(1.01); box-shadow: 0 10px 30px rgba(0,0,0,0.3), 0 0 15px rgba(34, 211, 238, 0.2); }
-    .stark-card::after { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: linear-gradient(45deg, transparent, rgba(34,211,238,0.05), transparent); transform: rotate(45deg); transition: 0.6s; z-index: -1; }
-    .stark-card:hover::after { left: 100%; }
-    
-    .scan-line { position: absolute; height: 1px; width: 100%; background: linear-gradient(90deg, transparent, var(--accent), transparent); top: 0; left: 0; animation: scan-anim 4s linear infinite; pointer-events: none; opacity: 0.3; }
-    @keyframes scan-anim { 0% { top: 0; } 100% { top: 100%; } }
-    
-    .hud-tag { font-family: 'JetBrains Mono', monospace; font-size: 9px; padding: 2px 8px; border-radius: 4px; background: rgba(34,211,238,0.1); border: 1px solid rgba(34,211,238,0.3); color: var(--accent); text-transform: uppercase; letter-spacing: 0.5px; }
-    .hud-tag--crit { background: rgba(244,63,94,0.1); border-color: rgba(244,63,94,0.3); color: #f43f5e; }
-    
-    .affinity-bar { height: 3px; background: rgba(255,255,255,0.05); border-radius: 1.5px; overflow: hidden; margin-top: 10px; }
-    .affinity-fill { height: 100%; background: linear-gradient(90deg, var(--accent), #fff); box-shadow: 0 0 10px var(--accent); width: 0; transition: width 1.5s ease-out; }
-    
-    /* Technical Corners */
-    .stark-card::before { content: ''; position: absolute; width: 8px; height: 8px; border-top: 2px solid var(--accent); border-left: 2px solid var(--accent); top: 0; left: 0; opacity: 0; transition: 0.3s; }
-    .stark-card:hover::before { opacity: 1; top: 10px; left: 10px; }
-    
-    .radar-circle { width: 120px; height: 120px; border: 1px solid rgba(34,211,238,0.3); border-radius: 50%; position: relative; }
-    .radar-circle::after { content:''; position:absolute; top:50%; left:50%; width:1px; height:60px; background:linear-gradient(to top, var(--accent), transparent); transform-origin: top; animation: radar-spin 2s linear infinite; box-shadow: 0 0 15px var(--accent); }
-    @keyframes radar-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    /* Estilos específicos para el flujo de Licitaciones */
+    .scanner-hero {
+      background: radial-gradient(circle at 10% 10%, rgba(255, 15, 106, 0.12), transparent 30%), linear-gradient(180deg, rgba(8, 18, 37, 0.96), rgba(4, 12, 28, 0.96));
+      border: 1px solid rgba(255, 15, 106, 0.2);
+      border-radius: var(--radius-lg);
+      padding: 30px;
+      margin-bottom: 20px;
+      position: relative;
+    }
+    .upload-area {
+      border: 2px dashed var(--border);
+      background: rgba(255, 255, 255, 0.02);
+      border-radius: var(--radius);
+      padding: 40px;
+      text-align: center;
+      transition: all 0.3s;
+      cursor: pointer;
+    }
+    .upload-area:hover {
+      border-color: var(--cyan);
+      background: rgba(65, 223, 255, 0.05);
+      transform: translateY(-2px);
+    }
+    .intel-report {
+      border-left: 3px solid var(--cyan);
+      background: rgba(65, 223, 255, 0.03);
+      padding: 20px;
+      margin-top: 20px;
+      border-radius: 0 var(--radius) var(--radius) 0;
+    }
   </style>
 </head>
-
 <body>
-  <div class="dashboard">
-    <aside class="sidebar" aria-label="Navegaci├│n">
+  <div class="app">
+    <!-- Sidebar Stark v2.0 -->
+    <aside class="sidebar">
       <div class="brand">
-        <div class="logo">AFK</div>
-        <span>RRHH</span>
+        <div class="brand-logo">AFK</div>
+        <div>
+          <h1>AFK RRHH</h1>
+          <span>Inteligencia Operativa</span>
+        </div>
       </div>
-
+      <div class="nav-title">Principal</div>
       <nav class="nav">
-        <div class="nav-category">Admisi├│n y selecci├│n</div>
-        <a href="index.html"><span class="label">Dashboard</span></a>
-        <a href="vacancies.html"><span class="label">Vacantes</span></a>
-        <a href="interviews.html"><span class="label">Entrevistas</span></a>
-        <a href="pipeline.html"><span class="label">Pipeline</span></a>
-
-        <div class="nav-category">Gesti├│n</div>
-        <a href="workers.html"><span class="label">Trabajadores</span></a>
-        <a href="alerts.html"><span class="label">Alertas</span></a>
-        <a href="documents.html"><span class="label">Documentos</span></a>
-        <a href="reports.html"><span class="label">Reportes</span></a>
-        <a id="openChatbot" href="#chatbot"><span class="label">Chatbot</span></a>
-
-        <div class="nav-category">Anal├¡tica e Inteligencia</div>
-        <a href="analytics.html"><span class="label">People Analytics</span></a>
+        <a href="index.html">Dashboard</a>
+        <a class="active" href="tenders.html">Vacantes</a>
+        <a href="interviews.html">Entrevistas</a>
+        <a href="pipeline.html">Pipeline</a>
+      </nav>
+      <div class="nav-title">Gestión</div>
+      <nav class="nav">
+        <a href="workers.html">Trabajadores</a>
+        <a href="alerts.html">Alertas</a>
+        <a href="documents.html">Documentos</a>
+        <a href="reports.html">Reportes</a>
+        <a href="#" id="openChatbot">Chatbot</a>
+      </nav>
+      <div class="nav-title">Analítica e IA</div>
+      <nav class="nav">
+        <a href="analytics.html">People Analytics</a>
+        <a href="analytics.html">Cumplimiento</a>
+        <a href="tenders.html">Licitaciones</a>
       </nav>
     </aside>
 
-    <header class="topbar">
-      <button class="btn-menu" aria-label="Abrir men├║">Ôÿ░</button>
-      <div style="display:flex; gap:10px; margin-left:auto; flex-wrap:wrap;">
-        <button id="btnGenerateTec02FromCandidates" class="btn">Generar TEC-02</button>
-        <button id="btnGenerateTec02AFromCandidates" class="btn">Generar TEC-02-A</button>
-        <button id="btnNewTender" class="btn btn--primary" style="background:linear-gradient(135deg, var(--accent), var(--primary)); border:none; font-weight:800;">Nueva Licitaci├│n</button>
-        <button class="btn" onclick="location.href='documents.html'">Subir documentos</button>
-        <button class="btn" id="btnChat">Abrir Chatbot</button>
-      </div>
-    </header>
-
     <main class="main">
-      <div class="toolbar" style="margin-bottom: 16px;">
-        <div class="toolbar__left" style="display:flex; gap:10px; width:100%;">
-          <div class="input" style="flex: 1; max-width: 500px;">
-            <input id="searchTender" type="text" placeholder="Buscar licitaci├│n por nombre, descripci├│n o requerimiento...">
-          </div>
-        </div>
+      <div class="top-actions">
+        <button class="btn" id="btnNewTender">Nueva Licitación</button>
+        <button class="btn primary" id="btnStarkScan">Escanear PDF con JARVIS</button>
       </div>
 
-      <div class="card" style="padding: 0;">
-        <div class="table tenders">
-          <div class="t-head tenders-head">
-            <div class="t-col-name" style="flex: 0 0 25%;">Licitaci├│n / Empresa</div>
-            <div class="t-col-desc" style="flex: 0 0 35%;">Descripci├│n Estrat├®gica</div>
-            <div class="t-col-reqs" style="flex: 1;">Requisitos Detectados</div>
-            <div class="t-col-actions" style="flex: 0 0 150px; text-align:right;">Comando</div>
-          </div>
-          <div id="tendersBody" style="display:flex; flex-direction:column;">
-            <div style="padding: 40px; text-align: center; color: var(--muted);">Cargando licitaciones...</div>
-          </div>
+      <header class="scanner-hero">
+        <div class="scan-line"></div>
+        <h2>Centro de Inteligencia de Licitaciones</h2>
+        <p>Analiza requerimientos operativos, identifica vacantes críticas y realiza matchmaking de alta fidelidad con tu dotación actual.</p>
+        
+        <div class="ai-row">
+           <div class="search" style="min-width: 100%;">
+             <input id="searchTender" type="text" placeholder="Buscar licitación por nombre, empresa o requerimiento..." />
+             <button class="btn">Filtrar</button>
+           </div>
         </div>
-      </div>
+      </header>
+
+      <section class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Licitación / Empresa</th>
+              <th>Descripción Estratégica</th>
+              <th>Requisitos Detectados</th>
+              <th style="width:120px">Comando</th>
+            </tr>
+          </thead>
+          <tbody id="tendersBody">
+             <!-- Se puebla dinámicamente -->
+             <tr><td colspan="4" style="text-align:center; padding:40px; color:var(--muted)">Sincronizando con la red Stark...</td></tr>
+          </tbody>
+        </table>
+      </section>
     </main>
-
-    <!-- Modal Nueva Licitaci├│n -->
-    <div id="tenderModal" class="modal">
-      <div class="modal__content" style="max-width:600px">
-        <!-- Scanner Overlay Stark V3 (Animaci├│n) -->
-        <div id="scannerOverlay" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.9); z-index:100; flex-direction:column; align-items:center; justify-content:center; backdrop-filter:blur(8px); border-radius:12px;">
-            <div class="radar-circle"></div>
-            <div style="font-family:'Courier New', monospace; color:var(--accent); margin-top:20px; font-weight:800; letter-spacing:2px; text-shadow: 0 0 10px var(--accent);" id="radarText">INICIANDO ESCANEO T├üCTICO...</div>
-            <div id="radarLog" style="font-size:10px; color:var(--muted); margin-top:10px; font-family:monospace;">READY_FOR_DATA_INJECTION...</div>
-        </div>
-        <div class="modal__header">
-          <h2 class="h1">Configurar Licitaci├│n</h2>
-          <button class="close-modal">&times;</button>
-        </div>
-        <div class="modal__body">
-          
-          <div class="hud-scanner">
-            <div id="uploadZone" class="upload-zone">
-              <div style="font-size:32px; margin-bottom:15px; color:var(--accent)">­ƒôä</div>
-              <div style="font-weight:700; color:var(--text)">Arrastra el PDF de la Licitaci├│n</div>
-              <div style="font-size:12px; color:var(--muted); margin-top:8px;">o haz clic para explorar</div>
-            </div>
-            <input type="file" id="pdfInput" accept="application/pdf" style="display:none">
-            <div id="scanningState" style="display:none; padding:20px 0;">
-               <div class="loader" style="margin:0 auto 15px;"></div>
-               <div style="color:var(--accent); font-weight:700; font-size:14px;">Iniciando An├ílisis Vectorial Deep-IA...</div>
-               <div id="scanLog" style="font-size:11px; color:var(--muted); margin-top:10px; font-family:monospace;">Conectando con matriz de extracci├│n...</div>
-            </div>
-            <div id="intelPreview" class="intel-preview">
-               <div style="color:var(--ok); font-weight:800; font-size:16px; margin-bottom:15px;">Ô£ô An├ílisis de Requisitos Completado</div>
-               <div style="text-align:left; margin-bottom:20px;">
-                  <label style="font-size:11px; color:var(--accent);">Resumen de la Licitaci├│n Generado por IA</label>
-                  <textarea id="intelDesc" class="input" style="height:80px; font-size:12px;" placeholder="Descripci├│n autom├ítica..."></textarea>
-               </div>
-               <div style="text-align:left; margin-bottom:20px;">
-                 <div style="font-size:11px; color:var(--accent); margin-bottom:10px;">Jerarqu├¡a de Vacantes y Requisitos Extra├¡dos</div>
-                 <div id="intelReqs" style="max-height:200px; overflow-y:auto; padding-right:5px;"></div>
-               </div>
-               <button id="btnImportIntel" class="btn btn--primary" style="width:100%">Importar a Licitaci├│n</button>
-            </div>
-          </div>
-          <form id="tenderForm">
-            <input type="hidden" id="tenderId" name="id">
-            <div class="form-group">
-              <label>Nombre del Proyecto / Licitaci├│n</label>
-              <input id="tenderName" name="name" class="input" placeholder="Ej: Mantenimiento Planta Norte 2024" required>
-            </div>
-            <div class="form-group">
-              <label>Descripci├│n</label>
-              <textarea id="tenderDesc" name="description" class="input" style="height:80px" placeholder="Detalles del proyecto..."></textarea>
-            </div>
-            
-            <div class="form-group">
-              <label>Requerimientos de Salud / Certificaciones</label>
-              <div id="reqContainer" style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px;">
-                <!-- Reqs din├ímicos -->
-              </div>
-              <button type="button" id="btnAddReq" class="btn btn--mini">+ A├▒adir Requisito</button>
-            </div>
-
-            <div id="vacanciesWrapper" style="display:none; margin-top: 25px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
-              <label style="color:var(--accent); font-weight:800; font-size:12px; text-transform:uppercase; margin-bottom:15px; display:block;">Vacantes Detectadas en Proceso</label>
-              <div id="vacanciesList" style="display:flex; flex-direction:column; gap:12px;"></div>
-            </div>
-
-            <button type="submit" class="btn btn--primary" style="width:100%; margin-top:20px;">Guardar Licitaci├│n</button>
-          </form>
-        </div>
-      </div>
-    </div>
-
-    <!-- Modal Matchmaking (Resultados) -->
-    <div id="matchModal" class="modal">
-        <div class="modal__content stark-hud" style="max-width:1000px;">
-        <div style="position:absolute; top:20px; right:20px;">
-            <button class="close-modal" style="background:none; border:none; color:var(--muted); font-size:24px; cursor:pointer;">&times;</button>
-        </div>
-
-        <div class="modal-stark-header" style="margin-bottom:20px;">
-           <div class="stark-id-badge" style="font-size:9px; border:1px solid rgba(34,211,238,0.2); width:fit-content; padding:2px 8px; border-radius:4px; opacity:0.6;">MISI├ôN: SELECCI├ôN_EQUIPO</div>
-           <h2 id="matchTitle" style="margin:10px 0; font-size:26px;">OPERACI├ôN_HUD: LICITACI├ôN</h2>
-        </div>
-
-        <!-- STARK TEAM COVERAGE HUD -->
-        <div id="starkCoverageHUD" class="stark-card" style="margin-bottom:24px; display:grid; grid-template-columns: 1fr 2fr 1.2fr; gap:20px; border:1px solid var(--accent); background:rgba(34,211,238,0.05); padding:20px; border-radius:12px; position:relative; overflow:hidden;">
-          <div style="text-align:center; border-right:1px solid rgba(255,255,255,0.1); padding-right:10px;">
-            <div class="section-kicker" style="font-size:9px; letter-spacing:1px; opacity:0.6;">COBERTURA_EQUIPO</div>
-            <div id="coveragePct" style="font-size:42px; font-weight:900; color:var(--accent); line-height:1.2; font-family:'Outfit', sans-serif;">0%</div>
-            <div style="width:100%; height:4px; background:rgba(255,255,255,0.1); margin-top:8px; border-radius:2px; overflow:hidden;">
-              <div id="coverageFill" style="width:0%; height:100%; background:var(--accent); transition:width 1s cubic-bezier(0.4, 0, 0.2, 1);"></div>
-            </div>
-          </div>
-          <div style="border-right:1px solid rgba(255,255,255,0.1); padding:0 15px;">
-            <div class="section-kicker" style="font-size:9px; letter-spacing:1px; opacity:0.6;">AUDITOR├ìA_OPERATIVA</div>
-            <div id="teamStatusText" style="font-size:12px; margin:8px 0; opacity:0.8; height:36px; overflow:hidden; font-family:'JetBrains Mono', monospace;">Sincronizando perfiles para licitaci├│n...</div>
-            <div id="missingRolesTags" style="display:flex; flex-wrap:wrap; gap:4px;"></div>
-          </div>
-          <div style="display:flex; flex-direction:column; justify-content:center; align-items:center; gap:8px; padding-left:10px;">
-            <div id="tenderRiskBadge" style="font-size:10px; font-weight:900; padding:4px 10px; border-radius:4px; background:rgba(255,255,255,0.05); border:1px solid var(--accent); color:var(--accent);">RIESGO: --</div>
-            <button id="btnStarkAutoFill" class="btn btn--primary" style="width:100%; font-size:10px; font-weight:900; background:#10b981; border:none; color:#000; box-shadow: 0 0 15px rgba(16,185,129,0.2);">ÔÜí COMPLETAR_EQUIPO</button>
-          </div>
-        </div>
-
-        <div style="display:flex; gap:20px; align-items:center; margin-bottom:20px; background:rgba(255,255,255,0.03); padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.05);">
-          <div style="font-size:10px; opacity:0.6; font-family:'JetBrains Mono', monospace; font-weight:bold;">VACANTE_ESTRATEGICA:</div>
-          <select id="vacancySelector" class="stark-input" style="flex:1; border:none; background:transparent; font-weight:900; color:var(--accent); cursor:pointer; list-style:none; outline:none; -webkit-appearance:none;"></select>
-        </div>
-
-        <div style="padding:15px 20px; border-bottom:1px solid rgba(255,255,255,0.1); display:flex; gap:20px; background: rgba(0,0,0,0.2);">
-           <button class="btn btn--mini" id="tabWorkers" style="background:transparent; color:var(--accent); border-bottom:2px solid var(--accent); padding:10px 0; border-radius:0; font-weight:800; font-size:11px; letter-spacing:1px;">[ ­ƒæÀ TRABAJADORES AFK ]</button>
-           <button class="btn btn--mini" id="tabCandidates" style="background:transparent; color:var(--muted); border-bottom:2px solid transparent; padding:10px 0; border-radius:0; font-weight:800; font-size:11px; letter-spacing:1px;">[ ­ƒª© CANDIDATOS IA ]</button>
-        </div>
-        <div class="modal__body" style="padding:0; max-height:60vh; overflow-y:auto">
-            <div id="matchBodyWorkers" class="table">
-              <div class="t-head">
-                <div class="t-col-name" style="width:200px">Trabajador</div>
-                <div class="t-col-prof" style="width:100px">Estado</div>
-                <div class="t-col-status">Detalle</div>
-              </div>
-            </div>
-            <div id="matchBodyCandidates" class="table" style="display:none;">
-              <div class="t-head">
-                <div class="t-col-name" style="flex: 0 0 250px">Candidato</div>
-                <div class="t-col-score" style="flex: 0 0 100px; text-align:center;">Match AI</div>
-                <div class="t-col-desc" style="flex: 1">Evaluaci├│n General</div>
-              </div>
-            </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- New Modal: Person Profile Stark Card -->
-    <div id="personProfileModal" class="modal" style="z-index: 10050 !important;">
-      <div class="modal__content stark-hud" style="max-width:800px; padding:0; overflow:hidden; border: 2px solid var(--accent) !important;">
-        <div id="profileScanner" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.9); z-index:100; flex-direction:column; align-items:center; justify-content:center; backdrop-filter:blur(10px);">
-            <div class="loader"></div>
-            <div style="font-family:'JetBrains Mono', monospace; color:var(--accent); margin-top:20px; font-weight:800; letter-spacing:3px;">SINCRONIZANDO BIOMETR├ìA...</div>
-        </div>
-        
-        <div class="modal__header" style="padding: 25px; background: rgba(34,211,238,0.05); border-bottom: 1px solid rgba(34,211,238,0.2); position:relative;">
-          <div style="display:flex; align-items:center; gap:20px;">
-            <div id="profileAvatar" style="width:80px; height:80px; border-radius:12px; background:rgba(103,232,249,0.1); border:2px solid var(--accent); display:grid; place-items:center; font-size:40px; box-shadow: 0 0 20px var(--accent-glow);">­ƒæñ</div>
-            <div>
-              <div class="stark-id-badge" id="profileType">[ AFK OPERATIVE ]</div>
-              <h2 class="stark-name" id="profileName" style="font-size:28px;">JUAN P├ëREZ</h2>
-              <div id="profileStatus" class="stark-status" style="color:var(--ok);">ÔùÅ HABILITADO / NIVEL 1</div>
-            </div>
-          </div>
-          <button class="close-modal" id="btnCloseProfile" style="position:absolute; top:20px; right:20px; font-size:30px; color:var(--muted); background:none; border:none; cursor:pointer;">&times;</button>
-        </div>
-
-        <div class="modal__body" style="padding:25px; max-height:75vh; overflow-y:auto; display:grid; grid-template-columns: 1fr 1fr; gap:25px;">
-            <!-- Column 1: Info & Stats -->
-            <div>
-                <div class="stark-summary-label">DETALLES BIOM├ëTRICOS</div>
-                <div class="stark-stats-grid" style="margin-top:10px;">
-                    <div>
-                        <div class="stark-stat-label">RUT / ID</div>
-                        <div class="stark-stat-value" id="profileRut" style="font-size:14px;">-</div>
-                    </div>
-                    <div>
-                        <div class="stark-stat-label">EXP. TOTAL</div>
-                        <div class="stark-stat-value" id="profileExp" style="font-size:14px;">-</div>
-                    </div>
-                    <div>
-                        <div class="stark-stat-label">PROFESI├ôN</div>
-                        <div class="stark-stat-value" id="profileProfession" style="font-size:13px; text-transform:uppercase;">-</div>
-                    </div>
-                    <div>
-                        <div class="stark-stat-label">COMPA├æ├ìA</div>
-                        <div class="stark-stat-value" id="profileCompany" style="font-size:13px; text-transform:uppercase;">-</div>
-                    </div>
-                </div>
-
-                <div style="margin-top:25px;">
-                    <div class="stark-summary-label">CONTACTO ESTRAT├ëGICO</div>
-                    <div style="background:rgba(255,255,255,0.03); padding:15px; border-radius:8px; border:1px solid rgba(255,255,255,0.05);">
-                        <div style="font-size:12px; margin-bottom:8px;">­ƒôº <span id="profileEmail" style="color:var(--text);">-</span></div>
-                        <div style="font-size:12px;">­ƒô× <span id="profilePhone" style="color:var(--text);">-</span></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Column 2: CV Intelligence (IA) -->
-            <div>
-                <div class="stark-summary-label">IA CV INTELLIGENCE [EXTRACTION_SUMMARY]</div>
-                <div id="profileCvSummary" class="stark-summary-content" style="background:rgba(34,211,238,0.03); padding:15px; border-radius:8px; border:1px solid rgba(34,211,238,0.1); font-size:12px; height:240px; overflow-y:auto; line-height:1.6;">
-                    Sincronizando con redes neuronales...
-                </div>
-                
-                <div id="profileAcademicSection" style="margin-top:20px;">
-                    <div class="stark-summary-label">ANTECEDENTES ACAD├ëMICOS</div>
-                    <div id="profileAcademic" style="font-size:11px; color:var(--muted); padding-left:10px; border-left:2px solid var(--accent);">
-                        No registrados.
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="modal__footer" style="padding:20px 25px; background:rgba(0,0,0,0.3); border-top:1px solid rgba(34,211,238,0.2); display:flex; justify-content:space-between; align-items:center;">
-             <div style="font-family:monospace; font-size:10px; color:var(--accent); opacity:0.5;">AFK_INTEL_SYSTEM_v10.4 // SECURE_LINK: ENABLED</div>
-             <button id="profileEditBtn" class="btn btn--mini" style="background:transparent; border:1px solid var(--accent); color:var(--accent);">ACCEDER A EXPEDIENTE COMPLETO</button>
-        </div>
-      </div>
-      </div>
-    
-    <!-- New Modal: Stark Intelligence Report (View Mode) -->
-    <div id="viewTenderModal" class="modal">
-      <div class="modal__content stark-hud" style="max-width:900px; border:1px solid var(--accent) !important;">
-        <div class="modal__header" style="border-bottom:1px solid rgba(34,211,238,0.2); padding-bottom:15px; display:flex; justify-content:space-between; align-items:flex-start;">
-          <div>
-            <div class="stark-id-badge" style="margin-bottom:5px;">[ INFORME ESTRAT├ëGICO STARK ]</div>
-            <h2 id="viewTenderTitle" style="font-size:28px; margin:0; letter-spacing:1px; text-transform:uppercase;">DETALLE DE MISI├ôN</h2>
-          </div>
-          <button class="close-modal" id="btnCloseView" style="font-size:32px; background:none; border:none; color:var(--muted); cursor:pointer;">&times;</button>
-        </div>
-        
-        <div class="modal__body" style="padding:20px 0; display:grid; grid-template-columns: 1fr 1.5fr; gap:30px;">
-          <!-- Left Column: Summary & Stats -->
-          <div style="border-right:1px solid rgba(255,255,255,0.05); padding-right:20px;">
-            <div class="stark-summary-label" style="font-size:10px; opacity:0.6; margin-bottom:10px;">RESUMEN DE INTELIGENCIA AI</div>
-            <div id="viewTenderSummary" style="font-size:13px; line-height:1.6; color:var(--text); background:rgba(255,255,255,0.02); padding:15px; border-radius:8px; border:1px solid rgba(255,255,255,0.05); margin-bottom:20px;">
-                Analizando datos estrat├®gicos...
-            </div>
-            
-            <div class="stark-summary-label" style="font-size:10px; opacity:0.6; margin-bottom:10px;">REQUISITOS OPERATIVOS</div>
-            <div id="viewTenderReqs" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
-          </div>
-          
-          <!-- Right Column: Assigned Team Matrix -->
-          <div>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                <div class="stark-summary-label" style="font-size:10px; opacity:0.6;">MATRIZ DE PERSONAL ASIGNADO</div>
-                <div id="viewTenderCoverage" style="font-weight:900; color:var(--accent); font-family:monospace; font-size:14px;">0%</div>
-            </div>
-            <div id="viewTenderTeam" style="max-height:400px; overflow-y:auto; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.05); border-radius:8px; display:flex; flex-direction:column; gap:1px;">
-                <!-- Team Rows Generated Dynamically -->
-            </div>
-          </div>
-        </div>
-        
-        <div class="modal__footer" style="margin-top:20px; border-top:1px solid rgba(255,255,255,0.05); padding-top:15px; display:flex; justify-content:space-between; align-items:center;">
-             <div style="font-size:10px; color:var(--accent); font-family:monospace; opacity:0.4;">SISTEMA_STARK // v10.4 // ACCESO_LECTURA</div>
-             <div id="viewTenderDate" style="font-size:11px; opacity:0.6;">Sincronizado: --/--/----</div>
-        </div>
-      </div>
-    </div>
-  </div>
   </div>
 
-  <!-- Scripts Logic - JARVIS Nexo Local -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <script src="/static/supabase-js.2.js"></script>
-  <script src="/static/supabase.js"></script>
-  <script src="/static/auth.js"></script>
-  <script src="/static/tenders.supabase.js?v=10.0"></script>
+  <!-- Modal NASA Level God: Nuevo Escaneo -->
+  <div id="tenderModal" class="modal">
+    <div class="modal-content" style="max-width: 800px;">
+       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+         <h3 class="text-cyan">Protocolo de Carga de Licitación</h3>
+         <button class="btn" onclick="document.getElementById('tenderModal').style.display='none'">Cerrar</button>
+       </div>
+       
+       <div id="uploadZone" class="upload-area">
+          <div style="font-size:40px; margin-bottom:10px;">📄</div>
+          <p>Arrastra el pliego de la licitación en PDF para que JARVIS realice el análisis de ingeniería humana.</p>
+          <input type="file" id="pdfInput" style="display:none" accept="application/pdf">
+       </div>
 
-  <!-- Chatbot JARVIS -->
-  <div class="chatbot" id="chatbot">
-    <div class="chatbot-header" id="chatbotHeader">
-      <div style="display:flex; align-items:center; gap:10px;">
-        <div class="status-dot"></div>
-        <strong>AFK Chat Assistant</strong>
-      </div>
-      <div style="display:flex; gap:10px; align-items:center;">
-        <button id="chatbotClearBtn" class="btn btn--mini" style="background:var(--danger);">Borrar BD</button>
-        <button id="chatbotToggleBtn" style="background:none; border:none; color:white; font-size:18px; cursor:pointer;">&minus;</button>
-      </div>
-    </div>
-    <div class="chatbot-body" id="chatbotBody">
-      <div class="chat-message ai">Hola, soy JARVIS de AFK. Estoy listo para analizar licitaciones y trabajadores. ┬┐En qu├® te puedo ayudar?</div>
-    </div>
-    <div class="chatbot-footer">
-      <input type="text" id="chatInput" placeholder="Pregunta algo (ej. vencimientos pr├│ximos)..." />
-      <button id="chatSendBtn" class="btn" style="padding:8px 15px">Enviar</button>
+       <div id="scanningState" style="display:none; text-align:center; padding:30px;">
+          <div class="text-pink" style="font-weight:900; letter-spacing:2px; margin-bottom:10px;">ESCANEO_ACTUAL_EN_PROGRESO...</div>
+          <div style="height:4px; background:rgba(255,255,255,0.1); border-radius:10px; overflow:hidden;">
+            <div style="width:45%; height:100%; background:var(--cyan); transition: width 0.5s;"></div>
+          </div>
+       </div>
+
+       <div id="intelPreview" style="display:none;" class="intel-report">
+          <h4 class="text-green">Reporte de Inteligencia Extraído</h4>
+          <textarea id="intelDesc" class="btn" style="width:100%; height:80px; margin:10px 0; background:rgba(0,0,0,0.2); border:1px solid var(--border); padding:10px; text-align:left;"></textarea>
+          <div id="intelReqs" style="margin-top:10px;"></div>
+          <button class="btn primary" id="btnImportIntel" style="width:100%; margin-top:15px;">Integrar a la Base de Datos</button>
+       </div>
     </div>
   </div>
-  <button id="chatbotFab" class="chatbot-fab">Ô£¿</button>
 
-  <script defer src="/static/chat.js?v=6.0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="static/supabase.js"></script>
+  <script src="static/auth.js"></script>
+  <script src="static/tenders.supabase.js"></script>
 </body>
 </html>
-
-

@@ -1,205 +1,81 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login — AFK RRHH</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <title>Acceso Seguro — AFK RRHH (Nivel Stark)</title>
+  <link rel="stylesheet" href="static/styles.css">
   <style>
-    :root {
-      --bg: #0f172a;
-      --card-bg: rgba(30, 41, 59, 0.7);
-      --primary: #3b82f6;
-      --primary-hover: #2563eb;
-      --text: #f8fafc;
-      --text-muted: #94a3b8;
-      --border: rgba(255, 255, 255, 0.1);
-    }
-
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
     body {
-      font-family: 'Inter', sans-serif;
-      background: var(--bg);
-      background-image:
-        radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0, transparent 50%),
-        radial-gradient(at 100% 0%, rgba(147, 51, 234, 0.15) 0, transparent 50%);
-      color: var(--text);
-      height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; overflow: hidden;
     }
-
+    .login-container {
+      max-width: 420px; width: 100%; padding: 20px;
+      animation: emerge 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+    @keyframes emerge {
+      from { opacity: 0; transform: scale(0.9) translateY(30px); filter: blur(10px); }
+      to { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); }
+    }
     .login-card {
-      background: var(--card-bg);
-      backdrop-filter: blur(12px);
-      border: 1px solid var(--border);
+      background: rgba(7, 18, 37, 0.8);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--cyan);
+      border-radius: var(--radius-lg);
       padding: 40px;
-      border-radius: 24px;
-      width: 100%;
-      max-width: 400px;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-      animation: fadeIn 0.6s ease-out;
+      box-shadow: 0 0 60px rgba(65, 223, 255, 0.15), inset 0 0 20px rgba(65, 223, 255, 0.05);
+      position: relative;
     }
-
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(20px);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+    .login-card::before {
+      content: ''; position: absolute; top: -2px; left: -2px; right: -2px; bottom: -2px;
+      border-radius: inherit; background: linear-gradient(45deg, var(--cyan), transparent, var(--pink), transparent);
+      z-index: -1; opacity: 0.3;
     }
-
-    .brand {
-      text-align: center;
-      margin-bottom: 32px;
+    .login-title {
+      font-size: 24px; font-weight: 900; letter-spacing: 2px;
+      text-align: center; margin-bottom: 30px; text-transform: uppercase;
     }
-
-    .brand .logo {
-      font-size: 32px;
-      font-weight: 800;
-      letter-spacing: -1px;
-      color: var(--primary);
-      display: inline-block;
-    }
-
-    .brand span {
-      font-size: 24px;
-      font-weight: 400;
-      color: var(--text-muted);
-      margin-left: 4px;
-    }
-
-    h1 {
-      font-size: 20px;
-      font-weight: 600;
-      margin-bottom: 8px;
-      text-align: center;
-    }
-
-    p {
-      color: var(--text-muted);
-      font-size: 14px;
-      text-align: center;
-      margin-bottom: 32px;
-    }
-
-    .form-group {
-      margin-bottom: 20px;
-    }
-
-    label {
-      display: block;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text-muted);
-      margin-bottom: 8px;
-    }
-
     input {
-      width: 100%;
-      background: rgba(15, 23, 42, 0.6);
-      border: 1px solid var(--border);
-      padding: 12px 16px;
-      border-radius: 12px;
-      color: white;
-      font-size: 14px;
-      transition: all 0.2s;
+      width: 100%; background: rgba(0,0,0,0.4); border: 1px solid var(--border);
+      padding: 14px; border-radius: 12px; color: white; margin-bottom: 20px;
+      transition: all 0.3s; font-size: 14px;
     }
-
-    input:focus {
-      outline: none;
-      border-color: var(--primary);
-      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
-    }
-
-    .btn {
-      width: 100%;
-      background: var(--primary);
-      color: white;
-      border: none;
-      padding: 14px;
-      border-radius: 12px;
-      font-weight: 700;
-      font-size: 15px;
-      cursor: pointer;
-      transition: background 0.2s, transform 0.1s;
-      margin-top: 10px;
-    }
-
-    .btn:hover {
-      background: var(--primary-hover);
-    }
-
-    .btn:active {
-      transform: scale(0.98);
-    }
-
-    .error-msg {
-      background: rgba(239, 68, 68, 0.1);
-      color: #f87171;
-      padding: 12px;
-      border-radius: 8px;
-      font-size: 13px;
-      margin-bottom: 20px;
-      display: none;
-      border: 1px solid rgba(239, 68, 68, 0.2);
-    }
-
-    .footer {
-      margin-top: 24px;
-      text-align: center;
-      font-size: 13px;
-      color: var(--text-muted);
-    }
-
-    .footer a {
-      color: var(--primary);
-      text-decoration: none;
-      font-weight: 600;
+    input:focus { outline: none; border-color: var(--cyan); box-shadow: 0 0 15px rgba(65, 223, 255, 0.2); }
+    .error-box {
+      background: rgba(255, 15, 106, 0.1); border: 1px solid var(--pink);
+      color: var(--pink-2); padding: 12px; border-radius: 8px; font-size: 12px;
+      margin-bottom: 20px; display: none; text-align: center;
     }
   </style>
 </head>
-
 <body>
+  <div class="login-container">
+    <div class="login-card">
+      <div class="scan-line"></div>
+      
+      <div class="brand" style="justify-content:center; border:none; margin-bottom:10px;">
+        <div class="brand-logo">AFK</div>
+        <h1 style="font-size:18px; letter-spacing:3px;">STARK_GATEWAY</h1>
+      </div>
+      
+      <div class="login-title text-cyan">Identificación Requerida</div>
 
-  <div class="login-card">
-    <div class="brand">
-      <div class="logo">AFK</div>
-      <span>RRHH</span>
-    </div>
+      <div id="errorBox" class="error-box"></div>
 
-    <h1>Bienvenido de nuevo</h1>
-    <p>Ingresa tus credenciales para acceder</p>
-
-    <div id="errorBox" class="error-msg"></div>
-
-    <form id="loginForm">
-      <div class="form-group">
-        <label for="email">Email corporativo</label>
+      <form id="loginForm">
+        <div style="margin-bottom:5px; font-size:10px; color:var(--muted); font-weight:800;">USER_ID (EMAIL)</div>
         <input type="email" id="email" placeholder="nombre@empresa.com" required>
-      </div>
-      <div class="form-group">
-        <label for="password">Contraseña</label>
+        
+        <div style="margin-bottom:5px; font-size:10px; color:var(--muted); font-weight:800;">ACCESS_KEY (PASSWORD)</div>
         <input type="password" id="password" placeholder="••••••••" required>
+
+        <button type="submit" class="btn primary" id="btnLogin" style="width:100%; justify-content:center; padding:16px; font-weight:900; letter-spacing:1px;">AUTENTICAR EN LA RED</button>
+      </form>
+
+      <div style="margin-top:25px; text-align:center; font-size:11px; color:var(--muted);">
+        ¿Acceso denegado? <a href="#" class="text-cyan" style="text-decoration:none; font-weight:800;">SOPORTE_STARK</a>
       </div>
-
-      <button type="submit" class="btn" id="btnLogin">Iniciar Sesión</button>
-    </form>
-
-    <div class="footer">
-      ¿No tienes cuenta? <a href="#" id="linkSignup">Contactar con soporte</a>
     </div>
   </div>
 
@@ -216,7 +92,7 @@
     form.onsubmit = async (e) => {
       e.preventDefault();
       btn.disabled = true;
-      btn.textContent = 'Autenticando...';
+      btn.textContent = 'VERIFICANDO CREDENCIALES...';
       errorBox.style.display = 'none';
 
       try {
@@ -230,17 +106,12 @@
         // Éxito: Redirigir al dashboard
         window.location.href = 'index.html';
       } catch (err) {
-        errorBox.textContent = 'Error: ' + (err.message === 'Invalid login credentials' ? 'Credenciales inválidas' : err.message);
+        errorBox.textContent = 'ERROR: ' + (err.message === 'Invalid login credentials' ? 'CREDENCIALES INVÁLIDAS' : err.message.toUpperCase());
         errorBox.style.display = 'block';
         btn.disabled = false;
-        btn.textContent = 'Iniciar Sesión';
+        btn.textContent = 'REINTENTAR ACCESO';
       }
     };
   </script>
-    
-
 </body>
-
 </html>
-
-

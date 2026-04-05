@@ -1,53 +1,126 @@
-<!doctype html><html lang="es"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>AFK RRHH — Documentos</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css">
-</head><body><div class="dashboard">
-  <aside class="sidebar"><div class="brand"><div class="logo">AFK</div><span>RRHH</span></div>
-    <nav class="nav">
-      <a href="index.html"><span class="label">Dashboard</span></a>
-      <a href="pipeline.html"><span class="label">Pipeline</span></a>
-      <a href="vacancies.html"><span class="label">Vacantes</span></a>
-      <a href="interviews.html"><span class="label">Entrevistas</span></a>
-      <a href="alerts.html"><span class="label">Alertas</span></a>
-      <a href="reports.html"><span class="label">Reportes</span></a>
-      <a class="is-active" href="documents.html"><span class="label">Documentos</span></a>
-      <a id="openChatbot" href="#chatbot"><span class="label">Chatbot</span></a>
-    </nav>
-  </aside>
-  <header class="topbar"><button class="btn-menu" aria-label="Abrir menú">☰</button><div class="btn" id="btnChat">Abrir Chatbot</div></header>
-  <main class="main">
-    <h1 class="h1">Documentos</h1>
-    <div class="card"><div class="card__body">
-      <div class="uploader">
-        <div id="dropzone" class="dropzone" tabindex="0">
-          <p class="m-0">Arrastra archivos aquí o <span class="btn btn--primary" id="pickFiles">Selecciona</span></p>
-          <p class="text-muted m-0">PDF, DOCX, XLSX, PNG (máx. 25MB)</p>
-          <input id="fileInput" type="file" multiple hidden>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AFK RRHH — Gestión Documental (Nivel Stark)</title>
+  <link rel="stylesheet" href="static/styles.css">
+  <style>
+    .upload-box {
+      border: 2px dashed var(--border);
+      background: rgba(255, 255, 255, 0.02);
+      border-radius: var(--radius);
+      padding: 60px;
+      text-align: center;
+      transition: all 0.3s;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+    .upload-box:hover {
+      border-color: var(--cyan);
+      background: rgba(65, 223, 255, 0.05);
+      transform: translateY(-2px);
+    }
+    .file-list {
+      margin-top: 20px;
+      display: grid;
+      gap: 10px;
+    }
+    .file-item {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Sidebar Stark v2.0 -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-logo">AFK</div>
+        <div>
+          <h1>AFK RRHH</h1>
+          <span>Inteligencia Operativa</span>
         </div>
-        <div id="files" class="files"></div>
-        <div><button id="uploadNow" class="btn btn--primary">Subir ahora</button></div>
       </div>
-    </div></div>
-  </main>
-  <aside id="chatbot" class="chatbot"><div class="chatbot__head"><strong>AFK Chatbot</strong><button id="closeChat" class="btn">Cerrar</button></div><div id="chatBody" class="chatbot__body"><div class="chat-msg bot">Hola 👋</div></div><div class="chatbot__input"><input id="chatInput"><button id="chatSend" class="btn btn--primary">Enviar</button></div></aside>
-</div>
-<script>
-const d=document,dr=d.getElementById('chatbot'),i=d.getElementById('chatInput'),b=d.getElementById('chatBody');
-d.getElementById('btnChat')?.addEventListener('click',()=>{dr.classList.add('is-open');i.focus()});
-d.getElementById('openChatbot')?.addEventListener('click',e=>{e.preventDefault();dr.classList.add('is-open');i.focus()});
-d.getElementById('closeChat').onclick=()=>dr.classList.remove('is-open');
-d.getElementById('chatSend').onclick=()=>{const v=i.value.trim();if(!v)return;const m=d.createElement('div');m.className='chat-msg user';m.textContent=v;b.appendChild(m);i.value='';};
-/* Uploader simulado */
-const dz=d.getElementById('dropzone'), fi=d.getElementById('fileInput'), pf=d.getElementById('pickFiles'), list=d.getElementById('files'), up=d.getElementById('uploadNow');
-let files=[]; const bytes=n=>n<1024?n+' B':n<1048576?(n/1024).toFixed(1)+' KB':(n/1048576).toFixed(1)+' MB';
-const render=()=>{list.innerHTML='';files.forEach((f,i)=>{const row=d.createElement('div');row.className='file';row.innerHTML=`<span class="dot" style="background:#60a5fa"></span><div class="name">${f.name} <span class="size">· ${bytes(f.size)}</span></div><button class="btn">Quitar</button>`;row.querySelector('button').onclick=()=>{files.splice(i,1);render()};list.appendChild(row)});};
-const onFiles=s=>{for(const f of s){files.push(f)}render()};
-['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add('drag')}));
-['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove('drag')}));
-dz.addEventListener('drop',e=>onFiles(e.dataTransfer.files)); pf.onclick=()=>fi.click(); fi.onchange=e=>onFiles(e.target.files);
-up.onclick=()=>{if(!files.length)return alert('No hay archivos.');alert('Subidos '+files.length+' archivo(s). (Simulado)');files=[];render()};
-</script>
-<script defer src="responsive.js?v=2.0"></script>
-</body></html>
+      <div class="nav-title">Principal</div>
+      <nav class="nav">
+        <a href="index.html">Dashboard</a>
+        <a href="tenders.html">Vacantes</a>
+        <a href="interviews.html">Entrevistas</a>
+        <a href="pipeline.html">Pipeline</a>
+      </nav>
+      <div class="nav-title">Gestión</div>
+      <nav class="nav">
+        <a href="workers.html">Trabajadores</a>
+        <a href="alerts.html">Alertas</a>
+        <a class="active" href="documents.html">Documentos</a>
+        <a href="reports.html">Reportes</a>
+        <a href="#" id="openChatbot">Chatbot</a>
+      </nav>
+      <div class="nav-title">Analítica e IA</div>
+      <nav class="nav">
+        <a href="analytics.html">People Analytics</a>
+        <a href="analytics.html">Cumplimiento</a>
+        <a href="tenders.html">Licitaciones</a>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <div class="top-actions">
+        <div class="h1" style="font-size:20px; font-weight:800; letter-spacing:1px; flex:1;">Gestión Documental Centralizada</div>
+        <button class="btn primary" id="uploadNow">Sincronizar Lote</button>
+      </div>
+
+      <header class="card">
+        <div class="scan-line"></div>
+        <p style="margin:0; color:var(--muted); font-size:13px;">Carga masiva de certificados, exámenes y contratos para procesamiento biométrico por JARVIS.</p>
+      </header>
+
+      <section class="card" style="margin-top:20px;">
+        <div id="dropzone" class="upload-box">
+          <div style="font-size:48px; margin-bottom:15px;">💾</div>
+          <p style="font-weight:700;">Arrastra tus archivos aquí</p>
+          <p style="font-size:12px; color:var(--muted); margin-top:5px;">PDF, DOCX, XLSX o Imágenes (Máx 25MB)</p>
+          <input type="file" id="fileInput" multiple hidden>
+          <button class="btn" id="pickFiles" style="margin-top:20px;">Explorar archivos</button>
+        </div>
+
+        <div id="files" class="file-list"></div>
+      </section>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="static/supabase.js"></script>
+  <script src="static/auth.js"></script>
+  <script>
+    const d=document, dz=d.getElementById('dropzone'), fi=d.getElementById('fileInput'), pf=d.getElementById('pickFiles'), list=d.getElementById('files'), up=d.getElementById('uploadNow');
+    let files=[];
+    const bytes=n=>n<1024?n+' B':n<1048576?(n/1024).toFixed(1)+' KB':(n/1048576).toFixed(1)+' MB';
+    const render=()=>{
+      list.innerHTML='';
+      files.forEach((f,i)=>{
+        const row=d.createElement('div');
+        row.className='file-item';
+        row.innerHTML=`<div><span class="text-cyan" style="margin-right:10px;">📄</span><strong>${f.name}</strong> <span style="font-size:10px; color:var(--muted); margin-left:10px;">${bytes(f.size)}</span></div><button class="btn" style="padding:4px 10px;">&times;</button>`;
+        row.querySelector('button').onclick=()=>{files.splice(i,1);render()};
+        list.appendChild(row);
+      });
+    };
+    const onFiles=s=>{for(const f of s){files.push(f)}render()};
+    ['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.style.borderColor='var(--cyan)'}));
+    ['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.style.borderColor='var(--border)'}));
+    dz.addEventListener('drop',e=>onFiles(e.dataTransfer.files));
+    pf.onclick=()=>fi.click();
+    fi.onchange=e=>onFiles(e.target.files);
+    up.onclick=()=>{if(!files.length)return alert('No hay archivos para subir.');alert('Iniciando transferencia segura de '+files.length+' archivos...');files=[];render()};
+  </script>
+</body>
+</html>

@@ -1,48 +1,137 @@
-<!doctype html><html lang="es"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>AFK RRHH — Reportes</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css">
-</head><body><div class="dashboard">
-  <aside class="sidebar"><div class="brand"><div class="logo">AFK</div><span>RRHH</span></div>
-    <nav class="nav">
-      <a href="index.html"><span class="label">Dashboard</span></a>
-      <a href="pipeline.html"><span class="label">Pipeline</span></a>
-      <a href="vacancies.html"><span class="label">Vacantes</span></a>
-      <a href="interviews.html"><span class="label">Entrevistas</span></a>
-      <a href="alerts.html"><span class="label">Alertas</span></a>
-      <a class="is-active" href="reports.html"><span class="label">Reportes</span></a>
-      <a href="documents.html"><span class="label">Documentos</span></a>
-      <a id="openChatbot" href="#chatbot"><span class="label">Chatbot</span></a>
-    </nav>
-  </aside>
-  <header class="topbar"><button class="btn-menu" aria-label="Abrir menú">☰</button><div class="btn" onclick="location.href='documents.html'">Subir documentos</div><div class="btn" id="btnChat">Abrir Chatbot</div></header>
-  <main class="main">
-    <h1 class="h1">Reportes</h1>
-    <div class="grid-kpi">
-      <div class="card"><div class="card__body"><div class="text-muted">Rango</div><div class="btn">01/03/2024 → 31/03/2024</div></div></div>
-      <div class="card"><div class="card__body"><div class="text-muted">Atajos</div><div class="filters"><button class="btn">Últimos 7 días</button><button class="btn">Últimos 30 días</button><button class="btn">Últimos 90 días</button></div></div></div>
-    </div>
-    <section class="section">
-      <div class="card"><div class="card__body"><div class="text-muted">Contrataciones</div>
-        <div class="chart"><div class="bar" style="height:20%"></div><div class="bar" style="height:40%"></div><div class="bar" style="height:45%"></div><div class="bar" style="height:60%"></div><div class="bar" style="height:55%"></div><div class="bar" style="height:70%"></div><div class="bar" style="height:86%"></div></div>
-        <div class="filters"><button class="btn">Exportar PDF</button><button class="btn btn--primary">Exportar CSV</button></div>
-      </div></div>
-      <div class="card card--soft"><div class="card__body"><div class="donut" style="--val:12.5" data-label="" data-value="12.5"></div></div></div>
-      <div class="card"><div class="card__body"><div class="text-muted">Ausencias</div><div class="chart"><div class="bar" style="height:25%"></div><div class="bar" style="height:30%"></div><div class="bar" style="height:40%"></div><div class="bar" style="height:35%"></div><div class="bar" style="height:55%"></div></div><button class="btn">Exportar PDF</button></div></div>
-      <div class="card"><div class="card__body"><div class="text-muted">Personal Activo</div><div class="area"></div><button class="btn">Exportar CSV</button></div></div>
-    </section>
-    <div class="card"><div class="card__body"><button class="btn btn--primary" style="width:100%">Crear reporte</button></div></div>
-  </main>
-  <aside id="chatbot" class="chatbot"><div class="chatbot__head"><strong>AFK Chatbot</strong><button id="closeChat" class="btn">Cerrar</button></div><div id="chatBody" class="chatbot__body"><div class="chat-msg bot">Hola 👋</div></div><div class="chatbot__input"><input id="chatInput"><button id="chatSend" class="btn btn--primary">Enviar</button></div></aside>
-</div>
-<script>
-const d=document,dr=d.getElementById('chatbot'),i=d.getElementById('chatInput'),b=d.getElementById('chatBody');
-d.getElementById('btnChat').onclick=()=>{dr.classList.add('is-open');i.focus()};
-d.getElementById('openChatbot').onclick=e=>{e.preventDefault();dr.classList.add('is-open');i.focus()};
-d.getElementById('closeChat').onclick=()=>dr.classList.remove('is-open');
-d.getElementById('chatSend').onclick=()=>{const v=i.value.trim();if(!v)return;const m=d.createElement('div');m.className='chat-msg user';m.textContent=v;b.appendChild(m);i.value='';};
-i.onkeydown=e=>{if(e.key==='Enter')d.getElementById('chatSend').click()};
-</script>
-<script defer src="responsive.js?v=2.0"></script>
-</body></html>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AFK RRHH — Centro de Reportes (Nivel Stark)</title>
+  <link rel="stylesheet" href="static/styles.css">
+  <style>
+    .reports-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+      margin-top: 20px;
+    }
+    .chart-placeholder {
+      height: 150px;
+      background: linear-gradient(0deg, rgba(65, 223, 255, 0.05) 0%, transparent 100%);
+      border-bottom: 2px solid var(--cyan);
+      margin: 15px 0;
+      display: flex;
+      align-items: flex-end;
+      gap: 5px;
+      padding: 0 10px;
+    }
+    .chart-bar {
+      flex: 1;
+      background: var(--cyan);
+      opacity: 0.6;
+      border-radius: 4px 4px 0 0;
+      transition: opacity 0.3s;
+    }
+    .chart-bar:hover { opacity: 1; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Sidebar Stark v2.0 -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-logo">AFK</div>
+        <div>
+          <h1>AFK RRHH</h1>
+          <span>Inteligencia Operativa</span>
+        </div>
+      </div>
+      <div class="nav-title">Principal</div>
+      <nav class="nav">
+        <a href="index.html">Dashboard</a>
+        <a href="tenders.html">Vacantes</a>
+        <a href="interviews.html">Entrevistas</a>
+        <a href="pipeline.html">Pipeline</a>
+      </nav>
+      <div class="nav-title">Gestión</div>
+      <nav class="nav">
+        <a href="workers.html">Trabajadores</a>
+        <a href="alerts.html">Alertas</a>
+        <a href="documents.html">Documentos</a>
+        <a class="active" href="reports.html">Reportes</a>
+        <a href="#" id="openChatbot">Chatbot</a>
+      </nav>
+      <div class="nav-title">Analítica e IA</div>
+      <nav class="nav">
+        <a href="analytics.html">People Analytics</a>
+        <a href="analytics.html">Cumplimiento</a>
+        <a href="tenders.html">Licitaciones</a>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <div class="top-actions">
+        <div class="h1" style="font-size:20px; font-weight:800; letter-spacing:1px; flex:1;">Generador de Reportes Estratégicos</div>
+        <button class="btn primary" id="btnCreateReport">Crear Nuevo Reporte</button>
+      </div>
+
+      <header class="card">
+        <div class="scan-line"></div>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+           <div>
+              <span class="text-cyan" style="font-size:12px; font-weight:800;">RANGO_OPERATIVO:</span>
+              <span style="font-size:13px; margin-left:10px;">01/03/2024 — 31/03/2024</span>
+           </div>
+           <div class="chips">
+              <button class="btn">7D</button>
+              <button class="btn">30D</button>
+              <button class="btn">90D</button>
+           </div>
+        </div>
+      </header>
+
+      <div class="reports-grid">
+         <div class="card">
+            <h4 class="text-cyan" style="margin:0 0 10px; font-size:14px;">Contrataciones Mensuales</h4>
+            <div class="chart-placeholder">
+               <div class="chart-bar" style="height:30%"></div>
+               <div class="chart-bar" style="height:50%"></div>
+               <div class="chart-bar" style="height:45%"></div>
+               <div class="chart-bar" style="height:80%"></div>
+               <div class="chart-bar" style="height:65%"></div>
+               <div class="chart-bar" style="height:90%"></div>
+            </div>
+            <div style="display:flex; gap:10px;">
+               <button class="btn" style="flex:1">PDF</button>
+               <button class="btn" style="flex:1">CSV</button>
+            </div>
+         </div>
+
+         <div class="card">
+            <h4 class="text-cyan" style="margin:0 0 10px; font-size:14px;">Tasa de Ausentismo</h4>
+            <div class="chart-placeholder" style="border-bottom-color: var(--pink);">
+               <div class="chart-bar" style="height:20%; background:var(--pink)"></div>
+               <div class="chart-bar" style="height:15%; background:var(--pink)"></div>
+               <div class="chart-bar" style="height:40%; background:var(--pink)"></div>
+               <div class="chart-bar" style="height:25%; background:var(--pink)"></div>
+               <div class="chart-bar" style="height:30%; background:var(--pink)"></div>
+            </div>
+            <button class="btn" style="width:100%">Exportar Auditoría</button>
+         </div>
+
+         <div class="card">
+            <h4 class="text-cyan" style="margin:0 0 10px; font-size:14px;">Cumplimiento Documental</h4>
+            <div style="height:150px; display:grid; place-items:center;">
+               <div style="text-align:center;">
+                  <div style="font-size:32px; font-weight:900;" class="text-green">94.2%</div>
+                  <div style="font-size:10px; color:var(--muted); text-transform:uppercase;">Status: Óptimo</div>
+               </div>
+            </div>
+            <button class="btn" style="width:100%">Ver Detalles</button>
+         </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="static/supabase.js"></script>
+  <script src="static/auth.js"></script>
+</body>
+</html>

@@ -1,28 +1,28 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>AFK RRHH — Pipeline Kanban</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AFK RRHH — Pipeline Estratégico (Nivel Stark)</title>
+  <link rel="stylesheet" href="static/styles.css">
   <style>
     .kanban {
       display: flex;
       gap: 20px;
       padding: 20px 0;
       overflow-x: auto;
-      min-height: calc(100vh - 180px);
+      min-height: calc(100vh - 200px);
       align-items: stretch;
     }
     .kanban__col {
-      background: rgba(255,255,255,0.03);
+      background: rgba(7, 18, 37, 0.4);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      min-width: 300px;
+      border-radius: var(--radius);
+      min-width: 320px;
       display: flex;
       flex-direction: column;
       max-height: 100%;
+      backdrop-filter: blur(10px);
     }
     .kanban__head {
       padding: 16px;
@@ -30,106 +30,105 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      background: rgba(255, 255, 255, 0.02);
     }
     .kanban__count {
-      background: rgba(255,255,255,0.1);
-      padding: 2px 8px;
-      border-radius: 12px;
-      font-size: 12px;
+      background: rgba(65, 223, 255, 0.1);
+      color: var(--cyan);
+      padding: 2px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 800;
+      border: 1px solid rgba(65, 223, 255, 0.2);
     }
     .kanban__body {
       padding: 12px;
       flex: 1;
       overflow-y: auto;
-      min-height: 200px;
-      transition: background 0.2s;
-    }
-    .kanban__body.drag-over {
-      background: rgba(255,255,255,0.08);
+      min-height: 300px;
     }
     .kanban__card {
-      background: var(--card);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
       border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 14px;
+      border-radius: 12px;
+      padding: 16px;
       margin-bottom: 12px;
       cursor: grab;
-      transition: all 0.2s ease;
-      position: relative;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
     .kanban__card:hover {
-      background: var(--card-2);
-      transform: translateY(-2px);
-      box-shadow: 0 8px 16px rgba(0,0,0,0.4);
-      border-color: rgba(255,255,255,0.15);
+      border-color: var(--cyan);
+      background: rgba(65, 223, 255, 0.08);
+      transform: translateY(-3px);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.3);
     }
-    .kanban__card:active { cursor: grabbing; }
-    .kanban__card .name { font-weight: 700; font-size: 14px; display: block; color: #fff; margin-bottom: 4px; }
-    .kanban__card .prof { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
-    .kanban__card .meta { border-top: 1px solid var(--border); margin-top: 10px; padding-top: 10px; display: flex; justify-content: space-between; }
-    
-    .text-white { color: #fff; }
-    .text-muted { color: var(--muted); }
-    
-    .is-dragging {
-      opacity: 0.3;
-      transform: scale(0.95);
-    }
+    .kanban__card .name { font-weight: 800; font-size: 14px; color: #fff; margin-bottom: 4px; display: block; }
+    .kanban__card .prof { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
   </style>
 </head>
 <body>
-  <div class="dashboard">
+  <div class="app">
+    <!-- Sidebar Stark v2.0 -->
     <aside class="sidebar">
-      <div class="brand"><div class="logo">AFK</div><span>RRHH</span></div>
+      <div class="brand">
+        <div class="brand-logo">AFK</div>
+        <div>
+          <h1>AFK RRHH</h1>
+          <span>Inteligencia Operativa</span>
+        </div>
+      </div>
+      <div class="nav-title">Principal</div>
       <nav class="nav">
-        <a href="index.html"><span class="label">Dashboard</span></a>
-        <a href="workers.html"><span class="label">Trabajadores</span></a>
-        <a class="is-active" href="pipeline.html"><span class="label">Pipeline</span></a>
-        <a href="vacancies.html"><span class="label">Vacantes</span></a>
-        <a href="interviews.html"><span class="label">Entrevistas</span></a>
-        <a href="alerts.html"><span class="label">Alertas</span></a>
-        <a href="reports.html"><span class="label">Reportes</span></a>
-        <a href="documents.html"><span class="label">Documentos</span></a>
-        <a id="openChatbot" href="#chatbot"><span class="label">Chatbot</span></a>
+        <a href="index.html">Dashboard</a>
+        <a href="tenders.html">Vacantes</a>
+        <a href="interviews.html">Entrevistas</a>
+        <a class="active" href="pipeline.html">Pipeline</a>
+      </nav>
+      <div class="nav-title">Gestión</div>
+      <nav class="nav">
+        <a href="workers.html">Trabajadores</a>
+        <a href="alerts.html">Alertas</a>
+        <a href="documents.html">Documentos</a>
+        <a href="reports.html">Reportes</a>
+        <a href="#" id="openChatbot">Chatbot</a>
+      </nav>
+      <div class="nav-title">Analítica e IA</div>
+      <nav class="nav">
+        <a href="analytics.html">People Analytics</a>
+        <a href="analytics.html">Cumplimiento</a>
+        <a href="tenders.html">Licitaciones</a>
       </nav>
     </aside>
 
-    <header class="topbar">
-        <button class="btn-menu" aria-label="Abrir menú">☰</button>
-        <div class="h1" style="font-size:20px">Pipeline de Reclutamiento</div>
-        <div class="btn" id="btnChat">Abrir Copiloto</div>
-    </header>
-
     <main class="main">
-      <section class="toolbar">
-        <div class="toolbar__left">
-          <select id="kanbanVacancyFilter" class="select" style="min-width: 250px;">
-            <option value="">Cargando vacantes...</option>
-          </select>
+      <div class="top-actions">
+        <div class="h1" style="font-size:20px; font-weight:800; letter-spacing:1px; flex:1;">Pipeline Estratégico JARVIS</div>
+        <button class="btn primary" id="btnSync">Sincronizar Flujo</button>
+      </div>
+
+      <header class="card">
+        <div class="scan-line"></div>
+        <div class="ai-row">
+           <div class="search" style="min-width: 100%;">
+             <select id="kanbanVacancyFilter" class="btn" style="background: transparent; border:none; width:100%; text-align:left;">
+                <option value="">Cargando vacantes activas...</option>
+             </select>
+           </div>
         </div>
-      </section>
+      </header>
 
       <div class="kanban" id="kanbanBoard">
-        <!-- Generado dinámicamente -->
+         <!-- Se puebla dinámicamente -->
+         <div style="padding:50px; text-align:center; width:100%;">
+            <span class="text-cyan">Inicializando Matriz de Reclutamiento...</span>
+         </div>
       </div>
     </main>
-
-    <aside id="chatbot" class="chatbot">
-      <div class="chatbot__head"><strong>AFK Copiloto</strong><button id="closeChat" class="btn">Cerrar</button></div>
-      <div id="chatBody" class="chatbot__body"></div>
-      <div class="chatbot__input"><input id="chatInput"><button id="chatSend" class="btn btn--primary">Enviar</button></div>
-    </aside>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="supabase.js?v=2.0"></script>
-  <script defer src="pipeline.js?v=2.0"></script>
-  <script>
-    // Toggle Chatbot
-    const d=document, chat=d.getElementById('chatbot');
-    d.getElementById('btnChat').onclick = () => chat.classList.add('is-open');
-    d.getElementById('closeChat').onclick = () => chat.classList.remove('is-open');
-  </script>
-  <script defer src="responsive.js?v=2.0"></script>
+  <script src="static/supabase.js"></script>
+  <script src="static/auth.js"></script>
+  <script defer src="static/pipeline.js"></script>
 </body>
 </html>
