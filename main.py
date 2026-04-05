@@ -309,15 +309,22 @@ async def bulk_generate_reports(req: BulkReportRequest):
         if not candidates:
             raise HTTPException(status_code=404, detail="No se encontraron candidatos seleccionados.")
             
-        # 2. Generate Consolidated Excel
+        # 2. Generación Dual Stark v5.0
         gen = StarkReportGenerator()
-        xlsx_buffer = gen.create_consolidated_workbook(candidates, req.report_type)
+        if req.report_type == 'tec02':
+            # Resumen de todos en una sola tabla
+            xlsx_buffer = gen.generate_tec02_summary(candidates)
+            filename = f"Anexo_TEC02_Resumen_{len(candidates)}_Candidatos.xlsx"
+        else:
+            # Expediente con una hoja por candidato
+            xlsx_buffer = gen.generate_tec02a_workbook(candidates)
+            filename = f"Anexo_TEC02A_Expediente_Consolidado.xlsx"
         
         # 3. Stream Response (.xlsx)
         return StreamingResponse(
             xlsx_buffer,
             media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            headers={"Content-Disposition": f"attachment; filename=Stark_Report_Consolidado_{req.report_type}.xlsx"}
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
         )
         
     except Exception as e:
