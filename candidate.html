@@ -766,24 +766,22 @@
                             <div class="hero-summary">
                                 <div class="stat-box">
                                     <div class="stat-label">Experiencia total</div>
-                                    <div id="phExp" class="stat-value">12 años</div>
+                                    <div id="phExp" class="stat-value">...</div>
                                 </div>
 
                                 <div class="stat-box">
                                     <div class="stat-label">Cargo objetivo</div>
-                                    <div id="phCargoObjetivo" class="stat-value" style="font-size:14px;">Técnico
-                                        eléctrico</div>
+                                    <div id="phCargoObjetivo" class="stat-value" style="font-size:14px;">...</div>
                                 </div>
 
                                 <div class="stat-box">
                                     <div class="stat-label">Última entidad</div>
-                                    <div id="phUltima" class="stat-value" style="font-size:14px;">HEG SPA</div>
+                                    <div id="phUltima" class="stat-value" style="font-size:14px;">...</div>
                                 </div>
 
                                 <div class="stat-box">
-                                    <div class="stat-label">Estado del proceso</div>
-                                    <div id="phStatusSecondary" class="stat-value" style="font-size:14px;">Sin vacante
-                                        vinculada</div>
+                                    <div class="stat-label">Permanencia actual</div>
+                                    <div id="phPermanencia" class="stat-value" style="font-size:14px;">...</div>
                                 </div>
                             </div>
                         </div>
@@ -892,18 +890,8 @@
                                 </div>
                             </div>
 
-                            <div id="aiSummaryContent" class="ai-summary">
-                                <p><strong>Diagnóstico:</strong> candidato con experiencia sólida en electricidad
-                                    industrial, presencia en entornos exigentes y señales positivas de adaptación a
-                                    faena.</p>
-                                <p><strong>Fortalezas:</strong> experiencia relevante, continuidad técnica y perfil
-                                    alineado con operación minera/industrial.</p>
-                                <p><strong>Riesgos:</strong> cumplimiento documental incompleto y una credencial próxima
-                                    a vencimiento.</p>
-                                <p><strong>Recomendación:</strong> avanzar a preselección condicionada a regularización
-                                    documental.</p>
-                                <p><strong>Siguiente acción:</strong> solicitar documentos faltantes y vincular a
-                                    vacante prioritaria.</p>
+                            <div id="phEval" class="ai-summary">
+                                <p><em>Sintonizando telemetría de JARVIS...</em></p>
                             </div>
 
                             <div class="actions-row" style="margin-top:18px;">
@@ -918,28 +906,28 @@
                             <div class="score-breakdown">
                                 <div class="score-line">
                                     <div class="name">Experiencia</div>
-                                    <div class="score-bar"><span style="width: 88%"></span></div>
-                                    <div class="val">40%</div>
+                                    <div class="score-bar"><span id="sbExp" style="width: 0%"></span></div>
+                                    <div class="val">0%</div>
                                 </div>
                                 <div class="score-line">
                                     <div class="name">Certificaciones</div>
-                                    <div class="score-bar"><span style="width: 62%"></span></div>
-                                    <div class="val">22%</div>
+                                    <div class="score-bar"><span id="sbCert" style="width: 0%"></span></div>
+                                    <div class="val">0%</div>
                                 </div>
                                 <div class="score-line">
                                     <div class="name">Estabilidad</div>
-                                    <div class="score-bar"><span style="width: 70%"></span></div>
-                                    <div class="val">15%</div>
+                                    <div class="score-bar"><span id="sbEst" style="width: 0%"></span></div>
+                                    <div class="val">0%</div>
                                 </div>
                                 <div class="score-line">
                                     <div class="name">Fit técnico</div>
-                                    <div class="score-bar"><span style="width: 92%"></span></div>
-                                    <div class="val">18%</div>
+                                    <div class="score-bar"><span id="sbFit" style="width: 0%"></span></div>
+                                    <div class="val">0%</div>
                                 </div>
                                 <div class="score-line">
                                     <div class="name">Otros</div>
-                                    <div class="score-bar"><span style="width: 55%"></span></div>
-                                    <div class="val">5%</div>
+                                    <div class="score-bar"><span id="sbOtr" style="width: 0%"></span></div>
+                                    <div class="val">0%</div>
                                 </div>
                             </div>
 
@@ -1210,83 +1198,9 @@
     <script>
         const d = document;
         const chat = d.getElementById('chatbot');
-
         d.getElementById('btnChat')?.addEventListener('click', () => chat.classList.add('is-open'));
-        d.getElementById('openChatbot')?.addEventListener('click', e => {
-            e.preventDefault();
-            chat.classList.add('is-open');
-        });
+        d.getElementById('openChatbot')?.addEventListener('click', e => { e.preventDefault(); chat.classList.add('is-open'); });
         d.getElementById('closeChat')?.addEventListener('click', () => chat.classList.remove('is-open'));
-
-        // Demo visual para que el cambio se note aunque aún no conectes toda la data
-        const radarEl = document.getElementById('radar');
-        if (radarEl && typeof Chart !== 'undefined') {
-            new Chart(radarEl, {
-                type: 'radar',
-                data: {
-                    labels: ['Experiencia', 'Fit', 'Estabilidad', 'Certificaciones', 'Comunicación'],
-                    datasets: [{
-                        label: 'Perfil',
-                        data: [9, 9, 7, 6, 8],
-                        fill: true,
-                        backgroundColor: 'rgba(34, 211, 238, 0.18)',
-                        borderColor: 'rgba(34, 211, 238, 0.95)',
-                        pointBackgroundColor: 'rgba(34, 211, 238, 0.95)',
-                        pointBorderColor: '#fff',
-                        pointRadius: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        r: {
-                            suggestedMin: 0,
-                            suggestedMax: 10,
-                            angleLines: { color: 'rgba(255,255,255,0.08)' },
-                            grid: { color: 'rgba(255,255,255,0.08)' },
-                            pointLabels: { color: 'rgba(255,255,255,0.7)', font: { size: 11 } },
-                            ticks: { display: false }
-                        }
-                    }
-                }
-            });
-        }
-
-        const timelineEl = document.getElementById('expTimeline');
-        if (timelineEl && typeof Chart !== 'undefined') {
-            new Chart(timelineEl, {
-                type: 'bar',
-                data: {
-                    labels: ['2016', '2018', '2020', '2022', '2024'],
-                    datasets: [{
-                        label: 'Trayectoria',
-                        data: [2, 3, 4, 4, 5],
-                        backgroundColor: 'rgba(34, 211, 238, 0.55)',
-                        borderColor: 'rgba(34, 211, 238, 1)',
-                        borderWidth: 1,
-                        borderRadius: 8
-                    }]
-                },
-                options: {
-                    indexAxis: 'y',
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: {
-                            grid: { color: 'rgba(255,255,255,0.06)' },
-                            ticks: { color: 'rgba(255,255,255,0.6)' }
-                        },
-                        y: {
-                            grid: { display: false },
-                            ticks: { color: 'rgba(255,255,255,0.75)' }
-                        }
-                    }
-                }
-            });
-        }
     </script>
 
     <script defer src="/static/responsive.js?v=2.0"></script>
