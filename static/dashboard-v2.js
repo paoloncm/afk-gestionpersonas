@@ -8,9 +8,16 @@ const $ = (s) => document.querySelector(s);
 async function initDashboard() {
     console.log("[JARVIS] 🦾 Activando Sistemas de Control v2.0...");
 
-    // 1. Cargar Metatada de Sesión / Usuario (opcional si ya está en auth.js)
     if (!window.supabase) {
         console.error("[JARVIS] ❌ Error Crítico: Supabase no detectado.");
+        return;
+    }
+
+    // 1. Verificación de Seguridad Stark (Proactiva)
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+        console.warn("[JARVIS] ⚠️ Sesión no detectada. Redirigiendo a zona segura...");
+        window.location.href = 'login.html';
         return;
     }
 
@@ -37,22 +44,18 @@ async function initDashboard() {
 async function loadKPIs() {
     console.log("[JARVIS] 📊 Sincronizando métricas operativas...");
 
-    // Conteo de Trabajadores
     const { count: workerCount } = await supabase
         .from('workers')
         .select('*', { count: 'exact', head: true });
     
     if ($('#kpi-workers')) $('#kpi-workers').innerText = workerCount || 0;
 
-    // Conteo de Candidatos
     const { count: candCount } = await supabase
         .from('candidates')
         .select('*', { count: 'exact', head: true });
     
     if ($('#kpi-candidates')) $('#kpi-candidates').innerText = candCount || 0;
 
-    // Riesgos (ejemplo: trabajadores bloqueados o con alertas)
-    // Asumimos que hay un campo 'status' o similar en 'workers'
     const { count: riskCount } = await supabase
         .from('workers')
         .select('*', { count: 'exact', head: true })
@@ -61,15 +64,12 @@ async function loadKPIs() {
     if ($('#kpi-risks')) {
         const val = riskCount || 0;
         $('#kpi-risks').innerText = val;
-        // Animamos la barra de progreso proporcionalmente (base 10 como "peligro")
         if ($('#bar-risks')) $('#bar-risks').style.width = Math.min(100, (val * 10)) + "%";
     }
 
-    // Próximos Vencimientos (Placeholder lógico: registros creados esta semana)
     if ($('#kpi-expiring')) $('#kpi-expiring').innerText = "4"; 
     if ($('#bar-expiring')) $('#bar-expiring').style.width = "40%";
 
-    // Índice de Cumplimiento (Cálculo real basado en dotación activa)
     const { count: compliantCount } = await supabase
         .from('workers')
         .select('*', { count: 'exact', head: true })
@@ -128,7 +128,6 @@ async function loadRecentCandidates() {
         tbody.appendChild(tr);
     });
 
-    // Delegación para checkboxes
     tbody.querySelectorAll('.cand-select').forEach(cb => {
         cb.onchange = (e) => {
             const id = e.target.dataset.id;
@@ -159,23 +158,17 @@ async function loadPipeline() {
     const container = $('#dashboard-pipeline');
     if (!container) return;
 
-    console.log("[JARVIS] 📈 Analizando Pipeline de Vacantes...");
-    
     const { count: tenderCount, error } = await supabase
         .from('tenders')
         .select('*', { count: 'exact', head: true });
 
-    if (error) {
-        console.error("Error loading pipeline:", error);
-        return;
-    }
+    if (error) return;
 
     const bar = container.querySelector('div');
     if (bar) {
         const height = Math.min(100, (tenderCount || 0) * 10) + "px";
         bar.style.height = height;
         bar.style.width = "85%";
-        bar.title = `${tenderCount} Licitaciones activas`;
     }
 }
 
@@ -183,18 +176,13 @@ async function loadTopCandidates() {
     const list = $('#dashboard-top-candidates');
     if (!list) return;
 
-    console.log("[JARVIS] 👑 Identificando Perfiles de Élite...");
-
     const { data: topCands, error } = await supabase
         .from('candidates')
         .select('nombre_completo, nota, cargo_a_desempenar')
         .order('nota', { ascending: false })
         .limit(5);
 
-    if (error) {
-        console.error("Error loading top candidates:", error);
-        return;
-    }
+    if (error) return;
 
     list.innerHTML = '';
     if (topCands.length === 0) {
@@ -205,7 +193,7 @@ async function loadTopCandidates() {
     topCands.forEach(cand => {
         const li = document.createElement('li');
         const nota = cand.nota || '—';
-        li.innerHTML = `<strong>${cand.nombre_completo}</strong> — Nota: <span class="score">${nota}</span> — Cargo: ${cand.cargo_a_desempenar || 'Por asignar'}`;
+        li.innerHTML = `<strong>${cand.nombre_completo}</strong> — Nota: <span class="score">${nota}</span> — Cargo: ${cand.cargo_a_desempenar || '—'}`;
         list.appendChild(li);
     });
 }
@@ -242,7 +230,7 @@ function setupEventListeners() {
         };
     }
 
-    // Botones Bulk
+    // Botones Bulk (Limpiar IDs, no sesión)
     $('#btn-bulk-clear')?.addEventListener('click', () => {
         selectedCandidateIds.clear();
         document.querySelectorAll('.cand-select').forEach(cb => cb.checked = false);
@@ -252,6 +240,8 @@ function setupEventListeners() {
     const generateReport = async (type) => {
         if (selectedCandidateIds.size === 0) return;
         const btn = type === 'tec02' ? $('#btn-bulk-tec02') : $('#btn-bulk-tec02a');
+        if (!btn) return;
+
         const oldText = btn.innerText;
         btn.disabled = true;
         btn.innerText = "Generando...";
@@ -271,7 +261,7 @@ function setupEventListeners() {
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `Reportes_${type}_${new Date().getTime()}.zip`;
+                a.download = `Anexo_${type.toUpperCase()}_AFK_${new Date().getTime()}.xlsx`;
                 document.body.appendChild(a);
                 a.click();
                 a.remove();
@@ -286,6 +276,15 @@ function setupEventListeners() {
     $('#btn-bulk-tec02')?.addEventListener('click', () => generateReport('tec02'));
     $('#btn-bulk-tec02a')?.addEventListener('click', () => generateReport('tec02a'));
 
+    // Logout Seguro
+    $('#side-btn-logout')?.addEventListener('click', async (e) => {
+        e.preventDefault();
+        if (confirm("¿Confirmas que deseas cerrar la sesión operativa de JARVIS?")) {
+            await supabase.auth.signOut();
+            window.location.href = 'login.html';
+        }
+    });
+
     // Búsqueda en tiempo real
     const searchInput = $('#search-input');
     if (searchInput) {
@@ -296,20 +295,8 @@ function setupEventListeners() {
                 const text = row.innerText.toLowerCase();
                 row.style.display = text.includes(term) ? '' : 'none';
             });
-            // Al filtrar, deseleccionamos para evitar errores de contexto
-            selectedCandidateIds.clear();
-            document.querySelectorAll('.cand-select').forEach(cb => cb.checked = false);
-            updateBulkBar();
         };
     }
-
-    // Chatbot Sidebar
-    $('#side-btn-chatbot')?.addEventListener('click', (e) => {
-        e.preventDefault();
-        window.dispatchEvent(new CustomEvent('afk:open-chatbot'));
-    });
 }
-
-document.addEventListener('DOMContentLoaded', initDashboard);
 
 document.addEventListener('DOMContentLoaded', initDashboard);

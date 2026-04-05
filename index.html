@@ -531,15 +531,15 @@
 
       <div class="nav-title">Cuenta</div>
       <nav class="nav">
-        <a href="#" style="color:#ff92ad">Cerrar sesión</a>
+        <a href="#" id="side-btn-logout" style="color:#ff92ad; border: 1px solid rgba(255, 15, 106, 0.15); background: rgba(255, 15, 106, 0.05);">Cerrar sesión segura</a>
       </nav>
     </aside>
 
     <main class="main">
       <div class="top-actions">
+        <button class="btn" onclick="window.location.href='index.html'">Dashboard</button>
         <button class="btn">Generar TEC-02</button>
         <button class="btn">Generar TEC-02A</button>
-        <button class="btn">Subir documentos</button>
         <button class="btn primary">Abrir Chatbot</button>
       </div>
 
@@ -706,15 +706,21 @@
         </div>
       </div>
 
-      <div id="bulk-actions-bar" class="stark-card bulk-bar" style="display:none; margin-bottom:15px; background:rgba(34, 211, 238, 0.1); border-color:var(--cyan); padding:12px 20px; align-items:center; justify-content:space-between;">
-        <div style="display:flex; align-items:center; gap:15px;">
-           <span id="selected-count" style="font-weight:900; color:var(--cyan); font-size:16px;">0</span>
-           <span style="font-size:12px; text-transform:uppercase; letter-spacing:1px; color:var(--muted);">Candidatos seleccionados</span>
+      <!-- Barra de Acciones Masivas Flotante -->
+      <div id="bulk-actions-bar" class="bulk-bar-fixed" style="display:none;">
+        <div style="display:flex; align-items:center; gap:20px;">
+           <div style="background:var(--cyan); color:#000; width:34px; height:34px; border-radius:50%; display:grid; place-items:center; font-weight:900;">
+             <span id="selected-count">0</span>
+           </div>
+           <div>
+             <div style="font-size:13px; font-weight:700; color:#fff;">CANDIDATOS SELECCIONADOS</div>
+             <div style="font-size:10px; color:var(--muted); text-transform:uppercase;">Protocolo Bulk Activo</div>
+           </div>
         </div>
-        <div style="display:flex; gap:10px;">
+        <div style="display:flex; gap:12px;">
            <button class="btn btn--mini" id="btn-bulk-tec02">Generar TEC-02</button>
            <button class="btn btn--mini" id="btn-bulk-tec02a">Generar TEC-02A</button>
-           <button class="btn btn--mini btn--danger" id="btn-bulk-clear">Limpiar</button>
+           <button class="btn btn--mini btn--danger" id="btn-bulk-clear">Limpiar Selección</button>
         </div>
       </div>
 
