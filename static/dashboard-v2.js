@@ -21,7 +21,11 @@ async function initDashboard() {
         // 3. Cargar Tabla de Candidatos Recientes
         await loadRecentCandidates();
 
-        // 4. Configurar Eventos
+        // 4. Cargar Inteligencia Adicional (Pipeline y Top 5)
+        await loadPipeline();
+        await loadTopCandidates();
+
+        // 5. Configurar Eventos
         setupEventListeners();
 
         console.log("[JARVIS] ✅ Sistemas en línea. HUD Operativo.");
@@ -62,7 +66,21 @@ async function loadKPIs() {
     }
 
     // Próximos Vencimientos (Placeholder lógico: registros creados esta semana)
-    if ($('#kpi-expiring')) $('#kpi-expiring').innerText = "4"; // Placeholder para lógica de fechas compleja
+    if ($('#kpi-expiring')) $('#kpi-expiring').innerText = "4"; 
+    if ($('#bar-expiring')) $('#bar-expiring').style.width = "40%";
+
+    // Índice de Cumplimiento (Cálculo real basado en dotación activa)
+    const { count: compliantCount } = await supabase
+        .from('workers')
+        .select('*', { count: 'exact', head: true })
+        .not('rut', 'is', null)
+        .not('email', 'is', null);
+    
+    if ($('#kpi-compliance')) {
+        const total = workerCount || 1;
+        const pct = Math.round(((compliantCount || 0) / total) * 100);
+        $('#kpi-compliance').innerText = pct + "%";
+    }
 }
 
 async function loadRecentCandidates() {
@@ -105,6 +123,64 @@ async function loadRecentCandidates() {
     });
 }
 
+async function loadPipeline() {
+    const container = $('#dashboard-pipeline');
+    if (!container) return;
+
+    console.log("[JARVIS] 📈 Analizando Pipeline de Vacantes...");
+    
+    const { count: tenderCount, error } = await supabase
+        .from('tenders')
+        .select('*', { count: 'exact', head: true });
+
+    if (error) {
+        console.error("Error loading pipeline:", error);
+        return;
+    }
+
+    // Actualizamos la barra táctica
+    const bar = container.querySelector('div');
+    if (bar) {
+        // Asignamos una altura basada en el volumen (proporcional: max 120px)
+        const height = Math.min(100, (tenderCount || 0) * 10) + "px";
+        const width = "85%"; // Ancho fijo por diseño
+        bar.style.height = height;
+        bar.style.width = width;
+        bar.title = `${tenderCount} Licitaciones activas`;
+    }
+}
+
+async function loadTopCandidates() {
+    const list = $('#dashboard-top-candidates');
+    if (!list) return;
+
+    console.log("[JARVIS] 👑 Identificando Perfiles de Élite...");
+
+    const { data: topCands, error } = await supabase
+        .from('candidates')
+        .select('nombre_completo, nota, cargo_a_desempenar')
+        .order('nota', { ascending: false })
+        .limit(5);
+
+    if (error) {
+        console.error("Error loading top candidates:", error);
+        return;
+    }
+
+    list.innerHTML = '';
+    if (topCands.length === 0) {
+        list.innerHTML = '<li>Sin candidatos calificados</li>';
+        return;
+    }
+
+    topCands.forEach(cand => {
+        const li = document.createElement('li');
+        const nota = cand.nota || '—';
+        li.innerHTML = `<strong>${cand.nombre_completo}</strong> — Nota: <span class="score">${nota}</span> — Cargo: ${cand.cargo_a_desempenar || 'Por asignar'}`;
+        list.appendChild(li);
+    });
+}
+
 function setupEventListeners() {
     // Sincronización de Drive
     const btnSync = $('#btn-sync-drive');
@@ -125,6 +201,8 @@ function setupEventListeners() {
              } finally {
                 btnSync.disabled = false;
                 btnSync.innerText = "Sincronizar Drive";
+                // Recargar KPIs después de un tiempo prudencial
+                setTimeout(loadKPIs, 5000);
              }
         };
     }
@@ -134,7 +212,6 @@ function setupEventListeners() {
     if (btnChatbot) {
         btnChatbot.onclick = (e) => {
             e.preventDefault();
-            // Disparar evento para que el componente chatbot (si existe) se abra
             window.dispatchEvent(new CustomEvent('afk:open-chatbot'));
         };
     }

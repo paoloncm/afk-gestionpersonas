@@ -835,9 +835,10 @@
       <section class="two-col">
         <article class="card">
           <h4 class="chart-title">Pipeline de vacantes</h4>
-          <div style="height:120px;display:flex;align-items:flex-end;padding-top:10px;">
+          <div style="height:120px;display:flex;align-items:flex-end;padding-top:10px;" id="dashboard-pipeline">
+            <!-- Barra dinámica de Pipeline -->
             <div
-              style="width:86%;height:82px;background:linear-gradient(180deg, rgba(87,168,255,0.85), rgba(87,168,255,0.35));border-radius:10px 10px 0 0;border:1px solid rgba(255,255,255,0.05);">
+              style="width:0%;height:0px;background:linear-gradient(180deg, rgba(87,168,255,0.85), rgba(87,168,255,0.35));border-radius:10px 10px 0 0;border:1px solid rgba(255,255,255,0.05);transition:all 1s ease;">
             </div>
           </div>
           <div style="text-align:center;color:var(--muted);font-size:12px;margin-top:8px;">Analizado por IA</div>
@@ -845,12 +846,8 @@
 
         <article class="card">
           <h4 class="chart-title">Top 5 candidatos por similitud</h4>
-          <ol class="mini-list">
-            <li>Molina Andrés Pérez Ulloa — Nota 6.7 — Exp 24.0</li>
-            <li>Fernández Enrique Rubio — Exp 24.0</li>
-            <li>Antonio Martínez Ureta Tapia — Nota 6.8</li>
-            <li>Cristóbal Rodrigo Díaz Carrillo — Exp 7.5</li>
-            <li>Cristóbal Gerardo Flores Segura — Exp 2.0</li>
+          <ol class="mini-list" id="dashboard-top-candidates">
+            <li style="color:var(--muted); font-style:italic;">Analizando red de candidatos...</li>
           </ol>
         </article>
       </section>
