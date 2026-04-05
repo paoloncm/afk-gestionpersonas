@@ -1,264 +1,899 @@
-<!-- AFK RRHH ÔÇö index.html -->
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
+
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>AFK RRHH ÔÇö Dashboard</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AFK RRHH — Dashboard</title>
+  <style>
+    :root {
+      --bg: #030816;
+      --panel: #071225;
+      --panel-2: #09182d;
+      --border: rgba(80, 208, 255, 0.18);
+      --text: #eaf6ff;
+      --muted: #8fa7c1;
+      --cyan: #41dfff;
+      --cyan-2: #7ff2ff;
+      --pink: #ff0f6a;
+      --pink-2: #ff4b91;
+      --green: #2ee7a5;
+      --yellow: #ffcf5a;
+      --red: #ff5f74;
+      --blue: #57a8ff;
+      --shadow: 0 0 0 1px rgba(65, 223, 255, 0.12), 0 18px 40px rgba(0, 0, 0, 0.35);
+      --radius: 14px;
+      --radius-lg: 18px;
+    }
 
-  <!-- Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    * {
+      box-sizing: border-box;
+    }
 
-  <!-- Styles -->
-  <link rel="stylesheet" href="styles.css">
+    html,
+    body {
+      height: 100%;
+    }
 
-  <!-- Charts -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at top center, rgba(255, 15, 106, 0.08), transparent 25%),
+        radial-gradient(circle at 20% 0%, rgba(65, 223, 255, 0.08), transparent 24%),
+        linear-gradient(180deg, #020611 0%, #040b19 100%);
+      color: var(--text);
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      border-right: 1px solid rgba(65, 223, 255, 0.1);
+      background: linear-gradient(180deg, rgba(4, 12, 28, 0.98), rgba(1, 7, 18, 0.98));
+      padding: 18px 14px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 18px;
+      padding: 6px 4px 14px;
+      border-bottom: 1px solid rgba(65, 223, 255, 0.08);
+    }
+
+    .brand-logo {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      color: #00141a;
+      background: linear-gradient(135deg, var(--cyan), var(--cyan-2));
+      box-shadow: 0 0 24px rgba(65, 223, 255, 0.35);
+      font-size: 12px;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 14px;
+      letter-spacing: 0.12em;
+    }
+
+    .brand span {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      margin-top: 2px;
+    }
+
+    .nav-title {
+      color: #5e7b9f;
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      margin: 18px 8px 8px;
+    }
+
+    .nav {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .nav a {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: #bcd7f0;
+      padding: 10px 12px;
+      border-radius: 12px;
+      font-size: 13px;
+      border: 1px solid transparent;
+      transition: 0.2s ease;
+    }
+
+    .nav a:hover,
+    .nav a.active {
+      background: linear-gradient(90deg, rgba(65, 223, 255, 0.18), rgba(65, 223, 255, 0.06));
+      border-color: rgba(65, 223, 255, 0.18);
+      color: white;
+      box-shadow: inset 0 0 0 1px rgba(65, 223, 255, 0.08);
+    }
+
+    .main {
+      padding: 14px;
+    }
+
+    .top-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .btn {
+      border: 1px solid rgba(65, 223, 255, 0.16);
+      background: rgba(10, 21, 42, 0.8);
+      color: #dcf9ff;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .btn.primary {
+      background: linear-gradient(135deg, rgba(255, 15, 106, 0.22), rgba(255, 75, 145, 0.12));
+      border-color: rgba(255, 75, 145, 0.3);
+      color: white;
+    }
+
+    .critical-banner {
+      background: linear-gradient(180deg, rgba(255, 15, 106, 0.92), rgba(215, 0, 93, 0.92));
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: var(--radius-lg);
+      padding: 14px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 14px 40px rgba(163, 0, 68, 0.25);
+      margin-bottom: 14px;
+    }
+
+    .critical-banner strong {
+      display: block;
+      font-size: 14px;
+    }
+
+    .critical-banner span {
+      font-size: 12px;
+      opacity: 0.95;
+    }
+
+    .hero {
+      background:
+        radial-gradient(circle at 10% 10%, rgba(255, 15, 106, 0.12), transparent 30%),
+        radial-gradient(circle at 80% 0%, rgba(65, 223, 255, 0.1), transparent 24%),
+        linear-gradient(180deg, rgba(8, 18, 37, 0.96), rgba(4, 12, 28, 0.96));
+      border: 1px solid rgba(255, 15, 106, 0.16);
+      box-shadow: var(--shadow);
+      border-radius: var(--radius-lg);
+      padding: 22px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      margin-bottom: 14px;
+    }
+
+    .hero h2 {
+      margin: 0 0 8px;
+      font-size: 22px;
+    }
+
+    .hero p {
+      margin: 0 0 16px;
+      color: var(--muted);
+      font-size: 13px;
+      max-width: 720px;
+    }
+
+    .ai-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .search {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      min-width: 420px;
+      border-radius: 999px;
+      background: rgba(9, 25, 45, 0.85);
+      border: 1px solid rgba(65, 223, 255, 0.22);
+      box-shadow: inset 0 0 0 1px rgba(65, 223, 255, 0.06);
+    }
+
+    .search input {
+      background: transparent;
+      border: 0;
+      outline: none;
+      width: 100%;
+      color: white;
+      font-size: 13px;
+    }
+
+    .chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .chip {
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.03);
+      color: #c7d7e9;
+      padding: 7px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+    }
+
+    .status-box {
+      align-self: center;
+      justify-self: end;
+      padding: 12px 14px;
+      min-width: 210px;
+      border-radius: 14px;
+      background: rgba(3, 25, 18, 0.55);
+      border: 1px solid rgba(46, 231, 165, 0.18);
+      text-align: right;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 999px;
+      background: rgba(46, 231, 165, 0.16);
+      color: #9af4d2;
+      padding: 7px 10px;
+      font-size: 12px;
+      margin-bottom: 10px;
+    }
+
+    .status-box small {
+      color: #9bc9b8;
+    }
+
+    .grid-5 {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .card {
+      background: linear-gradient(180deg, rgba(7, 18, 37, 0.98), rgba(4, 12, 28, 0.98));
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px;
+      min-height: 110px;
+    }
+
+    .metric-label {
+      color: #82a8c8;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 10px;
+    }
+
+    .metric-value {
+      font-size: 42px;
+      line-height: 1;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+
+    .metric-sub {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    .progress {
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.06);
+      overflow: hidden;
+    }
+
+    .progress>span {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--cyan), #7db8ff);
+    }
+
+    .card.red {
+      border-color: rgba(255, 95, 116, 0.28);
+      background: radial-gradient(circle at top right, rgba(255, 95, 116, 0.08), transparent 28%), linear-gradient(180deg, rgba(22, 10, 23, 0.98), rgba(15, 8, 20, 0.98));
+    }
+
+    .card.green {
+      border-color: rgba(46, 231, 165, 0.18);
+    }
+
+    .highlights {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .notice {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      background: linear-gradient(180deg, rgba(6, 22, 38, 0.98), rgba(4, 13, 28, 0.98));
+      border: 1px solid rgba(65, 223, 255, 0.15);
+      box-shadow: var(--shadow);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      margin-bottom: 12px;
+    }
+
+    .notice strong {
+      display: block;
+      font-size: 13px;
+      margin-bottom: 4px;
+    }
+
+    .notice p {
+      margin: 0;
+      font-size: 12px;
+      color: #c5d6e7;
+    }
+
+    .chart-grid {
+      display: grid;
+      grid-template-columns: 1.3fr 1fr 0.9fr;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .chart-title {
+      margin: 0 0 14px;
+      font-size: 12px;
+      color: #8caac8;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .bars {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    .bar-row {
+      display: grid;
+      grid-template-columns: 110px 1fr 28px;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+      color: #d6eaff;
+    }
+
+    .bar-track {
+      height: 18px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .bar-track span {
+      display: block;
+      height: 100%;
+      background: linear-gradient(90deg, #4b87ff, #5ddcff);
+      border-radius: inherit;
+    }
+
+    .donut-wrap {
+      display: grid;
+      place-items: center;
+      height: 100%;
+      min-height: 200px;
+    }
+
+    .donut {
+      width: 160px;
+      height: 160px;
+      border-radius: 50%;
+      background: conic-gradient(var(--green) 0 288deg, rgba(255, 255, 255, 0.08) 288deg 360deg);
+      display: grid;
+      place-items: center;
+      position: relative;
+      box-shadow: 0 0 30px rgba(46, 231, 165, 0.1);
+    }
+
+    .donut::after {
+      content: "";
+      width: 82px;
+      height: 82px;
+      border-radius: 50%;
+      background: #071225;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+    }
+
+    .donut-center {
+      position: absolute;
+      text-align: center;
+      z-index: 1;
+    }
+
+    .donut-center strong {
+      display: block;
+      font-size: 26px;
+      margin-bottom: 4px;
+    }
+
+    .donut-center span {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .chart-legend {
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      margin-top: 12px;
+      color: #bad1e6;
+      font-size: 12px;
+    }
+
+    .dot {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .mini-list {
+      margin: 0;
+      padding-left: 18px;
+      color: #d6eaff;
+      font-size: 12px;
+      line-height: 1.85;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 14px 0 10px;
+    }
+
+    .section-header h3 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .section-tools {
+      display: flex;
+      gap: 8px;
+    }
+
+    .table-wrap {
+      background: linear-gradient(180deg, rgba(7, 18, 37, 0.98), rgba(4, 12, 28, 0.98));
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .table-toolbar {
+      padding: 12px;
+      border-bottom: 1px solid rgba(65, 223, 255, 0.1);
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .table-toolbar input {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: white;
+      border-radius: 10px;
+      padding: 10px 12px;
+      min-width: 280px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      padding: 14px 12px;
+      border-bottom: 1px solid rgba(65, 223, 255, 0.08);
+      font-size: 12px;
+      text-align: left;
+    }
+
+    th {
+      color: #89a8c8;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      background: rgba(255, 255, 255, 0.02);
+      font-size: 11px;
+    }
+
+    tr:hover td {
+      background: rgba(65, 223, 255, 0.03);
+    }
+
+    .score {
+      color: var(--cyan-2);
+      font-weight: 700;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .badge.blue {
+      background: rgba(87, 168, 255, 0.14);
+      color: #b9d8ff;
+    }
+
+    .badge.red {
+      background: rgba(255, 95, 116, 0.14);
+      color: #ffc4cf;
+    }
+
+    .badge.green {
+      background: rgba(46, 231, 165, 0.12);
+      color: #acf7dc;
+    }
+
+    .badge.yellow {
+      background: rgba(255, 207, 90, 0.12);
+      color: #ffe6a1;
+    }
+
+    .action-link {
+      color: var(--cyan-2);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    @media (max-width: 1350px) {
+
+      .grid-5,
+      .chart-grid,
+      .two-col,
+      .highlights {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .chart-grid .card:last-child,
+      .highlights .card:last-child,
+      .two-col .card:last-child {
+        grid-column: 1 / -1;
+      }
+    }
+
+    @media (max-width: 1024px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        position: relative;
+        height: auto;
+      }
+
+      .hero {
+        grid-template-columns: 1fr;
+      }
+
+      .grid-5,
+      .chart-grid,
+      .two-col,
+      .highlights {
+        grid-template-columns: 1fr;
+      }
+
+      .search {
+        min-width: 100%;
+      }
+    }
+  </style>
 </head>
 
 <body>
-  <div class="dashboard">
-
-    <!-- Sidebar -->
-    <aside class="sidebar" aria-label="Navegaci├│n">
+  <div class="app">
+    <aside class="sidebar">
       <div class="brand">
-        <div class="logo">AFK</div>
-        <span>RRHH</span>
+        <div class="brand-logo">AFK</div>
+        <div>
+          <h1>AFK RRHH</h1>
+          <span>Inteligencia Operativa</span>
+        </div>
       </div>
 
+      <div class="nav-title">Principal</div>
       <nav class="nav">
-        <a class="is-active" href="index.html"><span class="label">Dashboard</span></a>
-        <a href="workers.html"><span class="label">Trabajadores</span></a>
-        <a href="pipeline.html"><span class="label">Pipeline</span></a>
-        <a href="vacancies.html"><span class="label">Vacantes</span></a>
-        <a href="interviews.html"><span class="label">Entrevistas</span></a>
-        <a href="alerts.html"><span class="label">Alertas</span></a>
-        <a href="reports.html"><span class="label">Reportes</span></a>
-        <a href="documents.html"><span class="label">Documentos</span></a>
-        <a id="openChatbot" href="#chatbot"><span class="label">Chatbot</span></a>
+        <a class="active" href="index.html">Dashboard</a>
+        <a href="tenders.html">Vacantes</a>
+        <a href="interviews.html">Entrevistas</a>
+        <a href="pipeline.html">Pipeline</a>
+      </nav>
+
+      <div class="nav-title">Gestión</div>
+      <nav class="nav">
+        <a href="workers.html">Trabajadores</a>
+        <a href="alerts.html">Alertas</a>
+        <a href="documents.html">Documentos</a>
+        <a href="reports.html">Reportes</a>
+        <a href="#" id="side-btn-chatbot">Chatbot</a>
+      </nav>
+
+      <div class="nav-title">Analítica e IA</div>
+      <nav class="nav">
+        <a href="analytics.html">People Analytics</a>
+        <a href="analytics.html">Cumplimiento</a>
+        <a href="tenders.html">Licitaciones</a>
+      </nav>
+
+      <div class="nav-title">Cuenta</div>
+      <nav class="nav">
+        <a href="#" style="color:#ff92ad">Cerrar sesión</a>
       </nav>
     </aside>
 
-    <!-- Topbar -->
-    <header class="topbar">
-      <button class="btn-menu" aria-label="Abrir men├║">Ôÿ░</button>
-      <button class="btn" onclick="location.href='documents.html'">
-        Subir documentos
-      </button>
-      <button class="btn btn--primary" id="btnChat">
-        Abrir Chatbot
-      </button>
-    </header>
+    <main class="main">
+      <div class="top-actions">
+        <button class="btn">Generar TEC-02</button>
+        <button class="btn">Generar TEC-02A</button>
+        <button class="btn">Subir documentos</button>
+        <button class="btn primary">Abrir Chatbot</button>
+      </div>
 
-    <!-- Main -->
-    <main class="main" id="app">
+      <section class="critical-banner">
+        <div>
+          <strong>1 trabajador BLOQUEADO (atención inmediata)</strong>
+          <span>Por incumplimiento crítico. Riesgo operacional alto si intenta ingresar a faena.</span>
+        </div>
+        <button class="btn" style="background:rgba(255,255,255,0.18);border-color:rgba(255,255,255,0.25);">Resolver
+          bloqueo ahora</button>
+      </section>
 
-      <h1 class="h1">Dashboard</h1>
+      <section class="hero">
+        <div>
+          <h2>Centro de Control Inteligente</h2>
+          <p>Capital humano, cumplimiento laboral, filtros y bloqueo en faena automatizados. Visualiza riesgos,
+            vencimientos y candidatos en un solo lugar.</p>
 
-      <!-- Ô£à FILTROS -->
-      <section class="toolbar">
-        <div class="toolbar__left" style="display:flex; gap:12px; flex-wrap:wrap;">
-          <select id="filterEstado" class="select">
-            <option value="">Todos los estados</option>
-          </select>
+          <div class="ai-row">
+            <div class="search">
+              <span>🤖</span>
+              <input value="Pregunta a AFK: ¿Quién está en riesgo hoy?" />
+              <button class="btn">Consultar</button>
+            </div>
+          </div>
 
-          <select id="filterCargo" class="select">
-            <option value="">Todos los cargos</option>
-          </select>
+          <div class="chips">
+            <span class="chip">Bloqueados hoy</span>
+            <span class="chip">Vencimientos semana</span>
+            <span class="chip">Top riesgo</span>
+          </div>
+        </div>
 
-          <button id="btnResetFilters" class="btn">Reset</button>
+        <div class="status-box">
+          <div class="status-pill">● Sistema Protegido</div>
+          <small>Última actualización: hoy, hace pocos segundos</small>
         </div>
       </section>
 
-      <!-- KPIs -->
-      <section class="grid-kpi">
-        <div class="card">
-          <div class="card__body kpi">
-            <span class="label">Total candidatos</span>
-            <span id="kpi_total" class="value">ÔÇö</span>
-          </div>
-        </div>
+      <section class="grid-5">
+        <article class="card green">
+          <div class="metric-label">Total personal</div>
+          <div class="metric-value" id="kpi-workers" style="color:var(--green)">...</div>
+          <div class="metric-sub">Dotación vigente</div>
+        </article>
 
-        <div class="card">
-          <div class="card__body kpi">
-            <span class="label">Promedio nota</span>
-            <span id="kpi_prom_nota" class="value">ÔÇö</span>
-          </div>
-        </div>
+        <article class="card">
+          <div class="metric-label">Postulaciones</div>
+          <div class="metric-value" id="kpi-candidates" style="color:#f3fbff">...</div>
+          <div class="metric-sub">Candidatos activos</div>
+        </article>
 
-        <div class="card">
-          <div class="card__body kpi">
-            <span class="label">Experiencia promedio</span>
-            <span id="kpi_prom_exp" class="value">ÔÇö</span>
-          </div>
-        </div>
+        <article class="card red">
+          <div class="metric-label">Riesgos críticos</div>
+          <div class="metric-value" id="kpi-risks" style="color:var(--red)">...</div>
+          <div class="metric-sub">Trabajadores bloqueados</div>
+          <div class="progress"><span id="bar-risks" style="width:0%"></span></div>
+        </article>
 
-        <div class="card">
-          <div class="card__body kpi">
-            <span class="label">% Nota ÔëÑ 6</span>
-            <span id="kpi_pct_n6" class="value">ÔÇö</span>
-          </div>
-        </div>
+        <article class="card">
+          <div class="metric-label">Próximos vencimientos</div>
+          <div class="metric-value" id="kpi-expiring" style="color:var(--cyan)">...</div>
+          <div class="metric-sub">En seguimiento semanal</div>
+          <div class="progress"><span id="bar-expiring" style="width:0%"></span></div>
+        </article>
+
+        <article class="card green">
+          <div class="metric-label">Índice de cumplimiento</div>
+          <div class="metric-value" id="kpi-compliance" style="color:var(--green)">...</div>
+          <div class="metric-sub">Salud documental total</div>
+        </article>
       </section>
 
-      <!-- Charts -->
-      <section class="section grid-3">
-        <div class="card">
-          <div class="card__body">
-            <div class="text-muted">Distribuci├│n de notas</div>
-            <div class="chart-box">
-              <canvas id="chart_notas"></canvas>
-            </div>
-          </div>
+      <section class="notice">
+        <div>
+          <strong>Recomendación de Inteligencia AFK</strong>
+          <p>Alerta operativa detectada: trabajador bloqueado por incumplimiento crítico. Se recomienda acción inmediata
+            para evitar detención de faena.</p>
         </div>
-
-        <div class="card">
-          <div class="card__body">
-            <div class="text-muted">Nota vs Experiencia</div>
-            <div class="chart-box">
-              <canvas id="chart_scatter"></canvas>
-            </div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card__body">
-            <div class="text-muted">Profesiones</div>
-            <div class="chart-box">
-              <canvas id="chart_profesiones"></canvas>
-            </div>
-          </div>
-        </div>
+        <button class="btn">Ejecutar acción</button>
       </section>
 
-      <section class="section grid-2">
-        <div class="card">
-          <div class="card__body">
-            <div class="text-muted">Pipeline por estado</div>
-            <div class="chart-box">
-              <canvas id="chart_pipeline"></canvas>
+      <section class="chart-grid">
+        <article class="card">
+          <h4 class="chart-title">Distribución por tipo de examen</h4>
+          <div class="bars">
+            <div class="bar-row"><span>Ruido</span>
+              <div class="bar-track"><span style="width:94%"></span></div><strong>4</strong>
+            </div>
+            <div class="bar-row"><span>Sílice</span>
+              <div class="bar-track"><span style="width:71%"></span></div><strong>3</strong>
+            </div>
+            <div class="bar-row"><span>Altura</span>
+              <div class="bar-track"><span style="width:71%"></span></div><strong>3</strong>
+            </div>
+            <div class="bar-row"><span>Inf. Psico</span>
+              <div class="bar-track"><span style="width:49%"></span></div><strong>2</strong>
+            </div>
+            <div class="bar-row"><span>Conductores</span>
+              <div class="bar-track"><span style="width:49%"></span></div><strong>2</strong>
             </div>
           </div>
-        </div>
+        </article>
 
-        <div class="card">
-          <div class="card__body">
-            <div class="text-muted">Top 5 candidatos (por nota)</div>
-            <ol id="topCandidates" class="toplist"></ol>
+        <article class="card">
+          <h4 class="chart-title">Cumplimiento de credenciales</h4>
+          <div class="donut-wrap">
+            <div>
+              <div class="donut">
+                <div class="donut-center">
+                  <strong>80%</strong>
+                  <span>Cumple</span>
+                </div>
+              </div>
+              <div class="chart-legend">
+                <span><i class="dot" style="background:var(--green)"></i>Con exámenes</span>
+                <span><i class="dot" style="background:rgba(255,255,255,0.22)"></i>Sin exámenes</span>
+              </div>
+            </div>
           </div>
-        </div>
+        </article>
+
+        <article class="card">
+          <h4 class="chart-title">Distribución de exámenes</h4>
+          <div class="bars">
+            <div class="bar-row"><span>Examen preocupacional</span>
+              <div class="bar-track"><span style="width:100%"></span></div><strong>17</strong>
+            </div>
+            <div class="bar-row"><span>Calificador</span>
+              <div class="bar-track"><span style="width:22%"></span></div><strong>4</strong>
+            </div>
+            <div class="bar-row"><span>Curso</span>
+              <div class="bar-track"><span style="width:14%"></span></div><strong>2</strong>
+            </div>
+          </div>
+        </article>
       </section>
 
-      <!-- Tabla de candidatos -->
-      <section id="candidatesTable">
-        <h2 class="h1">Candidatos</h2>
-
-        <div class="toolbar">
-          <div class="toolbar__left">
-            <div class="input">
-              <span class="input__icon">­ƒöÄ</span>
-              <input id="candSearch" type="search" placeholder="Buscar candidatoÔÇª" />
+      <section class="two-col">
+        <article class="card">
+          <h4 class="chart-title">Pipeline de vacantes</h4>
+          <div style="height:120px;display:flex;align-items:flex-end;padding-top:10px;">
+            <div
+              style="width:86%;height:82px;background:linear-gradient(180deg, rgba(87,168,255,0.85), rgba(87,168,255,0.35));border-radius:10px 10px 0 0;border:1px solid rgba(255,255,255,0.05);">
             </div>
           </div>
-          <div class="toolbar__right">
-            <button id="btnNewCandidate" class="btn btn--primary" style="margin-right: 10px;">Nuevo Candidato</button>
-            <button id="btnCompare" class="btn btn--primary" style="display:none">Comparar seleccionados (<span id="compareCount">0</span>)</button>
+          <div style="text-align:center;color:var(--muted);font-size:12px;margin-top:8px;">Analizado por IA</div>
+        </article>
+
+        <article class="card">
+          <h4 class="chart-title">Top 5 candidatos por similitud</h4>
+          <ol class="mini-list">
+            <li>Molina Andrés Pérez Ulloa — Nota 6.7 — Exp 24.0</li>
+            <li>Fernández Enrique Rubio — Exp 24.0</li>
+            <li>Antonio Martínez Ureta Tapia — Nota 6.8</li>
+            <li>Cristóbal Rodrigo Díaz Carrillo — Exp 7.5</li>
+            <li>Cristóbal Gerardo Flores Segura — Exp 2.0</li>
+          </ol>
+        </article>
+      </section>
+
+      <div class="section-header">
+        <h3>Candidatos</h3>
+        <div class="section-tools">
+          <button class="btn" id="btn-sync-drive">Sincronizar Drive</button>
+          <button class="btn primary">Nuevo candidato</button>
+        </div>
+      </div>
+
+      <section class="table-wrap">
+        <div class="table-toolbar">
+          <input type="text" placeholder="Buscar candidatos..." />
+          <div class="section-tools">
+            <button class="btn">Filtrar</button>
+            <button class="btn">Exportar</button>
           </div>
         </div>
 
-        <div class="card">
-          <div id="candidatesTable" class="table candidates">
-            <div class="t-head">
-              <div class="t-col-cb"></div>
-              <div class="t-col-name">Nombre</div>
-              <div class="t-col-prof">Profesi├│n</div>
-              <div class="t-col-vac">Vacante a postular</div>
-              <div class="t-col-score">Puntaje</div>
-              <div class="t-col-exp">A├▒os exp.</div>
-              <div class="t-col-status">Estado</div>
-            </div>
-            <!-- filas din├ímicas -->
-          </div>
-        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Candidato</th>
+              <th>Profesión</th>
+              <th>Cargo destino</th>
+              <th>Score IA</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="candidates-tbody">
+            <!-- Data injected by dashboard-v2.js -->
+          </tbody>
+        </table>
       </section>
     </main>
-
-    <!-- Chatbot -->
-    <aside id="chatbot" class="chatbot">
-      <div class="chatbot__head">
-        <strong>AFK Chatbot</strong>
-        <button id="closeChat" class="btn">Cerrar</button>
-      </div>
-
-      <div id="chatBody" class="chatbot__body"></div>
-
-      <div class="chatbot__input">
-        <input id="chatInput" placeholder="Escribe y presiona EnterÔÇª" />
-        <button class="btn btn--primary" id="chatSend">Enviar</button>
-      </div>
-    </aside>
-
-  <!-- Modal Nuevo Candidato -->
-  <div id="candidateModal" class="modal">
-    <div class="modal__content" style="max-width:500px">
-      <div class="modal__header">
-        <h2 class="h1" style="font-size:1.5rem">Registrar Candidato</h2>
-        <button class="close-modal">&times;</button>
-      </div>
-      <div class="modal__body">
-        <form id="candidateForm">
-          <div class="form-group">
-            <label>Nombre Completo</label>
-            <input name="nombre_completo" required class="input" placeholder="Ej: Juan P├®rez">
-          </div>
-          <div class="grid-2">
-            <div class="form-group">
-              <label>Profesi├│n</label>
-              <input name="profesion" class="input" placeholder="Ej: Desarrollador">
-            </div>
-            <div class="form-group">
-              <label>Nota / Ranking (0-10)</label>
-              <input name="nota" type="number" step="0.1" min="0" max="10" class="input" value="5">
-            </div>
-          </div>
-          <div class="grid-2">
-            <div class="form-group">
-              <label>Correo</label>
-              <input name="correo" type="email" class="input" placeholder="correo@ejemplo.com">
-            </div>
-            <div class="form-group">
-              <label>Tel├®fono</label>
-              <input name="telefono" class="input" placeholder="+56 9 ...">
-            </div>
-          </div>
-          <div class="form-group">
-            <label>Vincular a Vacante</label>
-            <select name="vacancy_id" id="selectVacancy" class="select" style="width:100%">
-              <option value="">Ninguna por ahora</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Cargar CV (PDF)</label>
-            <input name="cv_file" type="file" class="input" accept=".pdf">
-          </div>
-          <div style="margin-top:20px">
-            <button type="submit" class="btn btn--primary" style="width:100%">Guardar y Empezar Proceso</button>
-          </div>
-        </form>
-      </div>
-    </div>
   </div>
-
-  <!-- Supabase & Auth Nexus -->
-  <script src="/static/supabase-js.2.js"></script>
-  <script src="/static/supabase.js"></script>
-  <script src="/static/auth.js"></script>
-
-  <!-- App scripts -->
-  <script defer src="/static/sheet.js?v=2.0"></script>
-  <script defer src="/static/candidates.supabase.js?v=2.0"></script>
-  <script defer src="/static/charts.js?v=2.0"></script>
-  <script defer src="/static/chat.js?v=2.0"></script>
-  <script defer src="/static/responsive.js?v=2.0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="static/supabase.js"></script>
+  <script src="static/auth.js"></script>
+  <script src="static/dashboard-v2.js"></script>
 </body>
+
 </html>
