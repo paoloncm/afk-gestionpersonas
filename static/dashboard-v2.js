@@ -286,6 +286,23 @@ function setupEventListeners() {
     $('#btn-bulk-tec02')?.addEventListener('click', () => generateReport('tec02'));
     $('#btn-bulk-tec02a')?.addEventListener('click', () => generateReport('tec02a'));
 
+    // Búsqueda en tiempo real
+    const searchInput = $('#search-input');
+    if (searchInput) {
+        searchInput.oninput = (e) => {
+            const term = e.target.value.toLowerCase();
+            const rows = document.querySelectorAll('#candidates-tbody tr');
+            rows.forEach(row => {
+                const text = row.innerText.toLowerCase();
+                row.style.display = text.includes(term) ? '' : 'none';
+            });
+            // Al filtrar, deseleccionamos para evitar errores de contexto
+            selectedCandidateIds.clear();
+            document.querySelectorAll('.cand-select').forEach(cb => cb.checked = false);
+            updateBulkBar();
+        };
+    }
+
     // Chatbot Sidebar
     $('#side-btn-chatbot')?.addEventListener('click', (e) => {
         e.preventDefault();
