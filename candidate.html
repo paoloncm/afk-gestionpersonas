@@ -11,35 +11,6 @@
     <link rel="stylesheet" href="/static/styles.css">
 
     <style>
-        :root {
-            --accent: #22d3ee;
-            --accent-2: #67e8f9;
-            --accent-glow: rgba(34, 211, 238, 0.25);
-            --bg-dark: #020617;
-            --bg-panel: rgba(15, 23, 42, 0.6);
-            --bg-panel-2: rgba(15, 23, 42, 0.82);
-            --stark-border: 1px solid rgba(255, 255, 255, 0.08);
-            --stark-cyan: 1px solid rgba(34, 211, 238, 0.32);
-            --text-soft: rgba(255, 255, 255, 0.76);
-            --text-dim: rgba(255, 255, 255, 0.56);
-            --ok: #22c55e;
-            --warn: #f59e0b;
-            --danger: #ef4444;
-            --violet: #a855f7;
-        }
-
-        * {
-            box-sizing: border-box;
-        }
-
-        body {
-            background-color: var(--bg-dark);
-            background-image:
-                radial-gradient(circle at 50% 0%, rgba(34, 211, 238, 0.08) 0%, transparent 70%),
-                linear-gradient(180deg, rgba(2, 6, 23, 1) 0%, rgba(2, 6, 23, 1) 100%);
-        }
-
-        .stark-shell {
             background: rgba(15, 23, 42, 0.32);
             backdrop-filter: blur(16px);
             border: var(--stark-border);
@@ -728,42 +699,37 @@
 </head>
 
 <body>
-    <div class="dashboard">
+    <div class="app">
 
-        <aside class="sidebar" aria-label="Navegación">
+        <aside class="sidebar">
             <div class="brand">
-                <div class="logo">AFK</div>
-                <span>RRHH</span>
+                <div class="brand-logo">AFK</div>
+                <div>
+                    <h1>INDUSTRIAS STARK</h1>
+                    <span>SISTEMA AFK RRHH</span>
+                </div>
             </div>
 
+            <div class="nav-title">Admisión y selección</div>
             <nav class="nav">
-                <div class="nav-category">Admisión y selección</div>
-                <a href="index.html"><span class="label">Dashboard</span></a>
-                <a href="vacancies.html"><span class="label">Vacantes</span></a>
-                <a href="interviews.html"><span class="label">Entrevistas</span></a>
-                <a href="pipeline.html"><span class="label">Pipeline</span></a>
+                <a href="index.html">Dashboard</a>
+                <a href="vacancies.html">Vacantes</a>
+                <a href="interviews.html">Entrevistas</a>
+                <a href="pipeline.html">Pipeline</a>
+            </nav>
 
-                <div class="nav-category">Gestión</div>
-                <a href="workers.html"><span class="label">Trabajadores</span></a>
-                <a href="alerts.html"><span class="label">Alertas</span></a>
-                <a href="documents.html"><span class="label">Documentos</span></a>
-                <a href="reports.html"><span class="label">Reportes</span></a>
-                <a id="openChatbot" href="#chatbot"><span class="label">Chatbot</span></a>
+            <div class="nav-title">Gestión Operativa</div>
+            <nav class="nav">
+                <a href="workers.html" class="active">Trabajadores</a>
+                <a href="documents.html">Documentos</a>
+                <a href="reports.html">Reportes</a>
+            </nav>
 
-                <div class="nav-category">Analítica e Inteligencia</div>
-                <a href="analytics.html"><span class="label">People Analytics</span></a>
+            <div class="nav-title">Inteligencia</div>
+            <nav class="nav">
+                <a href="analytics.html">People Analytics</a>
             </nav>
         </aside>
-
-        <header class="topbar">
-            <button class="btn-menu" aria-label="Abrir menú">☰</button>
-            <div style="display:flex; gap:10px; margin-left:auto; flex-wrap:wrap;">
-                <button id="btnGenerateTec02FromCandidates" class="btn">Generar TEC-02</button>
-                <button id="btnGenerateTec02AFromCandidates" class="btn">Generar TEC-02-A</button>
-                <button class="btn" onclick="location.href='documents.html'">Subir documentos</button>
-                <button class="btn btn--primary" id="btnChat">Abrir Chatbot</button>
-            </div>
-        </header>
 
         <main class="main">
             <div
