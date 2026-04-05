@@ -309,15 +309,15 @@ async def bulk_generate_reports(req: BulkReportRequest):
         if not candidates:
             raise HTTPException(status_code=404, detail="No se encontraron candidatos seleccionados.")
             
-        # 2. Generate ZIP
+        # 2. Generate Consolidated Excel
         gen = StarkReportGenerator()
-        zip_buffer = gen.create_bulk_zip(candidates, req.report_type)
+        xlsx_buffer = gen.create_consolidated_workbook(candidates, req.report_type)
         
-        # 3. Stream Response
+        # 3. Stream Response (.xlsx)
         return StreamingResponse(
-            zip_buffer,
-            media_type="application/x-zip-compressed",
-            headers={"Content-Disposition": f"attachment; filename=Stark_Reports_{req.report_type}.zip"}
+            xlsx_buffer,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": f"attachment; filename=Stark_Report_Consolidado_{req.report_type}.xlsx"}
         )
         
     except Exception as e:
