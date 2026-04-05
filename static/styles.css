@@ -158,6 +158,10 @@ td {
 }
 
 tr:hover td { background: rgba(65, 223, 255, 0.04); }
+tr { cursor: pointer; }
+
+.t-row { cursor: pointer; transition: background 0.2s; }
+.t-row:hover { background: rgba(65, 223, 255, 0.04) !important; }
 
 .badge {
   padding: 4px 10px; border-radius: 999px; font-size: 10px; font-weight: 700;

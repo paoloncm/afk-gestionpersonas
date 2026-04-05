@@ -80,9 +80,19 @@
         }
         tableBody.innerHTML = html;
 
-        // Add event listeners for assignment
+        // Add event listeners for assignment and navigation
+        tableBody.querySelectorAll('.t-row').forEach(row => {
+            row.onclick = (e) => {
+                // Evitar redirección si se hace clic en botones o enlaces específicos
+                if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A' || e.target.closest('button') || e.target.closest('a')) return;
+                const id = row.dataset.id;
+                if (id) window.location.href = `worker.html?id=${id}`;
+            };
+        });
+
         tableBody.querySelectorAll('.btn-assign').forEach(btn => {
             btn.onclick = async (e) => {
+                e.stopPropagation(); // Prevenir el clic de la fila
                 const row = e.target.closest('.t-row');
                 const id = row.dataset.id;
                 const newFaena = prompt('Ingrese el nombre de la Faena o Empresa:');

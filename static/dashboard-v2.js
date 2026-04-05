@@ -103,23 +103,22 @@ async function loadRecentCandidates() {
     candidates.forEach(cand => {
         const row = document.createElement('tr');
         const score = cand.nota || '—';
-        const status = cand.status || 'nuevo';
-        
-        // Asignación de badge color según estado
-        let badgeClass = 'blue';
-        if (status === 'Rechazado' || status === 'bloqueado') badgeClass = 'red';
-        if (status === 'Contratado' || status === 'Apto') badgeClass = 'green';
-        if (status === 'En revisión' || status === 'warning') badgeClass = 'yellow';
-
-        row.innerHTML = `
-            <td>${cand.nombre_completo || 'Sin nombre'}</td>
-            <td>${cand.profesion || '—'}</td>
-            <td>${cand.cargo_a_desempenar || 'Por asignar'}</td>
-            <td class="score">${score}</td>
-            <td><span class="badge ${badgeClass}">${status}</span></td>
+        const tr = document.createElement('tr');
+        tr.style.cursor = 'pointer';
+        tr.onclick = (e) => {
+            // Evitar redirección si se hace clic en botones o enlaces específicos
+            if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A' || e.target.closest('button') || e.target.closest('a')) return;
+            window.location.href = `candidate.html?id=${cand.id}`;
+        };
+        tr.innerHTML = `
+            <td>${cand.nombre_completo || '—'}</td>
+            <td class="text-cyan">${cand.profesion || '—'}</td>
+            <td>${cand.cargo_a_desempenar || '—'}</td>
+            <td class="score">${cand.nota || '—'}</td>
+            <td><span class="badge blue">${cand.status || 'Analizado'}</span></td>
             <td><a class="action-link" href="candidate.html?id=${cand.id}">Ver Perfil</a></td>
         `;
-        tbody.appendChild(row);
+        tbody.appendChild(tr);
     });
 }
 
