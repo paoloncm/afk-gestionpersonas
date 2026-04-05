@@ -2,7 +2,7 @@ import io
 import os
 import zipfile
 import openpyxl
-from copy import copy
+from openpyxl.utils.cell import coordinate_from_string, column_index_from_string, get_column_letter
 
 class StarkReportGenerator:
     """Motor de Generación de Reportes Técnicos Nivel Stark (TEC-02 / TEC-02A) basado en Excel."""
@@ -12,8 +12,28 @@ class StarkReportGenerator:
         self.tec02_path = os.path.join(templates_dir, "tec02_template.xlsx")
         self.tec02a_path = os.path.join(templates_dir, "tec02-A_template.xlsx")
 
-    def _fill_experience_table(self, sheet, start_row, exp_text):
-        """Inyecta la experiencia parseada en el Excel."""
+    def _get_master_cell_coord(self, sheet, cell_ref):
+        """Busca si una celda es parte de un rango combinado y retorna la celda maestra (Top-Left)."""
+        for merged_range in sheet.merged_cells.ranges:
+            if cell_ref in merged_range:
+                return merged_range.coord.split(':')[0]
+        return cell_ref
+
+    def _safe_write(self, sheet, cell_ref, value):
+        """Escribe en una celda asegurando que si está combinada, se escriba en la maestra."""
+        try:
+            master_ref = self._get_master_cell_coord(sheet, cell_ref)
+            sheet[master_ref] = value
+        except Exception as e:
+            print(f"[JARVIS] Warning: Failed to write to {cell_ref}: {e}")
+
+    def _safe_write_rc(self, sheet, row, col, value):
+        """Escribe usando fila/columna con protección de celdas combinadas."""
+        coord = f"{get_column_letter(col)}{row}"
+        self._safe_write(sheet, coord, value)
+
+    def _fill_experience_table(self, sheet, start_row, exp_text, type='tec02'):
+        """Inyecta la experiencia parseada en el Excel con protección absoluta."""
         if not exp_text: return
         
         lines = exp_text.split('\n')
@@ -21,30 +41,31 @@ class StarkReportGenerator:
         for line in lines:
             if not line.strip(): continue
             
-            # Formato: 2010-2012 CARGO - EMPRESA - FAENA
             parts = line.split('-', 3)
+            # TEC-02: Col C=3, D=4, G=7, J=10
+            # TEC-02A: Col B=2
+            if type == 'tec02':
+                if len(parts) >= 1: self._safe_write_rc(sheet, current_row, 3, parts[0].strip())
+                if len(parts) >= 2: self._safe_write_rc(sheet, current_row, 4, parts[1].strip())
+                if len(parts) >= 3: self._safe_write_rc(sheet, current_row, 7, parts[2].strip())
+                if len(parts) >= 4: self._safe_write_rc(sheet, current_row, 10, parts[3].strip())
+            else:
+                self._safe_write_rc(sheet, current_row, 2, line.strip())
             
-            # TEC-02 standard columns: C=Periodo, D=Cargo, G=Empresa, J=Faena/Proyecto (approx from ref errors)
-            # En TEC-02 template, vimos C36, J36, etc.
-            if len(parts) >= 1: sheet.cell(row=current_row, column=3).value = parts[0].strip() # C
-            if len(parts) >= 2: sheet.cell(row=current_row, column=4).value = parts[1].strip() # D
-            if len(parts) >= 3: sheet.cell(row=current_row, column=7).value = parts[2].strip() # G (guessing)
-            if len(parts) >= 4: sheet.cell(row=current_row, column=10).value = parts[3].strip() # J
             current_row += 1
 
     def generate_tec02(self, candidate):
-        """Genera el Anexo TEC-02 (Experiencia General) usando la plantilla Excel."""
+        """Anexo TEC-02 con Protección Absoluta Sharding."""
         wb = openpyxl.load_workbook(self.tec02_path)
         sheet = wb.active
         
-        # Mapeo Stark Corregido: Celdas maestras de rangos combinados
-        # C15:I16 es NOMBRE, J15:N16 es CARGO, O15:S16 es TÍTULO
-        sheet["C15"] = str(candidate.get("nombre_completo", "")).upper()
-        sheet["J15"] = str(candidate.get("cargo_a_desempenar", "")).upper()
-        sheet["O15"] = str(candidate.get("profesion", "")).upper()
+        # Inyección Táctica en Celdas Maestras
+        self._safe_write(sheet, "C15", str(candidate.get("nombre_completo", "")).upper())
+        self._safe_write(sheet, "J15", str(candidate.get("cargo_a_desempenar", "")).upper())
+        self._safe_write(sheet, "O15", str(candidate.get("profesion", "")).upper())
         
-        # Inyectar Experiencia General (C36 en adelante)
-        self._fill_experience_table(sheet, 36, candidate.get("experiencia_general", ""))
+        # Tabla de Experiencia desde Row 36
+        self._fill_experience_table(sheet, 36, candidate.get("experiencia_general", ""), 'tec02')
 
         target = io.BytesIO()
         wb.save(target)
@@ -52,22 +73,15 @@ class StarkReportGenerator:
         return target
 
     def generate_tec02a(self, candidate):
-        """Genera el Anexo TEC-02A (Experiencia Específica) usando la plantilla Excel."""
+        """Anexo TEC-02A con Protección Absoluta Sharding."""
         wb = openpyxl.load_workbook(self.tec02a_path)
         sheet = wb.active
         
-        # Mapeo Stark Corregido para TEC-02A
-        # B17: Nombre, B21: Cargo
-        sheet["B17"] = str(candidate.get("nombre_completo", "")).upper()
-        sheet["B21"] = str(candidate.get("cargo_a_desempenar", "")).upper()
+        self._safe_write(sheet, "B17", str(candidate.get("nombre_completo", "")).upper())
+        self._safe_write(sheet, "B21", str(candidate.get("cargo_a_desempenar", "")).upper())
         
-        # Inyectar Experiencia Específica (B42 en adelante)
-        exp_text = candidate.get("experiencia_especifica", "")
-        if exp_text:
-            lines = exp_text.split('\n')
-            for i, line in enumerate(lines):
-                if line.strip():
-                    sheet.cell(row=42 + i, column=2).value = line.strip()
+        # Tabla de Experiencia desde Row 42
+        self._fill_experience_table(sheet, 42, candidate.get("experiencia_especifica", ""), 'tec02a')
 
         target = io.BytesIO()
         wb.save(target)
@@ -75,18 +89,22 @@ class StarkReportGenerator:
         return target
 
     def create_bulk_zip(self, candidates, report_type):
-        """Crea un ZIP con las planillas de múltiples candidatos."""
+        """Crea un ZIP robusto."""
         zip_buffer = io.BytesIO()
         with zipfile.ZipFile(zip_buffer, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
             for cand in candidates:
-                if report_type == 'tec02':
-                    file_data = self.generate_tec02(cand)
-                    filename = f"TEC-02_{cand['nombre_completo'].replace(' ', '_')}.xlsx"
-                else:
-                    file_data = self.generate_tec02a(cand)
-                    filename = f"TEC-02A_{cand['nombre_completo'].replace(' ', '_')}.xlsx"
-                
-                zip_file.writestr(filename, file_data.getvalue())
+                try:
+                    if report_type == 'tec02':
+                        file_data = self.generate_tec02(cand)
+                        filename = f"TEC-02_{cand['nombre_completo'].replace(' ', '_')}.xlsx"
+                    else:
+                        file_data = self.generate_tec02a(cand)
+                        filename = f"TEC-02A_{cand['nombre_completo'].replace(' ', '_')}.xlsx"
+                    
+                    zip_file.writestr(filename, file_data.getvalue())
+                except Exception as cand_err:
+                    print(f"[JARVIS] Critical fail for candidate {cand.get('id')}: {cand_err}")
+                    continue
         
         zip_buffer.seek(0)
         return zip_buffer
