@@ -37,11 +37,11 @@ class StarkReportGenerator:
         wb = openpyxl.load_workbook(self.tec02_path)
         sheet = wb.active
         
-        # Mapeo Stark detectado para TEC-02
-        # C16: Nombre, J16: Cargo, O16: Título
-        sheet["C16"] = str(candidate.get("nombre_completo", "")).upper()
-        sheet["J16"] = str(candidate.get("cargo_a_desempenar", "")).upper()
-        sheet["O16"] = str(candidate.get("profesion", "")).upper()
+        # Mapeo Stark Corregido: Celdas maestras de rangos combinados
+        # C15:I16 es NOMBRE, J15:N16 es CARGO, O15:S16 es TÍTULO
+        sheet["C15"] = str(candidate.get("nombre_completo", "")).upper()
+        sheet["J15"] = str(candidate.get("cargo_a_desempenar", "")).upper()
+        sheet["O15"] = str(candidate.get("profesion", "")).upper()
         
         # Inyectar Experiencia General (C36 en adelante)
         self._fill_experience_table(sheet, 36, candidate.get("experiencia_general", ""))
@@ -56,13 +56,12 @@ class StarkReportGenerator:
         wb = openpyxl.load_workbook(self.tec02a_path)
         sheet = wb.active
         
-        # Mapeo Stark detectado para TEC-02A
-        # B18: Nombre, B22: Cargo
-        sheet["B18"] = str(candidate.get("nombre_completo", "")).upper()
-        sheet["B22"] = str(candidate.get("cargo_a_desempenar", "")).upper()
+        # Mapeo Stark Corregido para TEC-02A
+        # B17: Nombre, B21: Cargo
+        sheet["B17"] = str(candidate.get("nombre_completo", "")).upper()
+        sheet["B21"] = str(candidate.get("cargo_a_desempenar", "")).upper()
         
         # Inyectar Experiencia Específica (B42 en adelante)
-        # En TEC-02A la experiencia suele estar en una sola columna B con saltos de línea o filas
         exp_text = candidate.get("experiencia_especifica", "")
         if exp_text:
             lines = exp_text.split('\n')
