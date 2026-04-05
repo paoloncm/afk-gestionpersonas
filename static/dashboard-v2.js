@@ -87,12 +87,14 @@ async function loadRecentCandidates() {
     const tbody = $('#candidates-tbody');
     if (!tbody) return;
 
-    // Fetch 8 most recent candidates
+    console.log("[JARVIS] 📋 Cargando expediente de candidatos...");
+
+    // Aumentamos el límite de 8 a 50 para una visión más completa del pipeline
     const { data: candidates, error } = await supabase
         .from('candidates')
         .select('id, nombre_completo, profesion, cargo_a_desempenar, nota, status')
         .order('created_at', { ascending: false })
-        .limit(8);
+        .limit(50);
 
     if (error) {
         console.error("Error loading candidates:", error);
@@ -101,12 +103,9 @@ async function loadRecentCandidates() {
 
     tbody.innerHTML = '';
     candidates.forEach(cand => {
-        const row = document.createElement('tr');
-        const score = cand.nota || '—';
         const tr = document.createElement('tr');
         tr.style.cursor = 'pointer';
         tr.onclick = (e) => {
-            // Evitar redirección si se hace clic en botones o enlaces específicos
             if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A' || e.target.closest('button') || e.target.closest('a')) return;
             window.location.href = `candidate.html?id=${cand.id}`;
         };
@@ -114,8 +113,8 @@ async function loadRecentCandidates() {
             <td>${cand.nombre_completo || '—'}</td>
             <td class="text-cyan">${cand.profesion || '—'}</td>
             <td>${cand.cargo_a_desempenar || '—'}</td>
-            <td class="score">${cand.nota || '—'}</td>
-            <td><span class="badge blue">${cand.status || 'Analizado'}</span></td>
+            <td class="score" style="font-weight:900;">${cand.nota || '—'}</td>
+            <td><span class="badge blue">${cand.status || 'ANALIZADO POR IA'}</span></td>
             <td><a class="action-link" href="candidate.html?id=${cand.id}">Ver Perfil</a></td>
         `;
         tbody.appendChild(tr);
