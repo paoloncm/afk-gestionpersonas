@@ -74,18 +74,32 @@ class StarkReportGenerator:
             nombre = str(cand.get("nombre_completo", "Candidato"))[:25].strip()
             new_sheet.title = f"{nombre}_{str(cand.get('id', ''))[:4]}"
             
-            # Inyectar datos en la ficha individual (TEC-02A)
-            # B17: Nombre, B21: Cargo
+            # Inyectar datos en la ficha individual (Anexo TEC-02A Stark)
+            # ---------------------------------------------------------
+            # B17: Nombre
             self._safe_write(new_sheet, "B17", str(cand.get("nombre_completo", "")).upper())
+            # B21: Cargo Destino
             self._safe_write(new_sheet, "B21", str(cand.get("cargo_a_desempenar", "")).upper())
             
-            # Tabla de Experiencia Específica (Row 42+)
-            exp_text = cand.get("experiencia_especifica", "")
-            if exp_text:
-                lines = exp_text.split('\n')
-                for i, line in enumerate(lines):
-                    if line.strip():
-                        self._safe_write_rc(new_sheet, 42 + i, 2, line.strip())
+            # 1. BLOQUE EXPERIENCIA GENERAL (Header Row 23, Target B24)
+            exp_gen = cand.get("experiencia_general", "")
+            if exp_gen:
+                self._safe_write(new_sheet, "B24", str(exp_gen).strip())
+
+            # 2. BLOQUE EXPERIENCIA ESPECÍFICA (Header Row 31, Target B32)
+            exp_esp = cand.get("experiencia_especifica", "")
+            if exp_esp:
+                self._safe_write(new_sheet, "B32", str(exp_esp).strip())
+            
+            # 3. BLOQUE OTRAS EXPERIENCIAS (Header Row 40, Target B41)
+            exp_otras = cand.get("otras_experiencias", "")
+            if exp_otras:
+                self._safe_write(new_sheet, "B41", str(exp_otras).strip())
+            
+            # 4. BLOQUE ANTECEDENTES ACADÉMICOS (Header Row 48, Target B49)
+            aca = cand.get("antecedentes_academicos", "")
+            if aca:
+                self._safe_write(new_sheet, "B49", str(aca).strip())
             
         # Borrar la hoja original de plantilla
         if len(wb.sheetnames) > 1:
