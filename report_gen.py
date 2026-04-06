@@ -89,7 +89,7 @@ class StarkReportGenerator:
             # 2. BLOQUE EXPERIENCIA ESPECÍFICA (Header Row 31, Target B32)
             exp_esp = cand.get("experiencia_especifica", "")
             if exp_esp:
-                self._safe_write(new_sheet, "B32", str(exp_esp).strip())
+                self._safe_write(new_sheet, "B33", str(exp_esp).strip())
             
             # 3. BLOQUE OTRAS EXPERIENCIAS (Header Row 40, Target B41)
             exp_otras = cand.get("otras_experiencias", "")
