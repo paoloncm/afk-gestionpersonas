@@ -86,39 +86,83 @@
         return;
     }
 
+    // --- GROUPING LOGIC ---
+    const groups = {};
     vacs.forEach(v => {
-      const card = document.createElement('div');
-      card.className = 'stark-card';
+      const gId = v.tender_id || 'manual';
+      const gName = v.tenders?.name || 'VACANTES MANUALES / PROTOCOLO GENERAL';
+      if (!groups[gId]) groups[gId] = { name: gName, items: [] };
+      groups[gId].items.push(v);
+    });
+
+    const groupIds = Object.keys(groups).sort((a,b) => {
+        if (a === 'manual') return 1;
+        if (b === 'manual') return -1;
+        return 0;
+    });
+
+    groupIds.forEach(gId => {
+      const g = groups[gId];
+      const section = document.createElement('div');
+      section.className = 'tender-section';
       
-      const tenderInfo = v.tenders ? `<div style="font-size:9px; color:var(--accent); margin-top:4px;">PROVENIENTE DE: ${v.tenders.name.toUpperCase()}</div>` : '';
-      const reqsHtml = (v.requirements || []).slice(0, 4).map(r => `<span style="background:rgba(34,211,238,0.05); border:1px solid rgba(34,211,238,0.2); padding:2px 6px; border-radius:4px; font-size:10px; color:rgba(255,255,255,0.7);">${r}</span>`).join('');
-
-      card.innerHTML = `
-        <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:15px;">
-           <div style="flex:1;">
-              <h2 style="font-size:18px; font-weight:900; margin:0; letter-spacing:0.5px;">${v.title.toUpperCase()}</h2>
-              ${tenderInfo}
-           </div>
-           <div class="tag" style="background:${v.status === 'Abierta' ? 'rgba(34,211,238,0.1)' : 'rgba(255,255,255,0.05)'}; color:${v.status === 'Abierta' ? 'var(--accent)' : '#fff'}; font-weight:800; font-size:11px;">
-              ${v.status.toUpperCase()}
-           </div>
+      section.innerHTML = `
+        <div class="tender-header" id="header-${gId}">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div class="arrow" style="font-size:14px;">▶</div>
+            <strong style="letter-spacing:1px; font-size:14px;">${g.name.toUpperCase()}</strong>
+            <span style="font-size:10px; color:var(--muted); margin-left:10px; background:rgba(255,255,255,0.05); padding:2px 8px; border-radius:10px;">${g.items.length} REQUERIMIENTOS</span>
+          </div>
+          <div style="font-size:10px; color:var(--accent); font-weight:900;">[ STARK_GRID_ID: ${gId.slice(0,8)} ]</div>
         </div>
-
-        <div style="display:flex; flex-wrap:wrap; gap:5px; margin-bottom:20px; min-height:24px;">
-           ${reqsHtml}
-           ${(v.requirements?.length > 4) ? `<span style="font-size:10px; color:var(--muted);">+${v.requirements.length - 4}</span>` : ''}
-        </div>
-
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-           <button class="btn primary btn-match" style="padding:10px; font-weight:800; font-size:11px;" data-id="${v.id}">[ PROTOCOLO MATCH ]</button>
-           <button class="btn btn-edit" style="padding:10px; font-weight:800; font-size:11px;" data-id="${v.id}">EXPEDIENTE</button>
+        <div class="tender-content" id="content-${gId}">
+          <div class="vac-grid" id="grid-${gId}"></div>
         </div>
       `;
 
-      card.querySelector('.btn-match').onclick = () => runMatchmaking(v);
-      card.querySelector('.btn-edit').onclick = () => openEditModal(v);
-      
-      container.appendChild(card);
+      const header = section.querySelector('.tender-header');
+      const content = section.querySelector('.tender-content');
+      const grid = section.querySelector('.vac-grid');
+
+      header.onclick = () => {
+          const isOpen = content.classList.toggle('is-open');
+          header.classList.toggle('is-active', isOpen);
+          header.querySelector('.arrow').textContent = isOpen ? '▼' : '▶';
+      };
+
+      g.items.forEach(v => {
+          const card = document.createElement('div');
+          card.className = 'stark-card';
+          const reqsHtml = (v.requirements || []).slice(0, 4).map(r => `<span style="background:rgba(34,211,238,0.05); border:1px solid rgba(34,211,238,0.2); padding:2px 6px; border-radius:4px; font-size:10px; color:rgba(255,255,255,0.7);">${r}</span>`).join('');
+
+          card.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:15px;">
+               <div style="flex:1;">
+                  <h2 style="font-size:18px; font-weight:900; margin:0; letter-spacing:0.5px;">${v.title.toUpperCase()}</h2>
+               </div>
+               <div class="tag" style="background:${v.status === 'Abierta' ? 'rgba(34,211,238,0.1)' : 'rgba(255,255,255,0.05)'}; color:${v.status === 'Abierta' ? 'var(--accent)' : '#fff'}; font-weight:800; font-size:11px;">
+                  ${v.status.toUpperCase()}
+               </div>
+            </div>
+
+            <div style="display:flex; flex-wrap:wrap; gap:5px; margin-bottom:20px; min-height:24px;">
+               ${reqsHtml}
+               ${(v.requirements?.length > 4) ? `<span style="font-size:10px; color:var(--muted);">+${v.requirements.length - 4}</span>` : ''}
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+               <button class="btn primary btn-match" style="padding:10px; font-weight:800; font-size:11px;" data-id="${v.id}">[ PROTOCOLO MATCH ]</button>
+               <button class="btn btn-edit" style="padding:10px; font-weight:800; font-size:11px;" data-id="${v.id}">EXPEDIENTE</button>
+            </div>
+          `;
+
+          card.querySelector('.btn-match').onclick = (e) => { e.stopPropagation(); runMatchmaking(v); };
+          card.querySelector('.btn-edit').onclick = (e) => { e.stopPropagation(); openEditModal(v); };
+          
+          grid.appendChild(card);
+      });
+
+      container.appendChild(section);
     });
   }
 

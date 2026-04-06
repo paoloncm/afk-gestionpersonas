@@ -11,7 +11,24 @@
       --accent-glow: rgba(34, 211, 238, 0.25);
       --bg-dark: #020617;
     }
-    .vac-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 20px; margin-top: 20px; }
+    .vac-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 20px; margin-top: 20px; padding-bottom: 20px; }
+    .tender-section { margin-bottom: 25px; border-radius: 12px; overflow: hidden; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); }
+    .tender-header { 
+      padding: 15px 25px; 
+      background: linear-gradient(90deg, rgba(34,211,238,0.1), transparent);
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      cursor: pointer; 
+      user-select: none;
+      transition: background 0.3s;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .tender-header:hover { background: linear-gradient(90deg, rgba(34,211,238,0.15), transparent); }
+    .tender-header.is-active .arrow { transform: rotate(180deg); }
+    .tender-content { display: none; padding: 0 20px; }
+    .tender-content.is-open { display: block; }
+    .arrow { transition: transform 0.3s; font-size: 10px; color: var(--accent); }
     .stark-card {
       background: rgba(15, 23, 42, 0.6);
       backdrop-filter: blur(10px);
