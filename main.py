@@ -184,6 +184,26 @@ async def match_tender_candidates(req: TenderMatchRequest):
         traceback.print_exc()
         return JSONResponse({"ok": False, "detail": str(e)}, status_code=500)
 
+# --- JARVIS Vector Engine ---
+class VectorRequest(BaseModel):
+    text: str
+
+@app.post("/api/vectorize")
+async def vectorize(req: VectorRequest):
+    """JARVIS: Transforma texto en vectores de alta dimensionalidad."""
+    try:
+        from openai import OpenAI
+        openai_key = os.getenv("OPENAI_API_KEY")
+        if not openai_key:
+            return JSONResponse({"ok": False, "detail": "Missing OpenAI Key"}, status_code=500)
+            
+        openai = OpenAI(api_key=openai_key)
+        res = openai.embeddings.create(input=req.text, model="text-embedding-3-small")
+        embedding = res.data[0].embedding
+        return {"ok": True, "embedding": embedding}
+    except Exception as e:
+        return JSONResponse({"ok": False, "detail": str(e)}, status_code=500)
+
 # --- JARVIS Tender Analysis Endpoint ---
 class AnalyzeTenderRequest(BaseModel):
     text: str
@@ -204,35 +224,42 @@ async def analyze_tender(req: AnalyzeTenderRequest):
         prompt = (
             "ACTÚA COMO JARVIS (STARK INDUSTRIES). Eres un ANALISTA MASTER de licitaciones industriales (NIVEL NASA/TESLA/ZERO-COMPRESSION).\n"
             "Analiza el siguiente texto de licitación con una EXHAUSTIVIDAD TOTAL Y ABSOLUTA.\n"
+            "Objetivo: Extraer la estructura de cargos requerida, cantidades y requisitos técnicos específicos.\n\n"
             "FORMATO DE SALIDA (JSON ESTRICTO DE ALTA FIDELIDAD):\n"
             "{\n"
-            "  \"tender_summary\": \"...\",\n"
-            "  \"global_risk\": \"Bajo/Medio/Alto\",\n"
+            "  \"tender_summary\": \"Resumen ejecutivo táctico de la licitación (max 300 caracteres)\",\n"
+            "  \"global_risk\": \"Bajo/Medio/Alto (basado en complejidad de perfiles)\",\n"
             "  \"roles\": [\n"
             "    {\n"
-            "      \"nombre\": \"...\",\n"
-            "      \"cantidad\": 1,\n"
+            "      \"nombre\": \"Nombre exacto del cargo\",\n"
+            "      \"cantidad\": número_entero,\n"
             "      \"criticidad\": \"Primario/Secundario\",\n"
-            "      \"requisitos\": [\"req1\", \"req2\"],\n"
-            "      \"certificaciones\": [\"cert1\"],\n"
-            "      \"experiencia_minima\": \"ej: 3 años en el cargo\"\n"
+            "      \"requisitos\": [\"Requisito técnico 1\", \"Requisito técnico 2\"],\n"
+            "      \"certificaciones\": [\"Certificación obligatoria o deseable\"],\n"
+            "      \"experiencia_minima\": \"Años de experiencia y sector (ej: 5 años en Minería Subterránea)\"\n"
             "    }\n"
             "  ]\n"
-            "}\n"
-            f"TEXTO: {req.text[:15000]}"
+            "}\n\n"
+            f"TEXTO A ANALIZAR:\n{req.text[:20000]}"
         )
         
         res = openai.chat.completions.create(
             model="gpt-4o",
             messages=[
-                {"role": "system", "content": "You are JARVIS, an elite industrial analyst. You output ONLY valid JSON."},
+                {"role": "system", "content": "You are JARVIS, an elite industrial analyst for Stark Industries. You excel at extracting operational hierarchies from complex technical documents. Output ONLY valid JSON."},
                 {"role": "user", "content": prompt}
             ],
-            temperature=0.2,
+            temperature=0.1,
             response_format={"type": "json_object"}
         )
         
-        analysis = json.loads(res.choices[0].message.content)
+        content = res.choices[0].message.content
+        analysis = json.loads(content)
+        
+        # Fallback if roles is missing
+        if "roles" not in analysis or not analysis["roles"]:
+             analysis["roles"] = [{"nombre": "PERFIL GENERAL", "cantidad": 1, "criticidad": "Primario", "requisitos": ["Análisis de bases técnicas"]}]
+             
         return {"ok": True, "analysis": analysis}
         
     except Exception as e:

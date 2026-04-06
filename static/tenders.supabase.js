@@ -20,6 +20,7 @@
   const intelPreview = $('#intelPreview');
   const intelReqs = $('#intelReqs');
   const intelDesc = $('#intelDesc');
+  const btnStarkScan = $('#btnStarkScan');
   const vacanciesWrapper = $('#vacanciesWrapper');
   const vacanciesList = $('#vacanciesList');
 
@@ -155,6 +156,19 @@
     };
   }
 
+  if (btnStarkScan) {
+    btnStarkScan.onclick = () => {
+      $('#tenderId').value = '';
+      tenderForm.reset();
+      reqContainer.innerHTML = '';
+      detectedVacancies = [];
+      uploadZone.style.display = 'block';
+      intelPreview.style.display = 'none';
+      openModal(tenderModal);
+      pdfInput.click(); // Trigger file selection immediately
+    };
+  }
+
   if (uploadZone && pdfInput) {
     uploadZone.onclick = () => pdfInput.click();
     pdfInput.onchange = (e) => { if(e.target.files[0]) handleStarkScan(e.target.files[0]); };
@@ -190,43 +204,22 @@
   }
 
   async function analyzeTenderStarkV3(text) {
-     const WEBHOOK = 'https://primary-production-aa252.up.railway.app/webhook/a35e75ae-9003-493b-a00e-8edd8bd2b12a';
-     const res = await fetch(WEBHOOK, {
+     const res = await fetch('/api/analyze-tender', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-             message: `ACTÚA COMO JARVIS (STARK INDUSTRIES):
-             Analiza este texto de licitación y extrae la JERARQUÍA OPERATIVA.
-             1. Resumen Ejecutivo (max 250 chars).
-             2. Lista de Roles/Vacantes Críticas. Para cada una, extrae sus REQUISITOS TÉCNICOS ESPECÍFICOS (certificaciones, años exp, etc).
-             
-             FORMATO OBLIGATORIO (JSON ESTRICTO):
-             {
-               "description": "...",
-               "vacancies": [
-                 { "title": "Nombre del Cargo", "requirements": ["Req 1", "Req 2"] }
-               ]
-             }
-             
-             TEXTO A ANALIZAR:
-             ${text.substring(0, 5000)}` 
-        })
+        body: JSON.stringify({ text: text })
      });
      const data = await res.json();
-     let payload = Array.isArray(data) ? data[0] : data;
-     let raw = payload.output || payload.text || payload.reply || "";
+     if (!data.ok) throw new Error(data.detail || "Error en Matrix AI");
      
-     let final = { description: "", vacancies: [] };
-     try {
-       const sIdx = raw.indexOf('{');
-       const eIdx = raw.lastIndexOf('}') + 1;
-       final = JSON.parse(raw.substring(sIdx, eIdx));
-     } catch (e) { console.error("Parse Error", e); }
-     
-     if (!final.vacancies?.length) {
-        final.vacancies = [{ title: "PERFIL BASE CAPTURADO", requirements: ["Cumplimiento de bases técnicas"] }];
-     }
-     return final;
+     const analysis = data.analysis;
+     return {
+       description: analysis.tender_summary || "",
+       vacancies: (analysis.roles || []).map(r => ({
+         title: r.nombre || "PERFIL DETECTADO",
+         requirements: [...(r.requisitos || []), ...(r.certificaciones || []), r.experiencia_minima].filter(x => x)
+       }))
+     };
   }
 
   function renderScanPreview(vacs) {
@@ -611,7 +604,7 @@
       } catch(err) { console.error(err); }
   };
 
-  function addReqInput(val = '') {
+  window.addReqInput = function(val = '') {
     const div = document.createElement('div');
     div.className = 'grid-2'; div.style.gap = '8px';
     div.innerHTML = `<input class="input req-input" value="${val}" placeholder="Requisito..." required><button type="button" class="btn btn--mini btn-del-req" style="color:var(--danger)">×</button>`;
@@ -704,22 +697,14 @@
 
   // --- VECTOR SEARCH CORE (STARK V12) ---
   async function getEmbedding(text) {
-    const WEBHOOK = 'https://primary-production-aa252.up.railway.app/webhook/a35e75ae-9003-493b-a00e-8edd8bd2b12a';
     try {
-      const res = await fetch(WEBHOOK, {
+      const res = await fetch('/api/vectorize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: `VECTORIZE: ${text}` })
+        body: JSON.stringify({ text: text })
       });
       const data = await res.json();
-      const payload = Array.isArray(data) ? data[0] : data;
-      const raw = payload.output || payload.text || payload.reply || "";
-      
-      // Detect 1536-dim vector in JSON or raw
-      if (Array.isArray(payload.embedding)) return payload.embedding;
-      const sIdx = raw.indexOf('[');
-      const eIdx = raw.lastIndexOf(']') + 1;
-      if (sIdx !== -1) return JSON.parse(raw.substring(sIdx, eIdx));
+      if (data.ok && data.embedding) return data.embedding;
       return null;
     } catch (e) { console.warn("[Vector Engine] Error vectorizing:", e); return null; }
   }

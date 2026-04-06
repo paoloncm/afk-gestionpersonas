@@ -40,7 +40,16 @@ class StarkReportGenerator:
         wb = openpyxl.load_workbook(self.tec02_path)
         sheet = wb.active
         
-        # Comenzamos la inserción en la fila 19 (según inspección visual del encabezado)
+        # HEADER STARK (Razón Social / Representante / Fecha)
+        self._safe_write(sheet, "H9", "AFK LIMITADA")
+        self._safe_write(sheet, "H11", "PAOLO NAVARRO")
+        
+        # Fecha en formato Stark (D-M-YYYY)
+        from datetime import datetime
+        fecha_stark = datetime.now().strftime("%d-%m-%Y")
+        self._safe_write(sheet, "U11", fecha_stark)
+
+        # Comenzamos la inserción en la fila 17 (según inspección visual del encabezado)
         start_row = 17
         for i, cand in enumerate(candidates):
             current_row = start_row + i
@@ -48,18 +57,18 @@ class StarkReportGenerator:
             self._safe_write_rc(sheet, current_row, 2, i + 1)
             # Col C (NOMBRE COMPLETO)
             self._safe_write_rc(sheet, current_row, 3, str(cand.get("nombre_completo", "")).upper())
-            # Col J (CARGO)
-            self._safe_write_rc(sheet, current_row, 4, str(cand.get("cargo", "")).upper())
-            # Col O (PROFESION / ESPECIALIDAD)
-            self._safe_write_rc(sheet, current_row, 5, str(cand.get("profesion", "")).upper())
-            # Col T (AÑOS EXP TOTAL)
-            self._safe_write_rc(sheet, current_row, 6, cand.get("experiencia_total", "0"))
-            # Col V (EXP EN LA EMPRESA)
-            self._safe_write_rc(sheet, current_row, 7, cand.get("experiencia_en_empresa_actual", "—"))
-            # Col X (EXP EN EL CARGO)
-            self._safe_write_rc(sheet, current_row, 8, cand.get("exp_cargo_actual", "—"))
-             # Col Z (EXP PROYECTOS SIMILARES)
-            self._safe_write_rc(sheet, current_row, 9, cand.get("exp_proy_similares", "—"))
+            # Col J (CARGO A DESEMPEÑAR)
+            self._safe_write_rc(sheet, current_row, 10, str(cand.get("cargo_a_desempenar", cand.get("cargo", ""))).upper())
+            # Col O (TÍTULO PROFESIONAL)
+            self._safe_write_rc(sheet, current_row, 15, str(cand.get("profesion", "")).upper())
+            # Col T (AÑOS EXP TOTAL - A)
+            self._safe_write_rc(sheet, current_row, 20, cand.get("experiencia_total", "0"))
+            # Col V (EXP EN LA EMPRESA - B)
+            self._safe_write_rc(sheet, current_row, 22, cand.get("experiencia_en_empresa_actual", "—"))
+            # Col X (EXP EN EL CARGO - C)
+            self._safe_write_rc(sheet, current_row, 24, cand.get("exp_cargo_actual", "—"))
+             # Col Z (EXP PROYECTOS SIMILARES - D)
+            self._safe_write_rc(sheet, current_row, 26, cand.get("exp_proy_similares", "—"))
         target = io.BytesIO()
         wb.save(target)
         target.seek(0)
