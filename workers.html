@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AFK RRHH — Fuerza Operativa Stark</title>
   <link rel="stylesheet" href="static/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <style>
     :root {
       --accent: #22d3ee;
@@ -56,6 +57,25 @@
     .radar::after { content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 50%; background: conic-gradient(from 0deg, var(--accent) 0%, transparent 40%); animation: spin 2s linear infinite; }
     @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
+    /* Analytics HUD HUD */
+    #analyticsHUD {
+      display: none;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+      animation: slideDown 0.4s ease-out;
+    }
+    @keyframes slideDown { from { opacity:0; transform:translateY(-20px); } to { opacity:1; transform:translateY(0); } }
+    .chart-container {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 20px;
+      padding: 20px;
+      height: 250px;
+      position: relative;
+    }
+    .chart-label { font-size: 10px; color: var(--accent); font-weight: 800; letter-spacing: 1px; margin-bottom: 10px; text-transform: uppercase; }
+    
     .search-hud { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 15px; padding: 15px 25px; margin-bottom: 30px; display: flex; align-items: center; gap: 20px; }
     .search-hud input { background: transparent; border: none; color: #fff; font-size: 16px; width: 100%; outline: none; }
     .search-hud select { background: transparent; border: none; color: var(--accent); font-weight: 800; cursor: pointer; outline: none; font-size: 12px; }
@@ -101,7 +121,27 @@
           <h1 style="font-size:24px; font-weight:900; letter-spacing:2px; margin:0;">FUERZA OPERATIVA STARK</h1>
           <p style="color:var(--muted); font-size:12px; margin-top:5px; text-transform: uppercase; letter-spacing:1px;">Directorio de Inteligencia Humana y Despliegue de Campo</p>
         </div>
-        <button class="btn primary" id="btnNewWorker" style="padding:12px 25px; font-weight:900;">[ AÑADIR OPERATIVO ]</button>
+        <div style="display:flex; gap:10px;">
+          <button class="btn" id="btnToggleAnalytics" style="background:rgba(34, 211, 238, 0.1); color:var(--accent); border:1px solid var(--accent-glow); font-weight:900;">[ ANALÍTICA_HUD ]</button>
+          <button class="btn primary" id="btnNewWorker" style="padding:12px 25px; font-weight:900;">[ AÑADIR OPERATIVO ]</button>
+        </div>
+      </div>
+
+      <!-- ANALYTICS HUD CONSOLE -->
+      <div id="analyticsHUD">
+         <div class="chart-container">
+            <div class="chart-label">Distribución Biométrica (IMC)</div>
+            <canvas id="chartIMC"></canvas>
+         </div>
+         <div class="chart-container">
+            <div class="chart-label">Estado de Exámenes Médicos</div>
+            <canvas id="chartExams"></canvas>
+         </div>
+         <div class="chart-container" style="display:flex; flex-direction:column; justify-content:center; align-items:center;">
+             <div class="chart-label">Cumplimiento Preocupacional</div>
+             <div id="gaugePreo" style="font-size:48px; font-weight:900; color:var(--accent);">0%</div>
+             <div style="font-size:10px; color:var(--muted); margin-top:5px;">PERSONAL CERTIFICADO</div>
+         </div>
       </div>
 
       <div class="search-hud">
