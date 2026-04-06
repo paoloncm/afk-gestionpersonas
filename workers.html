@@ -3,12 +3,67 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AFK RRHH — Gestión de Trabajadores (Nivel Stark)</title>
+  <title>AFK RRHH — Fuerza Operativa Stark</title>
   <link rel="stylesheet" href="static/styles.css">
+  <style>
+    :root {
+      --accent: #22d3ee;
+      --accent-glow: rgba(34, 211, 238, 0.25);
+      --bg-dark: #020617;
+      --card-bg: rgba(15, 23, 42, 0.6);
+    }
+    body { background-color: var(--bg-dark); }
+    
+    .vac-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 20px; margin-top: 20px; }
+    
+    .stark-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 20px;
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    .stark-card:hover {
+      border-color: var(--accent);
+      background: rgba(34, 211, 238, 0.04);
+      transform: translateY(-5px);
+      box-shadow: 0 15px 40px rgba(34, 211, 238, 0.1);
+    }
+    .stark-card::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      opacity: 0; transition: 0.3s;
+    }
+    .stark-card:hover::before { opacity: 1; }
+
+    .tag { padding: 4px 10px; border-radius: 6px; font-size: 10px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; }
+    
+    /* Perfil Biométrico HUD */
+    .modal.is-open { display: flex !important; align-items: center; justify-content: center; z-index: 2000; }
+    .modal-content { max-height: 90vh; width: 90%; max-width: 800px; display: flex; flex-direction: column; padding: 0; overflow: hidden; background: rgba(2, 6, 23, 0.98); border: 1px solid var(--accent-glow); border-radius: 24px; box-shadow: 0 0 50px rgba(0,0,0,0.8); }
+    
+    .profile-header { background: linear-gradient(180deg, rgba(34,211,238,0.1), transparent); padding: 30px; border-bottom: 1px solid rgba(255,255,255,0.05); position: relative; }
+    .profile-body { padding: 30px; overflow-y: auto; flex: 1; }
+    
+    .scanner-overlay { position: fixed; inset: 0; background: rgba(2, 6, 23, 0.98); z-index: 9999; display: none; flex-direction: column; align-items: center; justify-content: center; }
+    .radar { width: 150px; height: 150px; border: 2px solid var(--accent); border-radius: 50%; position: relative; box-shadow: 0 0 20px var(--accent-glow); margin-bottom: 20px; }
+    .radar::after { content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 50%; background: conic-gradient(from 0deg, var(--accent) 0%, transparent 40%); animation: spin 2s linear infinite; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+    .search-hud { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 15px; padding: 15px 25px; margin-bottom: 30px; display: flex; align-items: center; gap: 20px; }
+    .search-hud input { background: transparent; border: none; color: #fff; font-size: 16px; width: 100%; outline: none; }
+    .search-hud select { background: transparent; border: none; color: var(--accent); font-weight: 800; cursor: pointer; outline: none; font-size: 12px; }
+  </style>
 </head>
 <body>
   <div class="app">
-    <!-- Sidebar Stark v2.0 -->
+    <!-- Sidebar Stark -->
     <aside class="sidebar">
       <div class="brand">
         <div class="brand-logo">AFK</div>
@@ -41,44 +96,78 @@
     </aside>
 
     <main class="main">
-      <div class="top-actions">
-        <div class="h1" style="font-size:20px; font-weight:800; letter-spacing:1px; flex:1;">Fuerza Operativa de Industrias Stark</div>
-        <button class="btn primary" id="btnNewWorker">Añadir Trabajador</button>
+      <div class="top-actions" style="margin-bottom:25px;">
+        <div>
+          <h1 style="font-size:24px; font-weight:900; letter-spacing:2px; margin:0;">FUERZA OPERATIVA STARK</h1>
+          <p style="color:var(--muted); font-size:12px; margin-top:5px; text-transform: uppercase; letter-spacing:1px;">Directorio de Inteligencia Humana y Despliegue de Campo</p>
+        </div>
+        <button class="btn primary" id="btnNewWorker" style="padding:12px 25px; font-weight:900;">[ AÑADIR OPERATIVO ]</button>
       </div>
 
-      <header class="card" style="background: radial-gradient(circle at 10% 10%, rgba(65, 223, 255, 0.08), transparent 30%);">
-        <div class="scan-line"></div>
-        <div class="ai-row">
-           <div class="search" style="min-width: 100%;">
-             <input id="workerSearch" type="text" placeholder="Buscar por nombre, RUT o empresa..." />
-             <select id="filterStatus" class="btn" style="background: transparent; border:none; border-left:1px solid var(--border); padding-left:15px; width:200px;">
-                <option value="">Status: Todos</option>
-                <option value="Activo">Activo</option>
-                <option value="Inactivo">Inactivo</option>
-             </select>
-             <button id="btnResetFilters" class="btn">Limpiar</button>
-           </div>
-        </div>
-      </header>
+      <div class="search-hud">
+        <div style="color:var(--accent); font-size:20px;">🔍</div>
+        <input type="text" id="workerSearch" placeholder="RASTREAR POR NOMBRE, RUT O EMPRESA...">
+        <select id="filterStatus">
+          <option value="">TODOS LOS ESTADOS</option>
+          <option value="Activo">ACTIVO</option>
+          <option value="Inactivo">INACTIVO</option>
+        </select>
+        <button id="btnResetFilters" class="btn btn--mini" style="opacity:0.6;">LIMPIAR</button>
+      </div>
 
-      <section class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Nombre Completo</th>
-              <th>RUT / ID</th>
-              <th>Empresa / Faena</th>
-              <th>Email</th>
-              <th>Estado Operativo</th>
-            </tr>
-          </thead>
-          <tbody id="workersTable">
-             <!-- Se puebla dinámicamente -->
-             <tr><td colspan="5" style="text-align:center; padding:40px; color:var(--muted)">Sincronizando con el directorio Stark...</td></tr>
-          </tbody>
-        </table>
-      </section>
+      <div id="workersGrid" class="vac-grid">
+         <!-- Se puebla dinámicamente con Stark Cards -->
+         <div style="grid-column: 1/-1; padding:100px; text-align:center; color:var(--muted); font-size:12px; letter-spacing:2px;">SINCRONIZANDO CON EL NÚCLEO...</div>
+      </div>
     </main>
+  </div>
+
+  <!-- HUD Escáner Biométrico -->
+  <div id="scannerOverlay" class="scanner-overlay">
+    <div class="radar"></div>
+    <div id="radarText" style="color:var(--accent); font-family:monospace; font-weight:900; letter-spacing:3px;">INICIANDO ESCANEO BIOMÉTRICO...</div>
+    <div id="radarLog" style="color:var(--muted); font-size:10px; margin-top:10px; font-family:monospace;">ANALIZANDO CRDENCIALES DE SEGURIDAD...</div>
+  </div>
+
+  <!-- Modal Perfil Biométrico -->
+  <div id="personProfileModal" class="modal">
+    <div class="modal-content">
+      <div class="profile-header">
+        <div style="display:flex; justify-content:space-between; align-items:start;">
+          <div>
+            <h2 id="profileName" style="font-size:28px; font-weight:900; letter-spacing:2px; margin:0; color:#fff;"></h2>
+            <div id="profileProfession" style="color:var(--accent); font-weight:800; font-size:14px; margin-top:5px; text-transform:uppercase;"></div>
+          </div>
+          <button class="btn close-modal" style="background:rgba(255,255,255,0.1);">CERRAR [X]</button>
+        </div>
+      </div>
+      <div class="profile-body">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:30px;">
+          <div class="stark-card" style="padding:20px; background:rgba(0,0,0,0.3);">
+            <h4 class="text-cyan" style="font-size:11px; letter-spacing:2px; margin-bottom:15px;">[ DATOS DE IDENTIDAD ]</h4>
+            <div style="display:grid; gap:12px;">
+              <div><span style="color:var(--muted); font-size:10px;">ID / RUT:</span><div id="profileRut" style="font-weight:700;"></div></div>
+              <div><span style="color:var(--muted); font-size:10px;">EMAIL OPERATIVO:</span><div id="profileEmail" style="font-weight:700;"></div></div>
+              <div><span style="color:var(--muted); font-size:10px;">COMUNICACIONES:</span><div id="profilePhone" style="font-weight:700;"></div></div>
+            </div>
+          </div>
+          <div class="stark-card" style="padding:20px; background:rgba(0,0,0,0.3);">
+            <h4 class="text-cyan" style="font-size:11px; letter-spacing:2px; margin-bottom:15px;">[ ESTADO OPERATIVO ]</h4>
+            <div style="display:grid; gap:12px;">
+              <div><span style="color:var(--muted); font-size:10px;">STATUS:</span><div id="profileStatus" style="font-weight:700;"></div></div>
+              <div><span style="color:var(--muted); font-size:10px;">EXPERIENCIA:</span><div id="profileExp" style="font-weight:700;"></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="stark-card" style="padding:20px; margin-top:20px; background:rgba(0,0,0,0.3);">
+           <h4 class="text-cyan" style="font-size:11px; letter-spacing:2px; margin-bottom:15px;">[ PERFIL PROFESIONAL / EVALUACIÓN JARVIS ]</h4>
+           <div id="profileCvSummary" style="font-size:13px; line-height:1.6; color:#cbd5e1;"></div>
+        </div>
+        <div style="margin-top:25px; text-align:right;">
+          <button class="btn primary" id="profileEditBtn" style="padding:10px 30px;">EXPEDIENTE COMPLETO [EDIT]</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

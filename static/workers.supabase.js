@@ -1,8 +1,9 @@
-
-// workers.supabase.js
+// workers.supabase.js - Protocolo Stark Intelligence V8: RECONSTRUCCIÓN INTEGRAL
 (async function() {
     const $ = s => document.querySelector(s);
-    const tableBody = $('#workersTable');
+    const grid = $('#workersGrid');
+    const scannerOverlay = $('#scannerOverlay');
+    const personProfileModal = $('#personProfileModal');
     let allWorkers = [];
 
     async function init() {
@@ -27,83 +28,106 @@
             renderWorkers(allWorkers);
         } catch (err) {
             console.error('Error loading workers:', err);
-            tableBody.innerHTML = `<div style="padding:40px; color:var(--muted)">Error al cargar trabajadores.</div>`;
+            if (grid) grid.innerHTML = `<div style="padding:40px; color:var(--danger)">ERROR_DDR: Error al sincronizar base de datos Stark.</div>`;
         }
     }
 
     function renderWorkers(items) {
-        const header = `
-            <div class="t-head">
-                <div>Nombre</div>
-                <div>RUT</div>
-                <div>Empresa / Faena</div>
-                <div>Email</div>
-                <div>Estado</div>
-            </div>`;
-        
-        let html = header;
+        if (!grid) return;
+        grid.innerHTML = '';
 
         if (items.length === 0) {
-            html += `<div style="padding:40px; text-align:center; color:var(--muted)">No se encontraron trabajadores.</div>`;
-        } else {
-            items.forEach(w => {
-                const id = w.id;
-                const name = w.full_name || 'Desconocido';
-                const rut = w.rut || 'N/A';
-                const company = w.company_name || 'Sin asignar';
-                const email = w.email || '-';
-                const status = w.status || 'Activo';
-                const statusClass = status === 'Activo' || status === 'active' ? 'badge--active' : 'badge--inactive';
-                
-                const avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff`;
-
-                html += `
-                    <div class="t-row" data-id="${id}">
-                        <div class="emp t-col-name" data-label="Nombre">
-                            <img class="avatar" src="${avatar}">
-                            <div>
-                                <a href="worker.html?id=${id}" class="emp__name" style="color:var(--text); text-decoration:none; border-bottom:1px solid transparent;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='transparent'">
-                                    ${name}
-                                </a>
-                            </div>
-                        </div>
-                        <div class="t-col-rut" data-label="RUT">${rut}</div>
-                        <div class="faena-cell t-col-faena" data-label="Empresa">
-                            <span class="faena-text">${company}</span>
-                            <button class="btn btn--mini btn-assign" style="padding:2px 6px; font-size:10px; margin-left:8px; opacity:0.5; display:${company === 'Sin asignar' ? 'inline-block' : 'none'}">Asignar</button>
-                        </div>
-                        <div class="t-col-email" data-label="Email">${email}</div>
-                        <div class="t-col-status" data-label="Estado"><span class="badge ${statusClass}">${status}</span></div>
-                    </div>
-                `;
-            });
+            grid.innerHTML = `<div style="grid-column: 1/-1; padding:100px; text-align:center; color:var(--muted); letter-spacing:2px;">NO SE DETECTARON PERFILES OPERATIVOS ACTIVOS.</div>`;
+            return;
         }
-        tableBody.innerHTML = html;
 
-        // Add event listeners for assignment and navigation
-        tableBody.querySelectorAll('.t-row').forEach(row => {
-            row.onclick = (e) => {
-                // Evitar redirección si se hace clic en botones o enlaces específicos
-                if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A' || e.target.closest('button') || e.target.closest('a')) return;
-                const id = row.dataset.id;
-                if (id) window.location.href = `worker.html?id=${id}`;
-            };
-        });
+        items.forEach(w => {
+            const id = w.id;
+            const name = (w.full_name || 'Desconocido').toUpperCase();
+            const rut = w.rut || 'N/A';
+            const company = w.company_name || 'SIN ASIGNAR';
+            const email = w.email || 'SIN EMAIL';
+            const status = w.status || 'Activo';
+            const avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=22d3ee&color=020617&bold=true`;
 
-        tableBody.querySelectorAll('.btn-assign').forEach(btn => {
-            btn.onclick = async (e) => {
-                e.stopPropagation(); // Prevenir el clic de la fila
-                const row = e.target.closest('.t-row');
-                const id = row.dataset.id;
-                const newFaena = prompt('Ingrese el nombre de la Faena o Empresa:');
-                if (newFaena) {
-                    const { error } = await supabase.from('workers').update({ company_name: newFaena }).eq('id', id);
-                    if (error) alert('Error: ' + error.message);
-                    else loadWorkers();
-                }
-            };
+            const card = document.createElement('div');
+            card.className = 'stark-card';
+            card.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:20px;">
+                   <div style="display:flex; align-items:center; gap:15px;">
+                      <img src="${avatar}" style="width:45px; height:45px; border-radius:12px; border:2px solid var(--accent); box-shadow: 0 0 10px var(--accent-glow);">
+                      <div>
+                         <h3 style="font-size:16px; font-weight:900; margin:0; letter-spacing:1px; cursor:pointer;" onclick="window.showPersonProfile('${id}')">${name}</h3>
+                         <div style="font-size:10px; color:var(--accent); font-weight:800; margin-top:2px;">ID: ${rut}</div>
+                      </div>
+                   </div>
+                   <div class="tag" style="background:${status === 'Activo' || status === 'active' ? 'rgba(34,211,238,0.1)' : 'rgba(255,50,100,0.1)'}; color:${status === 'Activo' || status === 'active' ? 'var(--accent)' : '#ff3264'};">
+                      ${status.toUpperCase()}
+                   </div>
+                </div>
+
+                <div style="background:rgba(255,255,255,0.03); border-radius:12px; padding:15px; margin-bottom:20px;">
+                   <div style="display:grid; grid-template-columns: 1fr; gap:10px;">
+                      <div style="display:flex; align-items:center; gap:8px;">
+                         <span style="font-size:12px;">🏢</span>
+                         <div style="flex:1;">
+                            <div style="font-size:9px; color:var(--muted); text-transform:uppercase;">Empresa / Faena</div>
+                            <div style="font-size:12px; font-weight:700;">${company}</div>
+                         </div>
+                         <button class="btn btn--mini btn-assign" style="font-size:9px; padding:4px 8px; opacity:0.5; display:${company === 'SIN ASIGNAR' ? 'block' : 'none'}">ASIGNAR</button>
+                      </div>
+                   </div>
+                </div>
+
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                   <div style="font-size:11px; color:var(--muted);">${email}</div>
+                   <button class="btn btn--mini" style="font-size:10px; font-weight:900;" onclick="window.showPersonProfile('${id}')">[ BIOMETRÍA ]</button>
+                </div>
+            `;
+
+            const btnAssign = card.querySelector('.btn-assign');
+            if (btnAssign) {
+              btnAssign.onclick = async (e) => {
+                  e.stopPropagation();
+                  const newFaena = prompt('ASIGNACIÓN DE RECURSO - Ingrese Faena/Empresa:');
+                  if (newFaena) {
+                      const { error } = await supabase.from('workers').update({ company_name: newFaena }).eq('id', id);
+                      if (error) alert('Error: ' + error.message);
+                      else loadWorkers();
+                  }
+              };
+            }
+
+            grid.appendChild(card);
         });
     }
+
+    // --- BIOMETRIC SCANNER V8 ---
+
+    window.showPersonProfile = async function(id) {
+        if (scannerOverlay) scannerOverlay.style.display = 'flex';
+        openModal(personProfileModal);
+
+        try {
+            const { data: p, error } = await supabase.from('workers').select('*').eq('id', id).single();
+            if (error) throw error;
+
+            $('#profileName').textContent = (p.full_name || 'ANÓNIMO').toUpperCase();
+            $('#profileProfession').textContent = p.cargo || 'Especialista Operativo';
+            $('#profileRut').textContent = p.rut || 'No Registrado';
+            $('#profileEmail').textContent = p.email || 'Sin Email';
+            $('#profilePhone').textContent = p.phone || 'Sin Teléfono';
+            $('#profileStatus').textContent = (p.status || 'Activo').toUpperCase();
+            $('#profileExp').textContent = (p.experiencia || '0') + ' años exp.';
+            $('#profileCvSummary').textContent = p.perfil_profesional || 'Sincronizando evaluación de inteligencia JARVIS... Perfil operativo optimizado para Industrias Stark.';
+            
+            $('#profileEditBtn').onclick = () => { window.location.href = `worker.html?id=${id}`; };
+
+        } catch (err) { console.error('[Stark Profile Error]', err); }
+        
+        // Mantener el efecto visual del escáner por un momento para inmersión
+        if (scannerOverlay) setTimeout(() => scannerOverlay.style.display = 'none', 800);
+    };
 
     function setupFilters() {
         const searchInput = $('#workerSearch');
@@ -125,12 +149,20 @@
             renderWorkers(filtered);
         };
 
-        searchInput.oninput = applyFilters;
-        statusFilter.onchange = applyFilters;
-        resetBtn.onclick = () => {
+        if (searchInput) searchInput.oninput = applyFilters;
+        if (statusFilter) statusFilter.onchange = applyFilters;
+        if (resetBtn) resetBtn.onclick = () => {
             searchInput.value = '';
             statusFilter.value = '';
             renderWorkers(allWorkers);
         };
     }
+
+    function openModal(m) { if(m) m.classList.add('is-open'); }
+    function closeModal(m) { if(m) m.classList.remove('is-open'); }
+
+    document.querySelectorAll('.close-modal').forEach(b => {
+        b.onclick = () => { closeModal(personProfileModal); };
+    });
+
 })();
