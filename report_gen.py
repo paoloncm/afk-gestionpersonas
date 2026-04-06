@@ -41,20 +41,25 @@ class StarkReportGenerator:
         sheet = wb.active
         
         # Comenzamos la inserción en la fila 19 (según inspección visual del encabezado)
-        start_row = 19
+        start_row = 17
         for i, cand in enumerate(candidates):
             current_row = start_row + i
             # Col B (Nº)
             self._safe_write_rc(sheet, current_row, 2, i + 1)
             # Col C (NOMBRE COMPLETO)
             self._safe_write_rc(sheet, current_row, 3, str(cand.get("nombre_completo", "")).upper())
-            # Col D (PROFESION / ESPECIALIDAD)
-            self._safe_write_rc(sheet, current_row, 4, str(cand.get("profesion", "")).upper())
-            # Col E (AÑOS EXP TOTAL)
-            self._safe_write_rc(sheet, current_row, 5, cand.get("experiencia_total", "0"))
-            # Col F (NOTA AFK)
-            self._safe_write_rc(sheet, current_row, 6, cand.get("nota", "—"))
-
+            # Col J (CARGO)
+            self._safe_write_rc(sheet, current_row, 4, str(cand.get("cargo", "")).upper())
+            # Col O (PROFESION / ESPECIALIDAD)
+            self._safe_write_rc(sheet, current_row, 5, str(cand.get("profesion", "")).upper())
+            # Col T (AÑOS EXP TOTAL)
+            self._safe_write_rc(sheet, current_row, 6, cand.get("experiencia_total", "0"))
+            # Col V (EXP EN LA EMPRESA)
+            self._safe_write_rc(sheet, current_row, 7, cand.get("experiencia_en_empresa_actual", "—"))
+            # Col X (EXP EN EL CARGO)
+            self._safe_write_rc(sheet, current_row, 8, cand.get("exp_cargo_actual", "—"))
+             # Col Z (EXP PROYECTOS SIMILARES)
+            self._safe_write_rc(sheet, current_row, 9, cand.get("exp_proy_similares", "—"))
         target = io.BytesIO()
         wb.save(target)
         target.seek(0)
