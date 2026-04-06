@@ -63,6 +63,40 @@
     };
   }
 
+  // Tender Modal Tabs
+  const tabEdit = $('#tabTenderEdit');
+  const tabIntel = $('#tabTenderIntel');
+  const contentEdit = $('#tenderEditContent');
+  const contentIntel = $('#tenderIntelContent');
+
+  function switchToTenderTab(tab) {
+    if (tab === 'edit') {
+        contentEdit.style.display = 'block';
+        contentIntel.style.display = 'none';
+        tabEdit.classList.add('active');
+        tabEdit.style.color = 'var(--accent)';
+        tabEdit.style.borderBottom = '2px solid var(--accent)';
+        tabIntel.classList.remove('active');
+        tabIntel.style.color = 'var(--muted)';
+        tabIntel.style.borderBottom = '2px solid transparent';
+    } else {
+        contentEdit.style.display = 'none';
+        contentIntel.style.display = 'block';
+        tabIntel.classList.add('active');
+        tabIntel.style.color = 'var(--accent)';
+        tabIntel.style.borderBottom = '2px solid var(--accent)';
+        tabEdit.classList.remove('active');
+        tabEdit.style.color = 'var(--muted)';
+        tabEdit.style.borderBottom = '2px solid transparent';
+        if ($('#tenderId').value) updateIntelTab($('#tenderId').value);
+    }
+  }
+
+  if (tabEdit && tabIntel) {
+    tabEdit.onclick = () => switchToTenderTab('edit');
+    tabIntel.onclick = () => switchToTenderTab('intel');
+  }
+
   // --- DASHBOARD TACTICAL VIEW ---
 
   async function loadTenders() {
@@ -88,9 +122,9 @@
     tendersBody.innerHTML = filtered.map(t => {
       const topReqs = (t.requirements || []).slice(0, 3).map(r => `<span class="badge" style="font-size:10px; border-color:rgba(34,211,238,0.2)">${r}</span>`).join('');
       return `
-        <div class="t-row stark-card" style="margin-bottom:10px; padding: 18px 20px; display:flex; align-items: center; border: 1px solid rgba(255,255,255,0.05); transition:all 0.4s;" onclick="window.editTenderById('${t.id}')">
+        <div class="t-row stark-card" style="margin-bottom:10px; padding: 18px 20px; display:flex; align-items: center; border: 1px solid rgba(255,255,255,0.05); transition:all 0.4s;">
           <div style="flex: 0 0 25%;">
-            <div style="font-weight: 800; color:var(--text); font-size:15px; letter-spacing:0.5px;">${escapeHtml(t.name)}</div>
+            <div style="font-weight: 800; color:var(--text); font-size:15px; letter-spacing:0.5px; cursor:pointer;" onclick="window.editTenderById('${t.id}', 'intel')">${escapeHtml(t.name)}</div>
           </div>
           <div style="flex: 0 0 35%; padding-right:15px;">
             <div style="color: var(--muted); font-size: 11px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height:1.4;">
@@ -114,7 +148,7 @@
 
   if (searchInput) searchInput.oninput = renderTenders;
 
-  window.editTenderById = (id) => {
+  window.editTenderById = (id, startTab = 'edit') => {
     const t = allTenders.find(x => x.id === id);
     if (!t) return;
     $('#tenderId').value = t.id;
@@ -128,9 +162,81 @@
     window.supabase.from('vacancies').select('*').eq('tender_id', t.id).then(async ({data}) => {
         detectedVacancies = data || [];
         await renderDetectedVacancies();
+        if (startTab === 'intel') updateIntelTab(t.id);
     });
+    switchToTenderTab(startTab);
     openModal(tenderModal);
   };
+
+  async function updateIntelTab(id) {
+    const intelList = $('#intelVacancyList');
+    const totalScoreText = $('#intelTotalScore');
+    const totalProgressCircle = $('#intelTotalProgress');
+    if (!intelList) return;
+
+    intelList.innerHTML = '<div style="padding:40px; text-align:center; color:var(--muted); font-size:12px;">INICIANDO ANÁLISIS DE CUMPLIMIENTO...</div>';
+
+    try {
+      // Fetch everything we need
+      const { data: vacs } = await window.supabase.from('vacancies').select('*').eq('tender_id', id);
+      const { data: candidates } = await window.supabase.from('candidates').select('*');
+      const { data: workers } = await window.supabase.from('workers').select('*, worker_credentials(*)');
+
+      if (!vacs || vacs.length === 0) {
+          intelList.innerHTML = '<p style="text-align:center; padding:20px;">Sin vacantes detectadas para analizar.</p>';
+          return;
+      }
+
+      let totalFulfillment = 0;
+      const normalize = (t) => (t||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+      const results = vacs.map(v => {
+          const rs = v.requirements || [];
+          const allPeople = [
+              ...(candidates || []).map(c => ({ name: c.nombre_completo, txt: `${c.profesion} ${c.evaluacion_general} ${c.experiencia_tecnica}`, type: 'CANDIDATO' })),
+              ...(workers || []).map(w => ({ name: w.nombre_completo, txt: `${w.cargo} ${w.perfil_profesional} ${w.worker_credentials.map(cr => cr.credential_name).join(' ')}`, type: 'OPERATIVO' }))
+          ];
+
+          let bestPerson = null;
+          let bestScore = 0;
+
+          if (rs.length > 0) {
+              allPeople.forEach(p => {
+                  const pTxt = normalize(p.txt);
+                  const matches = rs.filter(r => pTxt.includes(normalize(r))).length;
+                  const score = Math.round((matches / rs.length) * 100);
+                  if (score > bestScore) {
+                      bestScore = score;
+                      bestPerson = p;
+                  }
+              });
+          }
+
+          totalFulfillment += bestScore;
+
+          return `
+            <div class="stark-card" style="padding:15px; border-left: 2px solid ${bestScore > 70 ? 'var(--ok)' : 'rgba(34,211,238,0.3)'};">
+               <div style="display:flex; justify-content:space-between; align-items:center;">
+                  <div>
+                    <div style="font-size:10px; color:var(--accent); font-weight:900;">[ ${v.title.toUpperCase()} ]</div>
+                    <div style="font-size:12px; margin-top:4px; font-weight:600;">${bestPerson ? `TOP MATCH: ${bestPerson.name} (${bestPerson.type})` : 'SIN MATCH DETECTADO'}</div>
+                  </div>
+                  <div style="font-family:monospace; font-weight:900; font-size:20px; color:${bestScore > 70 ? 'var(--ok)' : 'var(--accent)'}">${bestScore}%</div>
+               </div>
+            </div>
+          `;
+      });
+
+      const avgScore = Math.round(totalFulfillment / vacs.length);
+      totalScoreText.textContent = `${avgScore}%`;
+      totalProgressCircle.setAttribute('stroke-dasharray', `${avgScore}, 100`);
+      intelList.innerHTML = results.join('');
+
+    } catch (err) {
+      console.error("[Stark Intel Failure]", err);
+      intelList.innerHTML = '<p style="color:var(--danger);">Error al procesar cumplimiento.</p>';
+    }
+  }
 
   async function deleteTender(id) {
     if (!confirm('¿DESACTIVAR PROYECTO?')) return;
