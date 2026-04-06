@@ -604,13 +604,14 @@
       } catch(err) { console.error(err); }
   };
 
-  window.addReqInput = function(val = '') {
+  function addReqInput(val = '') {
     const div = document.createElement('div');
     div.className = 'grid-2'; div.style.gap = '8px';
     div.innerHTML = `<input class="input req-input" value="${val}" placeholder="Requisito..." required><button type="button" class="btn btn--mini btn-del-req" style="color:var(--danger)">×</button>`;
     div.querySelector('.btn-del-req').onclick = () => div.remove();
     reqContainer.appendChild(div);
   }
+  window.addReqInput = addReqInput;
 
   async function extractTextFromPDF(file) {
     console.log("[Scanner] Iniciando extracción de texto para:", file.name);
