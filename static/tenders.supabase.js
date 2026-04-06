@@ -283,26 +283,27 @@
       const bestScore = allScores.length ? Math.max(...allScores) : 0;
 
       return `
-      <div class="stark-card" style="padding:15px; margin-bottom:12px; border-left: 3px solid var(--accent); position:relative; display:flex; justify-content:space-between; align-items:center;">
-        <button type="button" class="btn btn--mini" style="position:absolute; top:2px; right:2px; color:var(--danger); font-weight:800; background:none; border:none;" onclick="window.remV(${i})">×</button>
+      <div class="stark-card" style="padding:10px 15px; margin-bottom:8px; border-left: 2px solid var(--accent); position:relative; display:flex; justify-content:space-between; align-items:center;">
+        <button type="button" class="btn btn--mini" style="position:absolute; top:2px; right:2px; color:var(--danger); font-weight:800; background:none; border:none; padding:4px;" onclick="window.remV(${i})">×</button>
         <div style="flex:1;">
-            <div class="vacancy-pill" style="font-size:11px; font-weight:900; letter-spacing:1px; margin-bottom:8px;">[ ${v.title.toUpperCase()} ]</div>
-            <div style="font-size:10px; color:var(--muted); display:flex; flex-wrap:wrap; gap:4px;">
-              ${v.requirements.map(r => `<span style="background:rgba(34,211,238,0.05); border:1px solid rgba(34,211,238,0.2); padding:2px 6px; border-radius:4px; color:rgba(255,255,255,0.7);">${r}</span>`).join('')}
+            <div class="vacancy-pill" style="font-size:10px; font-weight:900; letter-spacing:0.5px; margin-bottom:4px; color:var(--accent);">[ ${v.title.toUpperCase()} ]</div>
+            <div style="font-size:9px; color:var(--muted); display:flex; flex-wrap:wrap; gap:4px; max-width: 85%;">
+              ${rs.map(r => `<span style="background:rgba(34,211,238,0.03); border:1px solid rgba(34,211,238,0.1); padding:1px 5px; border-radius:3px; white-space:nowrap;">${r}</span>`).join('')}
             </div>
         </div>
-        <div style="text-align:right; min-width:100px;">
-            <div style="display:flex; flex-direction:column; align-items:center;">
-                <svg width="40" height="40" viewBox="0 0 36 36" style="transform: rotate(-90deg);">
+        <div style="text-align:right; min-width:80px; margin-left:15px;">
+            <div style="display:flex; flex-direction:column; align-items:center; transform: scale(0.85);">
+                <svg width="36" height="36" viewBox="0 0 36 36" style="transform: rotate(-90deg);">
                     <circle cx="18" cy="18" r="16" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="3"></circle>
                     <circle cx="18" cy="18" r="16" fill="none" stroke="var(--accent)" stroke-width="3" stroke-dasharray="${bestScore}, 100" stroke-linecap="round"></circle>
-                    <text x="18" y="20.5" fill="var(--accent)" font-size="8" font-weight="900" text-anchor="middle" transform="rotate(90 18 18)" style="font-family:monospace;">${Math.round(bestScore)}%</text>
+                    <text x="18" y="20.5" fill="var(--accent)" font-size="9" font-weight="900" text-anchor="middle" transform="rotate(90 18 18)" style="font-family:monospace;">${Math.round(bestScore)}%</text>
                 </svg>
-                <div style="font-size:9px; color:var(--muted); margin-top:4px;">${itemsAbove50} personas</div>
+                <div style="font-size:8px; color:var(--muted); text-transform:uppercase; margin-top:2px; letter-spacing:1px;">${itemsAbove50} match</div>
             </div>
         </div>
       </div>
-    `}).join('');
+      `;
+    }).join('');
   }
   window.remV = async (i) => { detectedVacancies.splice(i, 1); await renderDetectedVacancies(); };
 
