@@ -82,6 +82,25 @@
       from { transform: rotate(0deg) translate(-50%, -50%); }
       to { transform: rotate(360deg) translate(-50%, -50%); }
     }
+    .modal-content {
+      background: var(--bg-card);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 20px;
+      padding: 30px;
+      width: 90%;
+      height: 85vh; /* Forced height for flexbox children */
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+      backdrop-filter: blur(20px);
+    }
+    .modal-content > div:last-child {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
     .stark-card {
       background: rgba(255, 255, 255, 0.02);
       border: 1px solid rgba(255, 255, 255, 0.08);
