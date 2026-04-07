@@ -1,7 +1,7 @@
 /** 
- * tenders.supabase.js - Protocolo Stark Intelligence V20 (Master Merge)
+ * tenders.supabase.js - Protocolo Stark Intelligence V21 (Extracción Industrial) 
  * 
- * Combinando Arquitectura Estable (V16 del Usuario) + Escaneo Level-God (JARVIS)
+ * Mejoras: 60k contexto, separación de certificaciones, renderizado masivo.
  */
 (function () {
   "use strict";
@@ -69,22 +69,21 @@
   // =========================================================
   const StarkProcessor = {
     async process(file) {
-        this.updateRadar("INICIANDO MATRIX SCAN...", "Accediendo al binario del pliego...");
+        this.updateRadar("INICIANDO MATRIX SCAN INDUSTRIAL...", "Analizando hasta 60,000 carácteres...");
         const text = await this.extractText(file);
-        this.updateRadar("EXTRACCIÓN COMPLETADA", `Analizando con JARVIS AI...`);
+        this.updateRadar("EXTRACCIÓN COMPLETADA", `Sincronizando con Red Stark AI...`);
         return await this.analyzeTender(text);
     },
     async extractText(file) {
         const buf = await file.arrayBuffer();
         const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
         let txt = "";
-        for (let i = 1; i <= pdf.length || pdf.numPages; i++) {
-            const num = pdf.numPages || pdf.length;
-            this.updateRadar(`ESCANEANDO PÁGINA ${i}/${num}`, "Detectando jerarquía...");
+        const num = pdf.numPages || pdf.length;
+        for (let i = 1; i <= num; i++) {
+            this.updateRadar(`ESCANEANDO PÁGINA ${i}/${num}`, "Extrayendo jerarquía tabular...");
             const page = await pdf.getPage(i);
             const content = await page.getTextContent();
             txt += content.items.map(it => it.str).join(" ") + "\n";
-            if (i >= (pdf.numPages || pdf.length)) break;
         }
         return txt;
     },
@@ -92,7 +91,7 @@
         const res = await fetch('/api/analyze-tender', { 
             method: 'POST', 
             headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ text: text.substring(0, 30000) }) 
+            body: JSON.stringify({ text: text }) 
         });
         const data = await res.json();
         if (!data.ok) throw new Error(data.detail);
@@ -114,19 +113,19 @@
     return aliases.some(alias => source.includes(normalizeText(alias)));
   }
 
-  function scoreRequirements(sourceText, requirements) {
-    const reqs = safeArray(requirements).map(r => String(r).trim()).filter(Boolean);
-    if (!reqs.length) return { score: 0, missing: [], matched: [] };
+  function scoreRequirements(sourceText, requirements, certifications = []) {
+    const all = [...safeArray(requirements), ...safeArray(certifications)].map(r => String(r).trim()).filter(Boolean);
+    if (!all.length) return { score: 0, missing: [], matched: [] };
     const matched = [], missing = [];
-    for (const req of reqs) {
+    for (const req of all) {
       if (matchesRequirement(sourceText, req)) matched.push(req);
       else missing.push(req);
     }
-    return { score: Math.round((matched.length / reqs.length) * 100), missing, matched };
+    return { score: Math.round((matched.length / all.length) * 100), missing, matched };
   }
 
   function getWorkerSourceText(worker, credentials) {
-    const credsText = (credentials || []).map(c => [c.credential_name, c.exam_type, c.result_status].filter(Boolean).join(' ')).join(' ');
+    const credsText = (credentials || []).map(c => [c.credential_name, c.result_status].filter(Boolean).join(' ')).join(' ');
     return [worker?.full_name, worker?.cargo, worker?.position, worker?.profession, credsText].filter(Boolean).join(' ');
   }
 
@@ -182,17 +181,17 @@
     const filtered = state.allTenders.filter(t => normalizeText(t.name).includes(term) || normalizeText(t.description).includes(term));
 
     body.innerHTML = filtered.map(t => `
-        <div class="t-row stark-card" data-id="${t.id}" style="margin-bottom:10px; padding:18px 20px; display:flex; align-items:center;">
-          <div style="flex: 0 0 25%; font-weight:800; color:var(--text); cursor:pointer;" onclick="editTenderById('${t.id}', 'intel')">
+        <div class="t-row stark-card" data-id="${t.id}" style="margin-bottom:10px; padding:18px 20px; display:flex; align-items:center; cursor:pointer;" onclick="editTenderById('${t.id}', 'intel')">
+          <div style="flex: 0 0 25%; font-weight:800; color:var(--text);">
              <span style="color:var(--accent)">[</span> ${escapeHtml(t.name)} <span style="color:var(--accent)">]</span>
           </div>
-          <div style="flex: 0 0 35%; color:var(--muted); font-size:11px;">${escapeHtml(t.description || '')}</div>
+          <div style="flex: 0 0 35%; color:var(--muted); font-size:11px; padding-right:15px;">${escapeHtml(t.description || '')}</div>
           <div style="flex:1; display:flex; flex-wrap:wrap; gap:5px;">
             ${safeArray(t.requirements).slice(0,3).map(r => `<span class="badge" style="font-size:10px;">${escapeHtml(r)}</span>`).join('')}
           </div>
-          <div style="flex:0 0 150px; display:flex; gap:8px; justify-content:flex-end;">
-            <button class="btn btn--mini btn--primary" onclick="runMatchmakingById('${t.id}')">[ OPERATIVO ]</button>
-            <button class="btn btn--mini btn-delete" onclick="deleteTender('${t.id}')" style="color:var(--danger); opacity:0.6;">🗑️</button>
+          <div style="flex:0 0 160px; display:flex; gap:8px; justify-content:flex-end;">
+            <button class="btn btn--mini btn--primary" onclick="event.stopPropagation(); runMatchmakingById('${t.id}')">[ OPERATIVO ]</button>
+            <button class="btn btn--mini btn-delete" onclick="event.stopPropagation(); deleteTender('${t.id}')" style="color:var(--danger); opacity:0.6;">🗑️</button>
           </div>
         </div>
     `).join('');
@@ -202,15 +201,21 @@
     const list = $('#vacanciesList'); if (!list) return;
     $('#vacanciesWrapper').style.display = state.detectedVacancies.length ? 'block' : 'none';
     list.innerHTML = state.detectedVacancies.map((v, i) => `
-      <div class="stark-card" style="padding:15px; margin-bottom:8px; border-left:2px solid var(--accent); display:flex; justify-content:space-between; align-items:center;">
+      <div class="stark-card" style="padding:15px; margin-bottom:12px; border-left:3px solid var(--accent); display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.01);">
         <div style="flex:1;">
-          <input class="input" value="${escapeHtml(v.title)}" style="background:transparent; border:none; font-weight:900; color:var(--accent); width:100%; border-bottom:1px solid rgba(255,255,255,0.05);" onchange="state.detectedVacancies[${i}].title=this.value">
-          <div style="font-size:9px; color:var(--muted); margin-top:4px;">${safeArray(v.requirements).join(' • ')}</div>
+          <input class="input" value="${escapeHtml(v.title)}" style="background:transparent; border:none; font-weight:900; color:var(--accent); width:100%; border-bottom:1px solid rgba(255,255,255,0.05); font-size:14px;" onchange="state.detectedVacancies[${i}].title=this.value">
+          
+          <div style="display:flex; flex-wrap:wrap; gap:5px; margin-top:8px;">
+            ${safeArray(v.requirements).map(r => `<span style="font-size:9px; color:var(--muted); background:rgba(0,0,0,0.2); padding:2px 6px; border-radius:4px;">${escapeHtml(r)}</span>`).join('')}
+            ${safeArray(v.certifications).map(c => `<span style="font-size:9px; color:var(--accent); background:rgba(34,211,238,0.1); padding:2px 6px; border-radius:4px; border:1px solid rgba(34,211,238,0.2);">🔒 ${escapeHtml(c)}</span>`).join('')}
+          </div>
+          <div style="font-size:10px; color:var(--text); margin-top:5px; font-style:italic; opacity:0.7;">Exp: ${escapeHtml(v.experiencia_minima || 'N/A')}</div>
         </div>
-        <div style="width:60px; margin:0 15px;">
-          <input type="number" class="input" value="${v.total_positions || 1}" onchange="state.detectedVacancies[${i}].total_positions=parseInt(this.value)" style="background:rgba(0,0,0,0.2); text-align:center;">
+        <div style="width:70px; margin:0 15px; text-align:center;">
+          <div style="font-size:8px; color:var(--muted); margin-bottom:4px;">DOTACIÓN</div>
+          <input type="number" class="input" value="${v.total_positions || 1}" onchange="state.detectedVacancies[${i}].total_positions=parseInt(this.value)" style="background:rgba(0,0,0,0.2); text-align:center; font-family:monospace;">
         </div>
-        <button type="button" class="btn btn--mini" onclick="removeVacancy(${i})" style="color:var(--danger)">×</button>
+        <button type="button" class="btn btn--mini" onclick="removeVacancy(${i})" style="color:var(--danger); font-size:18px;">×</button>
       </div>
     `).join('');
   }
@@ -232,7 +237,7 @@
           <div class="stark-card" style="padding:15px; margin-bottom:10px; border-left:3px solid ${pct >= 100 ? 'var(--ok)' : 'var(--accent)'};">
             <div style="display:flex; justify-content:space-between; align-items:start;">
               <div><div style="font-size:10px; font-weight:900;">[ ${escapeHtml(v.title.toUpperCase())} ]</div><div style="font-size:13px; font-weight:700; margin:5px 0;">${count} / ${pos} PUESTOS</div></div>
-              <div style="font-size:18px; font-weight:900; color:var(--accent)">${pct}%</div>
+              <div style="text-align:right;"><div style="font-size:18px; font-weight:900; color:var(--accent)">${pct}%</div><div style="font-size:8px; color:var(--muted);">LLENADO</div></div>
             </div>
             <div class="affinity-bar"><div class="affinity-fill" style="width:${pct}%"></div></div>
           </div>`;
@@ -247,21 +252,23 @@
     if (!f) return;
     $('#scannerOverlay').style.display = 'flex';
     try {
-        const analysis = await StarkProcessor.process(f);
-        $('#tenderName').value = `Licitación: ${analysis.roles[0]?.nombre || f.name.replace('.pdf','')}`;
-        $('#tenderDesc').value = analysis.tender_summary || "";
+        const a = await StarkProcessor.process(f);
+        $('#tenderName').value = `Licitación: ${a.roles[0]?.nombre || f.name.replace('.pdf','')}`;
+        $('#tenderDesc').value = a.tender_summary || "";
         
         $('#reqContainer').innerHTML = '';
-        (analysis.roles[0]?.requisitos || []).slice(0, 5).forEach(r => addReqInput(r));
+        (a.roles[0]?.requisitos || []).slice(0, 5).forEach(r => addReqInput(r));
         
-        state.detectedVacancies = analysis.roles.map(r => ({ 
+        state.detectedVacancies = a.roles.map(r => ({ 
             title: r.nombre, 
-            requirements: [...(r.requisitos||[]), ...(r.certificaciones||[]), r.experiencia_minima].filter(v=>v), 
+            requirements: safeArray(r.requirements),
+            certifications: safeArray(r.certificaciones),
+            experiencia_minima: r.experiencia_minima || "",
             total_positions: r.cantidad || 1 
         }));
         renderDetectedVacancies();
-        notify("INTEGRACIÓN NIVEL STARK COMPLETADA");
-    } catch (e) { notifyError("Error en Scan", e); }
+        notify("EXTRACCIÓN INDUSTRIAL NIVEL STARK COMPLETADA");
+    } catch (e) { notifyError("Error en Scan Industrial", e); }
     $('#scannerOverlay').style.display = 'none';
   }
 
@@ -282,24 +289,29 @@
       if (tErr) throw tErr;
       const tid = id || tRes[0].id;
 
-      // Sincronizar vacantes
+      // Sincronizar vacantes (incluyendo certificaciones)
       const { data: exV } = await window.supabase.from('vacancies').select('id').eq('tender_id', tid);
       const exIds = (exV||[]).map(v => v.id), nIds = state.detectedVacancies.map(v => v.id).filter(i => i);
       const toDel = exIds.filter(i => !nIds.includes(i));
-      if (toDel.length) await window.supabase.from('vacancies').delete().in('id', toDel);
+      
+      if (toDel.length) {
+          await window.supabase.from('vacancy_shortlists').delete().in('vacancy_id', toDel);
+          await window.supabase.from('vacancies').delete().in('id', toDel);
+      }
 
       await window.supabase.from('vacancies').upsert(state.detectedVacancies.map(v => ({
         id: v.id || undefined,
         tender_id: tid,
         title: v.title,
         requirements: v.requirements,
+        certifications: v.certifications, // Nueva columna industrial
         total_positions: v.total_positions || 1
       })));
 
-      notify('PROTOCOL_ENTRY: INTEGRIDAD DE DATOS SINCRONIZADA.');
+      notify('PROTOCOLO STARK: INTEGRIDAD SINCRONIZADA.');
       closeModal($('#tenderModal'));
       loadTenders();
-    } catch (err) { notifyError('Fallo al guardar licitación.', err); }
+    } catch (err) { notifyError('Error en persistencia industrial.', err); }
   }
 
   async function runMatchmaking(tender) {
@@ -320,18 +332,17 @@
 
   async function evaluateVacancy(vacancy) {
     const talent = await ensureTalentDataLoaded();
-    const reqs = vacancy.requirements || [];
     const sl = talent.shortlistsByVacancy[vacancy.id] || [];
 
     const scoredW = talent.workers.map(w => ({
         person: w,
-        ...scoreRequirements(getWorkerSourceText(w, talent.workerCredentials.filter(c => c.worker_id === w.id)), reqs),
+        ...scoreRequirements(getWorkerSourceText(w, talent.workerCredentials.filter(c => c.worker_id === w.id)), vacancy.requirements, vacancy.certifications),
         isS: sl.some(s => s.person_id === w.id)
     })).sort((a,b) => b.score - a.score);
 
     const scoredC = talent.candidates.map(c => ({
         person: { ...c, full_name: c.nombre_completo },
-        ...scoreRequirements(getCandidateSourceText(c), reqs),
+        ...scoreRequirements(getCandidateSourceText(c), vacancy.requirements, vacancy.certifications),
         isS: sl.some(s => s.person_id === c.id)
     })).sort((a,b) => b.score - a.score);
 
@@ -365,20 +376,19 @@
   // BOOTSTRAP
   // =========================================================
   function bindGlobalEvents() {
-    $('#btnNewTender').onclick = () => editTenderById(null);
-    $('#searchTender').oninput = () => renderTenders();
-    $('#tenderForm').onsubmit = (e) => saveTender(e);
+    if ($('#btnNewTender')) $('#btnNewTender').onclick = () => editTenderById(null);
+    if ($('#searchTender')) $('#searchTender').oninput = () => renderTenders();
+    if ($('#tenderForm')) $('#tenderForm').onsubmit = (e) => saveTender(e);
 
-    $('#tabTenderEdit').onclick = () => setTenderTab('edit');
-    $('#tabTenderIntel').onclick = () => { setTenderTab('intel'); if ($('#tenderId').value) updateIntelTab($('#tenderId').value); };
-    $('#tabWorkers').onclick = () => setMatchTab('workers');
-    $('#tabCandidates').onclick = () => setMatchTab('candidates');
+    if ($('#tabTenderEdit')) $('#tabTenderEdit').onclick = () => setTenderTab('edit');
+    if ($('#tabTenderIntel')) $('#tabTenderIntel').onclick = () => { setTenderTab('intel'); if ($('#tenderId').value) updateIntelTab($('#tenderId').value); };
+    if ($('#tabWorkers')) $('#tabWorkers').onclick = () => setMatchTab('workers');
+    if ($('#tabCandidates')) $('#tabCandidates').onclick = () => setMatchTab('candidates');
 
     document.querySelectorAll('.close-modal').forEach(b => b.onclick = () => {
         closeModal($('#tenderModal')); closeModal($('#matchModal')); closeModal($('#personProfileModal'));
     });
 
-    // Drag & Drop JARVIS
     const z = $('#uploadZone'), i = $('#pdfInput');
     if (z && i) {
         z.onclick = () => i.click();
@@ -391,18 +401,18 @@
 
   function setTenderTab(tab) {
     const isE = tab === 'edit';
-    $('#tenderEditContent').style.display = isE ? 'flex' : 'none';
-    $('#tenderIntelContent').style.display = isE ? 'none' : 'flex';
-    $('#tabTenderEdit').className = `tab ${isE ? 'active' : ''}`;
-    $('#tabTenderIntel').className = `tab ${!isE ? 'active' : ''}`;
+    if ($('#tenderEditContent')) $('#tenderEditContent').style.display = isE ? 'flex' : 'none';
+    if ($('#tenderIntelContent')) $('#tenderIntelContent').style.display = isE ? 'none' : 'flex';
+    if ($('#tabTenderEdit')) $('#tabTenderEdit').className = `tab ${isE ? 'active' : ''}`;
+    if ($('#tabTenderIntel')) $('#tabTenderIntel').className = `tab ${!isE ? 'active' : ''}`;
   }
 
   function setMatchTab(tab) {
     const isW = tab === 'workers';
-    $('#matchBodyWorkers').style.display = isW ? 'block' : 'none';
-    $('#matchBodyCandidates').style.display = isW ? 'none' : 'block';
-    $('#tabWorkers').className = `tab ${isW ? 'active' : ''}`;
-    $('#tabCandidates').className = `tab ${!isW ? 'active' : ''}`;
+    if ($('#matchBodyWorkers')) $('#matchBodyWorkers').style.display = isW ? 'block' : 'none';
+    if ($('#matchBodyCandidates')) $('#matchBodyCandidates').style.display = isW ? 'none' : 'block';
+    if ($('#tabWorkers')) $('#tabWorkers').className = `tab ${isW ? 'active' : ''}`;
+    if ($('#tabCandidates')) $('#tabCandidates').className = `tab ${!isW ? 'active' : ''}`;
   }
 
   function addReqInput(v = '') {
