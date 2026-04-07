@@ -34,9 +34,10 @@
     "altura fisica": ["altura fisica", "trabajo en altura", "altura", "altfis", "altura geográfica", "altura geografica"],
     "silice": ["silice", "sílice"],
     "ruido": ["ruido"],
-    "infpsico": ["infpsico", "informe psicologico", "informe psicológico", "psicologico", "psicológico"],
+    "psicologico": ["psicologico", "psicológico", "infpsico", "informe psicologico", "informe psicológico"],
     "examen preocupacional": ["preocupacional", "examen preocupacional", "preocupacional vigente"],
-    "licencia conducir": ["licencia conducir", "licencia de conducir", "licencia clase b", "licencia clase a", "licencia"],
+    "contra incendios": ["contra incendios", "red humeda", "fuego", "fire system", "sistemas extinguidores", "sistemas contra incendios", "detectores de humo", "red seca"],
+    "instalacion": ["instalacion", "instalador", "montaje", "armado", "puesta en marcha"],
     "curso": ["curso", "capacitacion", "capacitación", "certificacion", "certificación"],
     "certificacion": ["certificacion", "certificación", "acreditacion", "acreditación"],
     "operador": ["operador", "operacion", "operación"],
@@ -431,7 +432,18 @@
     if (tab === 'intel') updateIntelTab(id);
   };
 
-  window.runMatchmakingById = (id) => runMatchmaking(state.allTenders.find(t => t.id === id));
+  window.runMatchmakingById = async (id) => {
+    let t = state.allTenders.find(x => x.id === id);
+    // Si no ha sido guardado, usamos el estado actual
+    if (!t && $('#tenderId')?.value === '') { 
+        t = { 
+            id: 'unsaved', 
+            name: $('#tenderName').value, 
+            requirements: $$('.req-input').map(i => i.value.trim()).filter(Boolean) 
+        };
+    }
+    runMatchmaking(t);
+  };
 
   window.deleteTender = async (id) => {
     if (confirm('¿DESACTIVAR PROYECTO?')) {
