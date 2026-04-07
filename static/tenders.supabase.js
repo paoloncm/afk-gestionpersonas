@@ -81,10 +81,24 @@
         let txt = "";
         const num = pdf.numPages || pdf.length;
         for (let i = 1; i <= num; i++) {
-            this.updateRadar(`ESCANEANDO PÁGINA ${i}/${num}`, "Extrayendo jerarquía tabular...");
+            this.updateRadar(`ESCANEANDO PÁGINA ${i}/${num}`, "Extrayendo jerarquía tabular con precisión Y-Axis...");
             const page = await pdf.getPage(i);
             const content = await page.getTextContent();
-            txt += content.items.map(it => it.str).join(" ") + "\n";
+            
+            // Layout-Aware Sort: Priorizar Y (descendente) y luego X (ascendente)
+            const items = content.items.sort((a, b) => {
+              if (Math.abs(a.transform[5] - b.transform[5]) < 5) return a.transform[4] - b.transform[4];
+              return b.transform[5] - a.transform[5];
+            });
+
+            let lastY = -1;
+            let pageTxt = "";
+            for (const item of items) {
+                if (lastY !== -1 && Math.abs(item.transform[5] - lastY) > 8) pageTxt += "\n";
+                pageTxt += item.str + " ";
+                lastY = item.transform[5];
+            }
+            txt += pageTxt + "\n[PÁGINA_BREAK]\n";
         }
         return txt;
     },
