@@ -113,12 +113,14 @@
       overflow-y: auto;
       padding-right: 12px;
       margin-top: 10px;
+      min-height: 0;
     }
-    #tenderForm, #tenderEditContent, #tenderIntelContent {
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-      overflow: hidden;
+    .modal-footer {
+      flex: 0 0 auto;
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      text-align: right;
     }
     .modal-scroll::-webkit-scrollbar { width: 6px; }
     .modal-scroll::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 10px; }
@@ -249,7 +251,7 @@
            </div>
             </div>
 
-            <div style="margin-top:20px; text-align:right; border-top:1px solid rgba(255,255,255,0.05); padding-top:15px;">
+            <div class="modal-footer">
                 <button type="submit" class="btn primary" style="padding:12px 40px;">GUARDAR LICITACIÓN [PROTOCOL_ENTRY]</button>
             </div>
           </div>
