@@ -81,8 +81,9 @@
   // --- DATA LOADING ---
   async function init() {
     console.log("[Analytics] Iniciando Protocolo de Sincronización...");
-    if (!window.db) {
-       console.error("[Analytics] Error: window.db no detectado.");
+    if (!window.supabase) {
+       console.warn("[Analytics] Esperando enlace con Supabase...");
+       setTimeout(init, 500);
        return;
     }
     await loadData();
@@ -92,22 +93,15 @@
 
   async function loadData() {
     try {
-      const [
-        { data: workers, error: wErr },
-        { data: candidates, error: cErr },
-        { data: exams, error: eErr },
-        { data: vacancies, error: vErr }
-      ] = await Promise.all([
-        window.db.from("workers").select("*"),
-        window.db.from("candidates").select("*"),
-        window.db.from("medical_exam_records").select("*"),
-        window.db.from("vacancies").select("*")
-      ]);
+      const { data: workers, error: wErr } = await window.supabase.from("workers").select("*");
+      const { data: candidates, error: cErr } = await window.supabase.from("candidates").select("*");
+      const { data: exams, error: eErr } = await window.supabase.from("medical_exam_records").select("*");
+      const { data: vacancies, error: vErr } = await window.supabase.from("vacancies").select("*");
 
-      if (wErr) throw wErr;
-      if (cErr) throw cErr;
-      if (eErr) throw eErr;
-      if (vErr) throw vErr;
+      if (wErr) console.warn("[Analytics] Error loading workers:", wErr);
+      if (cErr) console.warn("[Analytics] Error loading candidates:", cErr);
+      if (eErr) console.warn("[Analytics] Error loading exams:", eErr);
+      if (vErr) console.warn("[Analytics] Error loading vacancies:", vErr);
 
       allWorkers = workers || [];
       allCandidates = candidates || [];
@@ -116,14 +110,13 @@
 
       // Consolidar para filtros globales
       filteredData = [
-        ...allWorkers.map(w => ({ ...w, _type: 'WORKER', name: w.full_name, prof: w.position || w.company_name })),
-        ...allCandidates.map(c => ({ ...c, _type: 'CANDIDATE', name: c.nombre_completo, prof: c.profesion }))
+        ...allWorkers.map(w => ({ ...w, _type: 'WORKER', name: w.full_name || w.name, prof: w.position || w.cargo || 'Operativo' })),
+        ...allCandidates.map(c => ({ ...c, _type: 'CANDIDATE', name: c.nombre_completo || c.name, prof: c.profesion || 'Candidato' }))
       ];
 
-      console.log(`[Analytics] Sincronización Exitosa: ${allWorkers.length} Operarios / ${allCandidates.length} Candidatos.`);
+      console.log(`[Analytics] Sincronización Finalizada: ${allWorkers.length} Operarios / ${allCandidates.length} Candidatos.`);
     } catch (err) {
       console.error("[Analytics] Critical Error:", err);
-      window.notificar?.("Error al sincronizar analíticas con la base de datos.", "danger");
     }
   }
 
