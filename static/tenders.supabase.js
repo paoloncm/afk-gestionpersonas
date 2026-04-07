@@ -1,5 +1,5 @@
 /** 
- * tenders.supabase.js - Protocolo Stark Intelligence V18 (UI Fix & Scroll NASA)
+ * tenders.supabase.js - Protocolo Stark Intelligence V19 (UI/UX Recovery) 
  */
 
 (function () {
@@ -99,7 +99,6 @@
         
         document.querySelectorAll('.close-modal').forEach(c => c.onclick = () => {
             document.querySelectorAll('.modal').forEach(m => m.classList.remove('is-open'));
-            if ($('#scannerOverlay')) $('#scannerOverlay').style.display = 'none';
         });
 
         const tb = $('#tendersBody'), zo = $('#uploadZone'), pi = $('#pdfInput');
@@ -118,16 +117,24 @@
         }
     },
     async handleFile(f) {
-        if (!f || !$('#scannerOverlay')) return;
-        $('#scannerOverlay').style.display = 'flex';
+        if (!f) return; $('#scannerOverlay').style.display = 'flex';
         try {
             const a = await StarkProcessor.process(f);
-            $('#tenderName').value = a.roles[0]?.nombre ? `Licitación: ${a.roles[0].nombre}` : f.name.replace('.pdf','');
+            $('#tenderName').value = `Licitación: ${a.roles[0]?.nombre || f.name.replace('.pdf','')}`;
             $('#tenderDesc').value = a.tender_summary || "";
-            StarkState.detectedVacancies = a.roles.map(r => ({ title: r.nombre, requirements: [...(r.requisitos||[]), ...(r.certificaciones||[]), r.experiencia_minima].filter(v=>v), total_positions: r.cantidad||1 }));
+            
+            // Populate Global Reqs
+            $('#reqContainer').innerHTML = '';
+            (a.roles[0]?.requisitos || []).slice(0, 5).forEach(r => this.addReq(r));
+            
+            StarkState.detectedVacancies = a.roles.map(r => ({ 
+                title: r.nombre, 
+                requirements: [...(r.requisitos||[]), ...(r.certificaciones||[]), r.experiencia_minima].filter(v=>v), 
+                total_positions: r.cantidad||1 
+            }));
             this.renderVacs();
-            window.notificar?.("ANÁLISIS COMPLETADO");
-        } catch (e) { console.error(e); window.notificar?.("ERROR EN SCAN"); }
+            window.notificar?.("INTEGRACIÓN NIVEL STARK COMPLETADA");
+        } catch (e) { window.notificar?.("ERROR EN SCAN"); }
         $('#scannerOverlay').style.display = 'none';
     },
     async load() {
@@ -151,7 +158,7 @@
     async openEdit(id=null, tab='edit') {
         const t = id ? StarkState.tenders.find(x => x.id === id) : { id:'', name:'', description:'', requirements:[] };
         $('#tenderId').value = t.id; $('#tenderName').value = t.name; $('#tenderDesc').value = t.description||'';
-        $('#reqContainer').innerHTML = ''; (t.requirements||[]).forEach(r => this.addReq(r)); if (!id) this.addReq();
+        $('#reqContainer').innerHTML = ''; (t.requirements||[]).forEach(r => this.addReq(r)); if (!t.requirements?.length) this.addReq();
         if (id) { const { data } = await window.supabase.from('vacancies').select('*').eq('tender_id', id); StarkState.detectedVacancies = data||[]; }
         else StarkState.detectedVacancies = [];
         this.renderVacs(); this.switchTab(tab); $('#tenderModal').classList.add('is-open');
@@ -216,13 +223,23 @@
         try { await StarkAPI.save(d, StarkState.detectedVacancies); $('#tenderModal').classList.remove('is-open'); this.load(); } catch(e) { window.notificar?.("ERROR AL GUARDAR"); }
     },
     renderVacs() {
-        $('#vacanciesWrapper').style.display = StarkState.detectedVacancies.length ? 'block' : 'none';
+        const w = $('#vacanciesWrapper'); if (!w) return;
+        w.style.display = StarkState.detectedVacancies.length ? 'block' : 'none';
         $('#vacanciesList').innerHTML = StarkState.detectedVacancies.map((v, i) => `
-            <div class="stark-card" style="padding:15px; margin-bottom:8px; border-left:2px solid var(--accent); display:flex; justify-content:space-between;">
-              <div style="flex:1;"><input class="input" value="${v.title}" style="background:transparent; border:none; font-weight:900; color:var(--accent); width:100%;"><div style="font-size:9px; color:var(--muted);">${(v.requirements||[]).join(' • ')}</div></div>
-              <div style="width:50px;"><input type="number" class="input" value="${v.total_positions||1}" style="background:rgba(0,0,0,0.2);"></div>
-              <button type="button" class="btn btn--mini" onclick="this.parentElement.remove()">×</button>
+            <div class="stark-card" style="padding:15px; margin-bottom:8px; border-left:2px solid var(--accent); display:flex; justify-content:space-between; align-items:center;">
+              <div style="flex:1;">
+                 <input class="input" value="${v.title}" style="background:transparent; border:none; font-weight:900; color:var(--accent); width:100%; border-bottom:1px solid rgba(255,255,255,0.05);" onchange="StarkState.detectedVacancies[${i}].title=this.value">
+                 <div style="font-size:9px; color:var(--muted); margin-top:4px;">${(v.requirements||[]).join(' • ')}</div>
+              </div>
+              <div style="width:60px; margin:0 15px;">
+                 <input type="number" class="input" value="${v.total_positions||1}" onchange="StarkState.detectedVacancies[${i}].total_positions=parseInt(this.value)" style="background:rgba(0,0,0,0.2); text-align:center;">
+              </div>
+              <button type="button" class="btn btn--mini" onclick="StarkUI.removeVac(${i})" style="color:var(--danger)">×</button>
             </div>`).join('');
+    },
+    removeVac(i) {
+        StarkState.detectedVacancies.splice(i, 1);
+        this.renderVacs();
     },
     addReq(val = '') {
         const d = document.createElement('div'); d.style.display = 'flex'; d.style.gap = '8px'; d.style.marginBottom = '5px';
@@ -241,5 +258,7 @@
     escape(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
   };
 
+  // Expose removeVac for global onclick use
+  window.StarkUI = StarkUI;
   StarkUI.init();
 })();
