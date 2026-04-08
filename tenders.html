@@ -368,6 +368,18 @@
     <div id="radarLog" style="font-family:monospace; font-size:12px; color:var(--muted);">Iniciando Matrix Scan...</div>
   </div>
 
+  <!-- RECRUITMENT HUD OVERLAY -->
+  <div id="recruitmentOverlay" class="scanner-overlay" style="display:none; flex-direction:column; background:rgba(0,10,20,0.95); z-index:10000;">
+    <div class="radar" style="border-color:var(--ok);"></div>
+    <div id="recruitmentLog" style="margin-top:20px; font-family:monospace; color:var(--ok); font-size:14px; text-transform:uppercase; letter-spacing:2px; text-align:center;">
+        Protocolo de Reclutamiento Autónomo Activado...
+    </div>
+    <div id="recruitmentProgress" style="width:300px; height:2px; background:rgba(255,255,255,0.1); margin-top:20px; position:relative; overflow:hidden;">
+        <div id="recruitmentBar" style="width:0%; height:100%; background:var(--ok); transition:width 0.3s ease;"></div>
+    </div>
+    <div id="recruitmentDetail" style="margin-top:10px; font-size:10px; color:var(--muted);">Analizando base de datos de talentos...</div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>

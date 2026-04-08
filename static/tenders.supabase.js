@@ -291,8 +291,12 @@
             if ($('#intelDesc')) $('#intelDesc').value = a.tender_summary || "";
             if ($('#intelReqs')) {
                 $('#intelReqs').innerHTML = roles.map(r => `
-                    <div style="font-size:10px; background:rgba(34,211,238,0.1); border:1px solid var(--accent); padding:5px; border-radius:4px;">
-                        <strong>${escapeHtml(r.nombre)}</strong> (${r.cantidad} pers)
+                    <div class="stark-card" style="font-size:10px; background:rgba(34,211,238,0.05); border:1px solid rgba(34,211,238,0.2); padding:8px; border-radius:4px; margin-bottom:5px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <strong style="color:var(--accent);">${escapeHtml(r.nombre.toUpperCase())}</strong>
+                            <span style="font-weight:900;">CANT: ${r.cantidad}</span>
+                        </div>
+                        <div style="font-size:8px; color:var(--muted); margin-top:4px;">${escapeHtml(r.perfil_ideal || '')}</div>
                     </div>
                 `).join('');
             }
@@ -347,7 +351,8 @@
         requirements: safeArray(r.requirements || r.requisitos),
         certifications: safeArray(r.certificaciones || r.certificciones),
         experiencia_minima: r.experiencia_minima || "No especificada",
-        total_positions: parseInt(r.cantidad) || 1 
+        total_positions: parseInt(r.cantidad) || 1,
+        perfil_ideal: r.perfil_ideal || ""
     }));
     
     renderDetectedVacancies();
@@ -400,10 +405,90 @@
           })));
       }
 
-      notify('PROTOCOLO STARK: LICITACIÓN Y VACANTES SINCRONIZADAS.');
+      // --- DISPARAR RECLUTAMIENTO AUTÓNOMO ---
+      if (state.detectedVacancies.length > 0) {
+          const { data: finalV } = await window.supabase.from('vacancies').select('*').eq('tender_id', tid);
+          if (finalV?.length) {
+              await autoAssignCandidates(tid, finalV);
+          }
+      }
+
+      notify('OPERACIÓN COMPLETADA: LICITACIÓN Y RECLUTAMIENTO SINCRONIZADOS.');
       closeModal($('#tenderModal'));
       loadTenders();
     } catch (err) { notifyError('Error en persistencia industrial.', err); }
+  }
+
+  async function autoAssignCandidates(tid, vacancies) {
+    const overlay = $('#recruitmentOverlay');
+    const bar = $('#recruitmentBar');
+    const log = $('#recruitmentLog');
+    const detail = $('#recruitmentDetail');
+
+    if (overlay) overlay.style.display = 'flex';
+    if (bar) bar.style.width = '0%';
+    
+    try {
+        const talent = await ensureTalentDataLoaded();
+        const totalV = vacancies.length;
+        
+        // 1. Obtener shortlists existentes para detectar colisiones (duplicados)
+        const { data: existingSL } = await window.supabase.from('vacancy_shortlists').select('person_id');
+        const busyIds = new Set((existingSL || []).map(s => s.person_id));
+
+        const allAssignments = [];
+
+        for (let i = 0; i < totalV; i++) {
+            const v = vacancies[i];
+            const progress = Math.round(((i + 1) / totalV) * 100);
+            if (bar) bar.style.width = `${progress}%`;
+            if (log) log.textContent = `RECLUTANDO: ${v.title.toUpperCase()}`;
+            
+            // Evaluar afinidad para todos los trabajadores
+            const scored = talent.workers.map(w => ({
+                id: w.id,
+                ...scoreRequirements(getWorkerSourceText(w, talent.workerCredentials.filter(c => c.worker_id === w.id)), v.requirements, v.certifications)
+            }))
+            .filter(s => s.score >= 70) // Solo los mejores (Nivel Stark)
+            .sort((a,b) => b.score - a.score);
+
+            // Seleccionar top N según dotación
+            const quota = v.total_positions || 1;
+            const top = scored.slice(0, quota);
+
+            top.forEach(candidate => {
+                const isDuplicate = busyIds.has(candidate.id);
+                allAssignments.push({
+                    vacancy_id: v.id,
+                    person_id: candidate.id,
+                    score: candidate.score,
+                    status: isDuplicate ? 'DOBLE_ASIGNACION' : 'RECLUTADO_IA',
+                    notes: `Asignación automática JARVIS (Score: ${candidate.score}%)${isDuplicate ? ' - ADVERTENCIA: En otro proceso' : ''}`
+                });
+                if (detail) detail.textContent = `Asignado: ${candidate.id.slice(0,8)} a ${v.title}`;
+            });
+            
+            await new Promise(r => setTimeout(r, 200)); // Delay estético Stark
+        }
+
+        if (allAssignments.length > 0) {
+            const { error: insErr } = await window.supabase.from('vacancy_shortlists').insert(allAssignments);
+            if (insErr) throw insErr;
+            notify(`JARVIS: ${allAssignments.length} CANDIDATOS RECLUTADOS AUTÓNOMAMENTE.`);
+        } else {
+            notify("JARVIS: No se encontraron candidatos con afinidad suficiente.");
+        }
+
+    } catch (e) {
+        console.error("Error en reclutamiento autónomo:", e);
+        notifyError("Falla en el Protocolo de Reclutamiento", e);
+    }
+
+    if (overlay) {
+        setTimeout(() => {
+            overlay.style.display = 'none';
+        }, 1500);
+    }
   }
 
   async function runMatchmaking(tender) {
