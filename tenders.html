@@ -244,15 +244,18 @@
               <input type="file" id="pdfInput" style="display:none" accept="application/pdf">
            </div>
 
-           <div id="intelPreview" style="display:none;" class="intel-report">
-              <h4 class="text-green">Reporte de Inteligencia Extraído</h4>
-              <textarea id="intelDesc" class="input" style="width:100%; height:80px; margin:10px 0; background:rgba(0,0,0,0.2); border:1px solid var(--border); padding:10px;"></textarea>
+           <div id="intelPreview" style="display:none; margin-bottom: 20px;" class="intel-report">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h4 class="text-green">Reporte de Inteligencia Extraído</h4>
+                <div id="riskBadge" class="badge" style="background:var(--accent); color:black; font-weight:900; padding:4px 12px; border-radius:4px;">RIESGO: ---</div>
+              </div>
+              <textarea id="intelDesc" class="input" style="width:100%; height:80px; margin:10px 0; background:rgba(0,0,0,0.2); border:1px solid var(--border); padding:10px;" placeholder="Resumen ejecutivo de la IA..."></textarea>
               <div id="intelReqs" style="margin-top:10px; display:grid; grid-template-columns: 1fr 1fr; gap:10px;"></div>
-              <button type="button" class="btn primary" id="btnImportIntel" style="width:100%; margin-top:15px;">Integrar a la Base de Datos</button>
+              <!-- Botón removido para evitar confusión, se integra automáticamente al guardar -->
            </div>
 
-           <div id="vacanciesWrapper" style="display:none; margin-top:30px; border-top:1px solid rgba(255,255,255,0.1); padding-top:20px;">
-              <h4 class="text-cyan" style="margin-bottom:15px;">Estructura de Vacantes Detectada</h4>
+           <div id="vacanciesWrapper" style="display:none; margin-top:10px; border-top:1px solid rgba(255,255,255,0.1); padding-top:20px;">
+              <h4 class="text-cyan" style="margin-bottom:15px; letter-spacing:1px;">ESTRUCTURA DE VACANTES [DETECTION_SCAN]</h4>
               <div id="vacanciesList" style="display:grid; grid-template-columns: 1fr; gap:12px;"></div>
            </div>
             </div>

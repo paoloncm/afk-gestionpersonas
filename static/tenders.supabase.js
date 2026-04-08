@@ -268,22 +268,48 @@
     $('#scannerOverlay').style.display = 'flex';
     try {
         const a = await StarkProcessor.process(f);
-        $('#tenderName').value = `Licitación: ${a.roles[0]?.nombre || f.name.replace('.pdf','')}`;
-        $('#tenderDesc').value = a.tender_summary || "";
         
-        $('#reqContainer').innerHTML = '';
-        (a.roles[0]?.requisitos || []).slice(0, 5).forEach(r => addReqInput(r));
+        // 1. Población de campos básicos
+        if ($('#tenderName')) $('#tenderName').value = `Licitación: ${a.roles?.[0]?.nombre || f.name.replace('.pdf','')}`;
+        if ($('#tenderDesc')) $('#tenderDesc').value = a.tender_summary || "";
         
-        state.detectedVacancies = a.roles.map(r => ({ 
+        // 2. Población de Inteligencia (Summary & Risk)
+        if ($('#intelPreview')) $('#intelPreview').style.display = 'block';
+        if ($('#intelDesc')) $('#intelDesc').value = a.tender_summary || "";
+        if ($('#riskBadge')) {
+            const risk = a.global_risk || "Medio";
+            $('#riskBadge').textContent = `RIESGO: ${risk.toUpperCase()}`;
+            $('#riskBadge').style.background = risk.includes('Alto') ? 'var(--danger)' : (risk.includes('Bajo') ? 'var(--ok)' : 'var(--accent)');
+            $('#riskBadge').style.color = risk.includes('Bajo') || risk.includes('Medio') ? 'black' : 'white';
+        }
+
+        // 3. Requerimientos globales (del primer rol detectado)
+        if ($('#reqContainer')) {
+            $('#reqContainer').innerHTML = '';
+            const firstRoleReqs = a.roles?.[0]?.requirements || a.roles?.[0]?.requisitos || [];
+            firstRoleReqs.slice(0, 5).forEach(r => addReqInput(r));
+        }
+        
+        // 4. Vacantes Detectadas para el Pipeline
+        state.detectedVacancies = (a.roles || []).map(r => ({ 
             title: r.nombre, 
-            requirements: safeArray(r.requirements),
-            certifications: safeArray(r.certificaciones),
+            requirements: safeArray(r.requirements || r.requisitos),
+            certifications: safeArray(r.certificaciones || r.certificciones),
             experiencia_minima: r.experiencia_minima || "",
             total_positions: r.cantidad || 1 
         }));
+        
         renderDetectedVacancies();
+        
+        // 5. Garantizar que el modal esté abierto para mostrar los resultados
+        if (!$('#tenderModal').classList.contains('is-open')) {
+            openModal($('#tenderModal'));
+        }
+        
         notify("EXTRACCIÓN INDUSTRIAL NIVEL STARK COMPLETADA");
-    } catch (e) { notifyError("Error en Scan Industrial", e); }
+    } catch (e) { 
+        notifyError("Error en Scan Industrial", e); 
+    }
     $('#scannerOverlay').style.display = 'none';
   }
 
@@ -411,6 +437,13 @@
         z.ondragover = (e) => { e.preventDefault(); z.style.borderColor = 'var(--accent)'; z.style.background = 'rgba(34,211,238,0.1)'; };
         z.ondragleave = () => { z.style.borderColor = 'var(--border)'; z.style.background = 'transparent'; };
         z.ondrop = (e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f?.type === 'application/pdf') handleFile(f); };
+    }
+
+    if ($('#btnStarkScan')) {
+        $('#btnStarkScan').onclick = () => {
+            // Abrir el input directamente si el dashboard lo pide
+            if (i) i.click();
+        };
     }
   }
 
