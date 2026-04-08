@@ -266,49 +266,77 @@
   async function handleFile(f) {
     if (!f) return;
     $('#scannerOverlay').style.display = 'flex';
+    if ($('#radarLog')) $('#radarLog').textContent = "INICIANDO PROTOCOLO JARVIS...";
+    
     try {
         const a = await StarkProcessor.process(f);
         
-        // 1. Población de campos básicos
-        if ($('#tenderName')) $('#tenderName').value = `Licitación: ${a.roles?.[0]?.nombre || f.name.replace('.pdf','')}`;
-        if ($('#tenderDesc')) $('#tenderDesc').value = a.tender_summary || "";
-        
-        // 2. Población de Inteligencia (Summary & Risk)
-        if ($('#intelPreview')) $('#intelPreview').style.display = 'block';
-        if ($('#intelDesc')) $('#intelDesc').value = a.tender_summary || "";
-        if ($('#riskBadge')) {
-            const risk = a.global_risk || "Medio";
-            $('#riskBadge').textContent = `RIESGO: ${risk.toUpperCase()}`;
-            $('#riskBadge').style.background = risk.includes('Alto') ? 'var(--danger)' : (risk.includes('Bajo') ? 'var(--ok)' : 'var(--accent)');
-            $('#riskBadge').style.color = risk.includes('Bajo') || risk.includes('Medio') ? 'black' : 'white';
+        // 1. Robustez en la data recibida
+        const roles = Array.isArray(a.roles) ? a.roles : [];
+        if (roles.length === 0) {
+            // Fallback: Generar un rol general si la IA no detectó cargos específicos pero el documento tiene texto
+            roles.push({
+                nombre: "PERFIL GENERAL OPERATIVO",
+                cantidad: 1,
+                requirements: ["Base Técnica", "Seguridad Industrial"],
+                certificaciones: [],
+                experiencia_minima: "1-3 años"
+            });
         }
 
-        // 3. Requerimientos globales (del primer rol detectado)
+        // 2. Población de campos básicos
+        if ($('#tenderName')) $('#tenderName').value = `Licitación: ${roles[0]?.nombre || f.name.replace('.pdf','')}`;
+        if ($('#tenderDesc')) $('#tenderDesc').value = a.tender_summary || "Análisis técnico completado por JARVIS.";
+        
+        // 3. Población de Inteligencia (Summary & Risk)
+        if ($('#intelPreview')) {
+            $('#intelPreview').style.display = 'block';
+            if ($('#intelDesc')) $('#intelDesc').value = a.tender_summary || "";
+            if ($('#riskBadge')) {
+                const risk = a.global_risk || "Medio";
+                $('#riskBadge').textContent = `RIESGO: ${risk.toUpperCase()}`;
+                $('#riskBadge').style.background = risk.includes('Alto') ? 'var(--danger)' : (risk.includes('Bajo') ? 'var(--ok)' : 'var(--accent)');
+                $('#riskBadge').style.color = risk.includes('Bajo') || risk.includes('Medio') ? 'black' : 'white';
+            }
+        }
+
+        // 4. Requerimientos globales (Manual Input Sync)
         if ($('#reqContainer')) {
             $('#reqContainer').innerHTML = '';
-            const firstRoleReqs = a.roles?.[0]?.requirements || a.roles?.[0]?.requisitos || [];
-            firstRoleReqs.slice(0, 5).forEach(r => addReqInput(r));
+            const allReqs = [...new Set([...(roles[0]?.requirements || []), ...(roles[0]?.certificaciones || [])])];
+            allReqs.slice(0, 6).forEach(r => addReqInput(r));
         }
         
-        // 4. Vacantes Detectadas para el Pipeline
-        state.detectedVacancies = (a.roles || []).map(r => ({ 
-            title: r.nombre, 
+        // 5. Vacantes Detectadas (Pipeline Data)
+        state.detectedVacancies = roles.map(r => ({ 
+            title: r.nombre || 'CARGO SIN NOMBRE', 
             requirements: safeArray(r.requirements || r.requisitos),
             certifications: safeArray(r.certificaciones || r.certificciones),
-            experiencia_minima: r.experiencia_minima || "",
-            total_positions: r.cantidad || 1 
+            experiencia_minima: r.experiencia_minima || "No especificada",
+            total_positions: parseInt(r.cantidad) || 1 
         }));
         
         renderDetectedVacancies();
         
-        // 5. Garantizar que el modal esté abierto para mostrar los resultados
+        // 6. Optimización de UI (Minimizar UploadZone al terminar)
+        if ($('#uploadZone')) {
+            $('#uploadZone').style.padding = '15px';
+            $('#uploadZone').querySelector('p').textContent = "Re-escanear otro documento";
+            $('#uploadZone').querySelector('div').style.fontSize = '20px';
+        }
+
         if (!$('#tenderModal').classList.contains('is-open')) {
             openModal($('#tenderModal'));
         }
         
-        notify("EXTRACCIÓN INDUSTRIAL NIVEL STARK COMPLETADA");
+        notify("PROTOCOLO STARK: EXTRACCIÓN INDUSTRIAL FINALIZADA");
+        
+        // Auto-scroll a los resultados superiores
+        const scrollArea = $('.modal-scroll');
+        if (scrollArea) scrollArea.scrollTop = 0;
+
     } catch (e) { 
-        notifyError("Error en Scan Industrial", e); 
+        notifyError("Falla en el motor JARVIS", e); 
     }
     $('#scannerOverlay').style.display = 'none';
   }

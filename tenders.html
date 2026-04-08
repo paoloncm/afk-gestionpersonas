@@ -220,6 +220,20 @@
         <form id="tenderForm">
           <div id="tenderEditContent">
             <div class="modal-scroll">
+           <div id="intelPreview" style="display:none; margin-bottom: 25px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 20px;" class="intel-report">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h4 class="text-green" style="letter-spacing:1px;">RESULTADOS DE INTELIGENCIA JARVIS</h4>
+                <div id="riskBadge" class="badge" style="background:var(--accent); color:black; font-weight:900; padding:4px 12px; border-radius:4px;">RIESGO: ---</div>
+              </div>
+              <textarea id="intelDesc" class="input" style="width:100%; height:80px; margin:10px 0; background:rgba(34,211,238,0.05); border:1px solid rgba(34,211,238,0.2); padding:10px;" placeholder="Resumen ejecutivo de la IA..."></textarea>
+              <div id="intelReqs" style="margin-top:10px; display:grid; grid-template-columns: 1fr 1fr; gap:10px;"></div>
+           </div>
+
+           <div id="vacanciesWrapper" style="display:none; margin-bottom:25px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 20px;">
+              <h4 class="text-cyan" style="margin-bottom:15px; letter-spacing:1px;">ESTRUCTURA DE VACANTES DETECTADA</h4>
+              <div id="vacanciesList" style="display:grid; grid-template-columns: 1fr; gap:12px;"></div>
+           </div>
+
            <input type="hidden" id="tenderId">
            <div class="grid-2" style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-bottom:20px;">
              <div>
@@ -242,21 +256,6 @@
               <div style="font-size:40px; margin-bottom:10px;">📄</div>
               <p>Arrastra el pliego en PDF para que JARVIS realice el análisis de ingeniería humana.</p>
               <input type="file" id="pdfInput" style="display:none" accept="application/pdf">
-           </div>
-
-           <div id="intelPreview" style="display:none; margin-bottom: 20px;" class="intel-report">
-              <div style="display:flex; justify-content:space-between; align-items:center;">
-                <h4 class="text-green">Reporte de Inteligencia Extraído</h4>
-                <div id="riskBadge" class="badge" style="background:var(--accent); color:black; font-weight:900; padding:4px 12px; border-radius:4px;">RIESGO: ---</div>
-              </div>
-              <textarea id="intelDesc" class="input" style="width:100%; height:80px; margin:10px 0; background:rgba(0,0,0,0.2); border:1px solid var(--border); padding:10px;" placeholder="Resumen ejecutivo de la IA..."></textarea>
-              <div id="intelReqs" style="margin-top:10px; display:grid; grid-template-columns: 1fr 1fr; gap:10px;"></div>
-              <!-- Botón removido para evitar confusión, se integra automáticamente al guardar -->
-           </div>
-
-           <div id="vacanciesWrapper" style="display:none; margin-top:10px; border-top:1px solid rgba(255,255,255,0.1); padding-top:20px;">
-              <h4 class="text-cyan" style="margin-bottom:15px; letter-spacing:1px;">ESTRUCTURA DE VACANTES [DETECTION_SCAN]</h4>
-              <div id="vacanciesList" style="display:grid; grid-template-columns: 1fr; gap:12px;"></div>
            </div>
             </div>
 
