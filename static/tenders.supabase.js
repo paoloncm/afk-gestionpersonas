@@ -15,6 +15,7 @@
   const state = {
     allTenders: [],
     detectedVacancies: [],
+    lastAiAnalysis: null,
     selectedTenderId: null,
     activeMatchTender: null,
     activeMatchVacancies: [],
@@ -270,11 +271,10 @@
     
     try {
         const a = await StarkProcessor.process(f);
+        state.lastAiAnalysis = a; // Guardar para importación manual
         
-        // 1. Robustez en la data recibida
         const roles = Array.isArray(a.roles) ? a.roles : [];
         if (roles.length === 0) {
-            // Fallback: Generar un rol general si la IA no detectó cargos específicos pero el documento tiene texto
             roles.push({
                 nombre: "PERFIL GENERAL OPERATIVO",
                 cantidad: 1,
@@ -282,57 +282,40 @@
                 certificaciones: [],
                 experiencia_minima: "1-3 años"
             });
+            state.lastAiAnalysis.roles = roles;
         }
 
-        // 2. Población de campos básicos
-        if ($('#tenderName')) $('#tenderName').value = `Licitación: ${roles[0]?.nombre || f.name.replace('.pdf','')}`;
-        if ($('#tenderDesc')) $('#tenderDesc').value = a.tender_summary || "Análisis técnico completado por JARVIS.";
-        
-        // 3. Población de Inteligencia (Summary & Risk)
+        // 2. Mostrar resultados en el panel de Inteligencia (SIN sobrescribir la ficha aún)
         if ($('#intelPreview')) {
             $('#intelPreview').style.display = 'block';
             if ($('#intelDesc')) $('#intelDesc').value = a.tender_summary || "";
+            if ($('#intelReqs')) {
+                $('#intelReqs').innerHTML = roles.map(r => `
+                    <div style="font-size:10px; background:rgba(34,211,238,0.1); border:1px solid var(--accent); padding:5px; border-radius:4px;">
+                        <strong>${escapeHtml(r.nombre)}</strong> (${r.cantidad} pers)
+                    </div>
+                `).join('');
+            }
             if ($('#riskBadge')) {
                 const risk = a.global_risk || "Medio";
                 $('#riskBadge').textContent = `RIESGO: ${risk.toUpperCase()}`;
                 $('#riskBadge').style.background = risk.includes('Alto') ? 'var(--danger)' : (risk.includes('Bajo') ? 'var(--ok)' : 'var(--accent)');
-                $('#riskBadge').style.color = risk.includes('Bajo') || risk.includes('Medio') ? 'black' : 'white';
             }
         }
 
-        // 4. Requerimientos globales (Manual Input Sync)
-        if ($('#reqContainer')) {
-            $('#reqContainer').innerHTML = '';
-            const allReqs = [...new Set([...(roles[0]?.requirements || []), ...(roles[0]?.certificaciones || [])])];
-            allReqs.slice(0, 6).forEach(r => addReqInput(r));
-        }
-        
-        // 5. Vacantes Detectadas (Pipeline Data)
-        state.detectedVacancies = roles.map(r => ({ 
-            title: r.nombre || 'CARGO SIN NOMBRE', 
-            requirements: safeArray(r.requirements || r.requisitos),
-            certifications: safeArray(r.certificaciones || r.certificciones),
-            experiencia_minima: r.experiencia_minima || "No especificada",
-            total_positions: parseInt(r.cantidad) || 1 
-        }));
-        
-        renderDetectedVacancies();
-        
-        // 6. Optimización de UI (Minimizar UploadZone al terminar)
+        // 3. Optimización de UI
         if ($('#uploadZone')) {
             $('#uploadZone').style.padding = '15px';
-            $('#uploadZone').querySelector('p').textContent = "Re-escanear otro documento";
-            $('#uploadZone').querySelector('div').style.fontSize = '20px';
+            $('#uploadZone').querySelector('p').textContent = "Explorar otro documento";
         }
 
         if (!$('#tenderModal').classList.contains('is-open')) {
             openModal($('#tenderModal'));
         }
         
-        notify("PROTOCOLO STARK: EXTRACCIÓN INDUSTRIAL FINALIZADA");
+        notify("JARVIS: ANÁLISIS COMPLETADO. REVISA EL PANEL SUPERIOR.");
         
-        // Auto-scroll a los resultados superiores
-        const scrollArea = $('.modal-scroll');
+        const scrollArea = document.querySelector('.modal-scroll');
         if (scrollArea) scrollArea.scrollTop = 0;
 
     } catch (e) { 
@@ -341,8 +324,46 @@
     $('#scannerOverlay').style.display = 'none';
   }
 
+  window.importIntel = () => {
+    const a = state.lastAiAnalysis;
+    if (!a) return;
+
+    const roles = a.roles || [];
+    
+    // 1. Poblar ficha técnica
+    if ($('#tenderName')) $('#tenderName').value = `Licitación: ${roles[0]?.nombre || 'Nuevo Proyecto'}`;
+    if ($('#tenderDesc')) $('#tenderDesc').value = a.tender_summary || "";
+    
+    // 2. Poblar Requisitos Manuales
+    if ($('#reqContainer')) {
+        $('#reqContainer').innerHTML = '';
+        const allReqs = [...new Set([...(roles[0]?.requirements || []), ...(roles[0]?.certificaciones || [])])];
+        allReqs.slice(0, 6).forEach(r => addReqInput(r));
+    }
+
+    // 3. Mapear vacantes al estado
+    state.detectedVacancies = roles.map(r => ({ 
+        title: r.nombre || 'CARGO SIN NOMBRE', 
+        requirements: safeArray(r.requirements || r.requisitos),
+        certifications: safeArray(r.certificaciones || r.certificciones),
+        experiencia_minima: r.experiencia_minima || "No especificada",
+        total_positions: parseInt(r.cantidad) || 1 
+    }));
+    
+    renderDetectedVacancies();
+    state.lastAiAnalysis = null; // Marcar como importado
+    notify("ANÁLISIS INTEGRADO A LA FICHA EXITOSAMENTE.");
+    if ($('#intelPreview')) $('#intelPreview').style.display = 'none';
+  };
+
   async function saveTender(e) {
     if (e) e.preventDefault();
+    
+    // DAR AVISO si hay inteligencia pendiente de importar
+    if (state.lastAiAnalysis && !confirm("JARVIS: Hay un análisis de IA pendiente de importar. ¿Deseas guardar SIN integrar estos datos?")) {
+        return;
+    }
+
     try {
       const id = $('#tenderId').value;
       const payload = {
@@ -358,26 +379,28 @@
       if (tErr) throw tErr;
       const tid = id || tRes[0].id;
 
-      // Sincronizar vacantes (incluyendo certificaciones)
-      const { data: exV } = await window.supabase.from('vacancies').select('id').eq('tender_id', tid);
-      const exIds = (exV||[]).map(v => v.id), nIds = state.detectedVacancies.map(v => v.id).filter(i => i);
-      const toDel = exIds.filter(i => !nIds.includes(i));
-      
-      if (toDel.length) {
-          await window.supabase.from('vacancy_shortlists').delete().in('vacancy_id', toDel);
-          await window.supabase.from('vacancies').delete().in('id', toDel);
+      // Sincronizar vacantes
+      if (state.detectedVacancies.length > 0) {
+          const { data: exV } = await window.supabase.from('vacancies').select('id').eq('tender_id', tid);
+          const exIds = (exV||[]).map(v => v.id), nIds = state.detectedVacancies.map(v => v.id).filter(i => i);
+          const toDel = exIds.filter(i => !nIds.includes(i));
+          
+          if (toDel.length) {
+              await window.supabase.from('vacancy_shortlists').delete().in('vacancy_id', toDel);
+              await window.supabase.from('vacancies').delete().in('id', toDel);
+          }
+
+          await window.supabase.from('vacancies').upsert(state.detectedVacancies.map(v => ({
+            id: v.id || undefined,
+            tender_id: tid,
+            title: v.title,
+            requirements: v.requirements,
+            certifications: v.certifications,
+            total_positions: v.total_positions || 1
+          })));
       }
 
-      await window.supabase.from('vacancies').upsert(state.detectedVacancies.map(v => ({
-        id: v.id || undefined,
-        tender_id: tid,
-        title: v.title,
-        requirements: v.requirements,
-        certifications: v.certifications, // Nueva columna industrial
-        total_positions: v.total_positions || 1
-      })));
-
-      notify('PROTOCOLO STARK: INTEGRIDAD SINCRONIZADA.');
+      notify('PROTOCOLO STARK: LICITACIÓN Y VACANTES SINCRONIZADAS.');
       closeModal($('#tenderModal'));
       loadTenders();
     } catch (err) { notifyError('Error en persistencia industrial.', err); }
@@ -457,6 +480,8 @@
     document.querySelectorAll('.close-modal').forEach(b => b.onclick = () => {
         closeModal($('#tenderModal')); closeModal($('#matchModal')); closeModal($('#personProfileModal'));
     });
+
+    if ($('#btnImportIntel')) $('#btnImportIntel').onclick = () => importIntel();
 
     const z = $('#uploadZone'), i = $('#pdfInput');
     if (z && i) {
