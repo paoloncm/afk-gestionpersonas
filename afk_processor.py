@@ -14,37 +14,37 @@ load_dotenv()
 # --- Schemas ---
 
 class CandidateCV(BaseModel):
-    nombre_completo: str = Field(..., description="Full name of the candidate")
-    rut: Optional[str] = Field(None, description="Chilean ID (RUT) if present, formatted as 12.345.678-9")
-    fecha_nacimiento: Optional[str] = Field(None, description="Date of birth if present (YYYY-MM-DD format)")
-    profesion: str = Field(..., description="Main profession or degree")
-    correo: str = Field(..., description="Email address")
-    telefono: Optional[str] = Field(None, description="Contact phone number")
-    direccion: Optional[str] = Field(None, description="Physical address or city of residence")
-    
-    cargo: Optional[str] = Field(None, description="Current or most recent job title/position")
-    ultima_exp_laboral_empresa: Optional[str] = Field(None, description="Name of the most recent company worked for")
-    periodo: Optional[str] = Field(None, description="Time period of the most recent employment (e.g., '2019 - Present')")
-    software_que_domina: Optional[str] = Field(None, description="List of software, tools, or technologies the candidate masters")
-    experiencia: Optional[str] = Field(None, description="Summary of the most recent work experience")
-    
-    cargo_a_desempenar: Optional[str] = Field(None, description="Latest or targeted position")
-    experiencia_total: float = Field(0.0, description="Total years of work experience (numeric)")
-    experiencia_en_empresa_actual: float = Field(0.0, description="Years in the current or most recent company")
-    exp_cargo_actual: float = Field(0.0, description="Years in the current or most recent position")
-    exp_proy_similares: float = Field(0.0, description="Estimated years of experience in industrial/mining projects or similar to the target role")
-    
-    antecedentes_academicos: str = Field("", description="Summary of education and degrees")
-    experiencia_general: str = Field("", description="Draft of General Experience for TEC-02 report. MUST use format: 'YYYY-YYYY CARGO - EMPRESA - FAENA' for each entry, one per line. NO SUMMARIES.")
-    experiencia_especifica: str = Field("", description="Draft of Specific Experience for TEC-02-A report. Focus on roles in FIRE PROTECTION (SPCI), MINING, or INDUSTRIAL projects. Use format: 'YYYY-YYYY CARGO - EMPRESA - FAENA', one per line.")
-    otras_experiencias: str = Field("", description="Other relevant experiences or certifications. Use same list format.")
-    
-    evaluacion_general: str = Field("", description="A professional 3-paragraph tactical summary: 1. Value Proposition, 2. Technical Mastery, 3. Operational Fit. Use bullet points if needed.")
-    match_score: float = Field(80.0, description="A merit index from 0 to 100 based on seniority, certifications, and technical specialized skills.")
-    match_explicacion: str = Field("", description="A clear, professional justification for the match_score, highlighting technical gaps or strengths.")
-    nota: float = Field(1.0, description="Numerical grade from 1.0 to 7.0 (Chilean scale). Based on 30% seniority, 40% certifications, 30% project complexity.")
-    ranking: int = Field(50, description="A strategic ranking from 1 to 100 representing the candidate's competitiveness in the industrial sector.")
-    antecedentes_academicos: str = Field("", description="Summary of education. format: 'TITULO - INSTITUCION - ESTADO (Titulado/Egresado/En Curso)'.")
+    nombre_completo: str = Field(..., description="Nombre completo del candidato")
+    rut: Optional[str] = Field(None, description="RUT chileno si está presente, formato: 12.345.678-9")
+    fecha_nacimiento: Optional[str] = Field(None, description="Fecha de nacimiento si está presente (formato YYYY-MM-DD)")
+    profesion: str = Field(..., description="Profesión principal o título")
+    correo: str = Field(..., description="Correo electrónico")
+    telefono: Optional[str] = Field(None, description="Teléfono de contacto")
+    direccion: Optional[str] = Field(None, description="Dirección física o ciudad de residencia")
+
+    cargo: Optional[str] = Field(None, description="Cargo actual o más reciente")
+    ultima_exp_laboral_empresa: Optional[str] = Field(None, description="Empresa más reciente")
+    periodo: Optional[str] = Field(None, description="Período del empleo más reciente (ej: '2019 - Presente')")
+    software_que_domina: Optional[str] = Field(None, description="Lista de software, ERPs (SAP, Maximo), herramientas y tecnologías que el candidato domina. Incluir todo.")
+    experiencia: Optional[str] = Field(None, description="Resumen de la experiencia más reciente")
+
+    cargo_a_desempenar: Optional[str] = Field(None, description="Cargo al que postula o último cargo objetivo")
+    experiencia_total: float = Field(0.0, description="Total de años de experiencia laboral (numérico)")
+    experiencia_en_empresa_actual: float = Field(0.0, description="Años en la empresa actual o más reciente")
+    exp_cargo_actual: float = Field(0.0, description="Años en el cargo actual o más reciente")
+    exp_proy_similares: float = Field(0.0, description="Años de experiencia en proyectos industriales/mineros similares al cargo objetivo")
+
+    antecedentes_academicos: str = Field("", description="Antecedentes académicos. Formato: 'TITULO - INSTITUCION - ESTADO (Titulado/Egresado/En Curso)', uno por línea.")
+    experiencia_general: str = Field("", description="Experiencia General para informe TEC-02. NUNCA resumir. Reconstruir TODA la línea de tiempo. Formato EXACTO por entrada: 'YYYY-YYYY CARGO - EMPRESA - FAENA/ESTABLECIMIENTO'. Una entrada por línea.")
+    experiencia_especifica: str = Field("", description="Experiencia Específica para informe TEC-02A. Enfocarse en roles de PROTECCIÓN CONTRA INCENDIOS (SPCI), MINERÍA o proyectos INDUSTRIALES. Mismo formato: 'YYYY-YYYY CARGO - EMPRESA - FAENA'.")
+    otras_experiencias: str = Field("", description="Otras experiencias relevantes, certificaciones, cursos. Mismo formato de lista.")
+
+    evaluacion_general: str = Field("", description="Resumen táctico profesional en 3 párrafos: 1. Propuesta de Valor, 2. Dominio Técnico, 3. Aptitud Operacional. En español formal de Chile.")
+    match_score: float = Field(80.0, description="Índice de mérito de 0 a 100 basado en antigüedad, certificaciones y habilidades técnicas especializadas.")
+    match_explicacion: str = Field("", description="Justificación clara y profesional del match_score. Destacar brechas o fortalezas técnicas.")
+    nota: float = Field(1.0, description="Nota numérica de 1.0 a 7.0 (escala chilena). Basada en: 30% antigüedad, 40% certificaciones, 30% complejidad de proyectos.")
+    ranking: int = Field(50, description="Ranking estratégico de 1 a 100 representando la competitividad del candidato en el sector industrial.")
+
 
 # --- Core Processor ---
 
@@ -53,23 +53,96 @@ class AFKProcessor:
         self.supabase_url = os.getenv("SUPABASE_URL")
         self.supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
         self.openai_api_key = os.getenv("OPENAI_API_KEY")
-        
+
         if not all([self.supabase_url, self.supabase_key, self.openai_api_key]):
             print("WARNING: Missing environment variables. Ensure SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, and OPENAI_API_KEY are set.")
-        
+
         self.supabase: Client = create_client(self.supabase_url, self.supabase_key) if self.supabase_url else None
         self.openai = OpenAI(api_key=self.openai_api_key) if self.openai_api_key else None
 
     def extract_text_from_pdf(self, file_path: str) -> str:
-        reader = PdfReader(file_path)
-        text = ""
-        for page in reader.pages:
-            text += page.extract_text() + "\n"
-        return text
+        """
+        Extracción de texto con Layout-Aware usando pdfplumber (preferido).
+        Fallback a pypdf si pdfplumber no está disponible.
+        """
+        try:
+            import pdfplumber
+            full_text = ""
+            with pdfplumber.open(file_path) as pdf:
+                for i, page in enumerate(pdf.pages):
+                    # Extraer palabras con posición (x, y, texto)
+                    words = page.extract_words(
+                        x_tolerance=5,
+                        y_tolerance=5,
+                        keep_blank_chars=False,
+                        use_text_flow=False,
+                        extra_attrs=["size", "fontname"]
+                    )
+
+                    if not words:
+                        # Fallback a extracción simple si no hay palabras con layout
+                        simple_text = page.extract_text() or ""
+                        full_text += simple_text + f"\n[PÁGINA_BREAK_{i+1}]\n"
+                        continue
+
+                    # Agrupar palabras en líneas por proximidad en Y
+                    lines = []
+                    current_line = []
+                    last_y = None
+                    Y_THRESHOLD = 3  # tolerancia en puntos para agrupar en la misma línea
+
+                    # Ordenar por Y descendente (top), luego X ascendente (left)
+                    sorted_words = sorted(words, key=lambda w: (-round(w["top"] / Y_THRESHOLD), w["x0"]))
+
+                    for word in sorted_words:
+                        y_bucket = round(word["top"] / Y_THRESHOLD)
+                        if last_y is None or abs(word["top"] - last_y) <= Y_THRESHOLD * 2:
+                            current_line.append(word["text"])
+                            last_y = word["top"]
+                        else:
+                            if current_line:
+                                lines.append(" ".join(current_line))
+                            current_line = [word["text"]]
+                            last_y = word["top"]
+
+                    if current_line:
+                        lines.append(" ".join(current_line))
+
+                    page_text = "\n".join(lines)
+                    full_text += page_text + f"\n[PÁGINA_BREAK_{i+1}]\n"
+
+            return full_text
+
+        except ImportError:
+            # Fallback a pypdf si pdfplumber no está instalado
+            print("⚠️  pdfplumber no disponible. Usando extracción básica con pypdf.")
+            reader = PdfReader(file_path)
+            text = ""
+            for page in reader.pages:
+                extracted = page.extract_text()
+                if extracted:
+                    text += extracted + "\n"
+            return text
+        except Exception as e:
+            print(f"⚠️  Error con pdfplumber ({e}). Intentando con pypdf...")
+            reader = PdfReader(file_path)
+            text = ""
+            for page in reader.pages:
+                extracted = page.extract_text()
+                if extracted:
+                    text += extracted + "\n"
+            return text
 
     def extract_text_from_docx(self, file_path: str) -> str:
         doc = docx.Document(file_path)
-        return "\n".join([para.text for para in doc.paragraphs])
+        paragraphs = [para.text for para in doc.paragraphs if para.text.strip()]
+        # Incluir tablas también
+        for table in doc.tables:
+            for row in table.rows:
+                row_text = " | ".join(cell.text.strip() for cell in row.cells if cell.text.strip())
+                if row_text:
+                    paragraphs.append(row_text)
+        return "\n".join(paragraphs)
 
     def extract_text(self, file_path: str) -> str:
         ext = os.path.splitext(file_path)[1].lower()
@@ -78,32 +151,32 @@ class AFKProcessor:
         elif ext == ".docx":
             return self.extract_text_from_docx(file_path)
         else:
-            raise ValueError(f"Unsupported file format: {ext}")
+            raise ValueError(f"Formato de archivo no soportado: {ext}")
 
     def process_cv_with_ai(self, text: str) -> CandidateCV:
         system_prompt = (
-            "You are JARVIS (Just A Rather Very Intelligent System), an elite HR Tactical Analyst. "
-            "CRITICAL LANGUAGE RULE: ALL OUTPUT FIELDS MUST BE IN SPANISH (Español Profesional de Chile). "
-            "NEVER use English for summaries, roles, or evaluations. "
-            "Your objective is to perform a SPLENDID, EXHAUSTIVE, and PROFESSIONAL extraction and JUDGMENT of intelligence from the provided CV. "
-            "TONE: Formal, tactical, and efficient. Use high-precision terminology. "
-            "CRITICAL 'STARK ABSOLUTE PROTOCOL v3' (No data loss): "
-            "1. PROFESSIONAL HISTORY: NEVER summarize. You MUST reconstruct the FULL timeline entry by entry. "
-            "2. FORMAT: For 'experiencia_general' and 'experiencia_especifica', use EXACTLY: 'YYYY-YYYY CARGO - EMPRESA - FAENA/ESTABLECIMIENTO' (Example: '2017-2019 OPERADOR TRACTO CAMION - GREKAT - COLLAHUASI'). "
-            "3. SITE IDENTIFICATION: Audit the text for mining sites (Faena) or project locations and include them in the entry. "
-            "4. ACADEMIC RECORDS: Format as 'TITULO - INSTITUCION - ESTADO (Titulado, Egresado, or En Curso)'. "
-            "5. SOFTWARE INVENTORY: Detailed list of ERPs (SAP, Maximo), technical tools, and specific software. "
-            "6. EVALUACION GENERAL: High-fidelity 3-paragraph summary: Value Proposition, Technical mastery, and Operational fit. "
-            "7. GRADING: 'nota' (1.0-7.0) and 'ranking' (1-100) must reflect the rigor of the industrial/mining sector."
+            "Eres JARVIS (Just A Rather Very Intelligent System), Analista Táctico de RRHH de élite de Stark Industries. "
+            "REGLA CRÍTICA DE IDIOMA: TODOS los campos de salida DEBEN estar en ESPAÑOL (Español Profesional de Chile). "
+            "NUNCA uses inglés para resúmenes, cargos o evaluaciones. "
+            "Tu objetivo es realizar una extracción EXHAUSTIVA, PROFESIONAL y SIN PÉRDIDA DE DATOS del CV proporcionado. "
+            "TONO: Formal, táctico y eficiente. Usa terminología de alta precisión. "
+            "PROTOCOLO STARK ABSOLUTO v4 (Cero pérdida de datos): "
+            "1. HISTORIAL PROFESIONAL: NUNCA resumir. DEBES reconstruir la línea de tiempo COMPLETA entrada por entrada. "
+            "2. FORMATO OBLIGATORIO: Para 'experiencia_general' y 'experiencia_especifica', usa EXACTAMENTE: 'YYYY-YYYY CARGO - EMPRESA - FAENA/ESTABLECIMIENTO' "
+            "(Ejemplo: '2017-2019 OPERADOR TRACTO CAMIÓN - GREKAT - COLLAHUASI'). Una entrada por línea. "
+            "3. IDENTIFICACIÓN DE FAENAS: Auditar el texto en busca de faenas mineras o ubicaciones de proyecto e incluirlas en la entrada. "
+            "4. REGISTROS ACADÉMICOS: Formato: 'TITULO - INSTITUCION - ESTADO (Titulado, Egresado, o En Curso)'. "
+            "5. INVENTARIO DE SOFTWARE: Lista detallada de ERPs (SAP, Maximo), herramientas técnicas y software específico. "
+            "6. EVALUACION GENERAL: Resumen de alta fidelidad en 3 párrafos: Propuesta de Valor, Dominio Técnico, Aptitud Operacional. "
+            "7. CALIFICACIÓN: 'nota' (1.0-7.0) y 'ranking' (1-100) deben reflejar el rigor del sector industrial/minero."
         )
-        
-        # Define the tool/function based on the Pydantic model
+
         tools = [
             {
                 "type": "function",
                 "function": {
                     "name": "extract_cv_data",
-                    "description": "Extracts structured information from a CV text",
+                    "description": "Extrae información estructurada de un CV de forma exhaustiva siguiendo el Protocolo Stark Absoluto v4",
                     "parameters": CandidateCV.model_json_schema()
                 }
             }
@@ -113,43 +186,38 @@ class AFKProcessor:
             model="gpt-4o",
             messages=[
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": text}
+                {"role": "user", "content": text[:55000]}  # Cap at 55k chars para evitar overflow
             ],
             tools=tools,
             tool_choice={"type": "function", "function": {"name": "extract_cv_data"}}
         )
-        
-        # Extract the tool call arguments
+
         tool_call = response.choices[0].message.tool_calls[0]
         data = json.loads(tool_call.function.arguments)
-        
+
         return CandidateCV(**data)
 
     def generate_embedding(self, text: str) -> List[float]:
+        # Limitar texto para embedding (máx 8191 tokens ~ 32k chars)
+        truncated = text[:30000]
         response = self.openai.embeddings.create(
-            input=text,
+            input=truncated,
             model="text-embedding-3-small"
         )
         return response.data[0].embedding
-
-    def download_from_gdrive(self, file_id: str) -> str:
-        # Placeholder for Google Drive API integration
-        # Requires 'google-api-python-client' and 'google-auth-httplib2'
-        print(f"🔗 Simulating download from GDrive ID: {file_id}")
-        # In a real scenario, this would return a local path to the downloaded file
-        return f"/tmp/{file_id}.pdf"
 
     def sync_to_supabase(self, candidate_id: Optional[str], cv_data: CandidateCV, full_text: str):
         if not self.supabase:
             print("Supabase client not initialized. Skipping sync.")
             return
 
-        # 1. Generate Embedding
+        # 1. Generar Embedding
+        print("🧠 Generando embedding vectorial...")
         embedding = self.generate_embedding(full_text)
-        
-        # 2. Build payload using ONLY columns that exist in the candidates table
+
+        # 2. Construir payload con columnas que existen en la tabla candidates
         EXISTING_DB_COLUMNS = {
-            "nombre_completo", "rut", "fecha_nacimiento", "correo", "telefono", 
+            "nombre_completo", "rut", "fecha_nacimiento", "correo", "telefono",
             "profesion", "experiencia", "software_que_domina", "ultima_exp_laboral_empresa",
             "cargo", "periodo", "experiencia_general", "experiencia_especifica",
             "otras_experiencias", "evaluacion_general", "experiencia_total",
@@ -158,68 +226,74 @@ class AFKProcessor:
             "match_score", "onboarding_progress", "source",
             "antecedentes_academicos", "direccion", "cv_full_text", "cv_embedding", "resumen_ia"
         }
-        
+
         raw = cv_data.model_dump()
         payload = {k: v for k, v in raw.items() if k in EXISTING_DB_COLUMNS}
         payload["status"] = "Analizado por IA"
         payload["cv_full_text"] = full_text
         payload["cv_embedding"] = embedding
-        # match_score is integer in Supabase, cast it
+
+        # match_score es integer en Supabase
         if "match_score" in payload and payload["match_score"] is not None:
             payload["match_score"] = int(payload["match_score"])
-        
+
         if candidate_id:
-            print(f"🔄 Syncing to Supabase ID: {candidate_id}...")
+            print(f"🔄 Actualizando candidato ID: {candidate_id}...")
             result = self.supabase.table("candidates").update(payload).eq("id", candidate_id).execute()
         else:
-            print("🆕 No ID provided. Checking for existing candidate by RUT or Name...")
+            print("🆕 Sin ID. Verificando candidato existente por RUT o Nombre...")
             found_id = None
-            
-            # Check by RUT first
+
+            # Verificar por RUT primero
             if cv_data.rut:
-                # Clean rut strings to avoid trailing spaces/inconsistencies
                 clean_rut = cv_data.rut.replace(" ", "").strip()
                 existing = self.supabase.table("candidates").select("id").eq("rut", clean_rut).execute()
                 if existing.data:
                     found_id = existing.data[0]['id']
-            
-            # Check by Name if RUT didn't match
+
+            # Verificar por Nombre si no se encontró por RUT
             if not found_id and cv_data.nombre_completo:
                 existing = self.supabase.table("candidates").select("id").ilike("nombre_completo", cv_data.nombre_completo.strip()).execute()
                 if existing.data:
                     found_id = existing.data[0]['id']
 
             if found_id:
-                print(f"⚠️ Candidate {cv_data.nombre_completo} already exists (ID: {found_id}). Updating.")
+                print(f"⚠️ Candidato {cv_data.nombre_completo} ya existe (ID: {found_id}). Actualizando.")
                 result = self.supabase.table("candidates").update(payload).eq("id", found_id).execute()
             else:
-                print(f"✨ Inserting new candidate: {cv_data.nombre_completo}")
+                print(f"✨ Insertando nuevo candidato: {cv_data.nombre_completo}")
                 result = self.supabase.table("candidates").insert(payload).execute()
-        
+
+        print(f"✅ Sync completado para: {cv_data.nombre_completo}")
         return result
+
 
 # --- CLI for Testing ---
 
 if __name__ == "__main__":
     import argparse
-    parser = argparse.ArgumentParser(description="AFK Intelligent CV Processor")
-    parser.add_argument("file", help="Path to the CV file (PDF or DOCX)")
-    parser.add_argument("--id", help="Candidate ID in Supabase", required=False)
+    parser = argparse.ArgumentParser(description="AFK Intelligent CV Processor — Protocolo Stark v4")
+    parser.add_argument("file", help="Ruta al archivo CV (PDF o DOCX)")
+    parser.add_argument("--id", help="ID del candidato en Supabase (opcional: actualiza si existe)", required=False)
     args = parser.parse_args()
 
     processor = AFKProcessor()
-    
-    print(f"🚀 Processing: {args.file}")
+
+    print(f"🚀 Iniciando procesamiento: {args.file}")
     try:
+        print("📄 Extrayendo texto con motor layout-aware...")
         text = processor.extract_text(args.file)
-        print("📝 Text extracted. Sending to AI...")
-        
+        char_count = len(text)
+        print(f"📝 Texto extraído: {char_count:,} caracteres. Enviando a JARVIS...")
+
         cv_data = processor.process_cv_with_ai(text)
-        print(f"✅ AI Extraction Complete: {cv_data.nombre_completo}")
-        
-        print("🔄 Synchronizing with Supabase...")
+        print(f"✅ Extracción IA completada: {cv_data.nombre_completo} | Nota: {cv_data.nota} | Ranking: {cv_data.ranking}")
+
+        print("🔄 Sincronizando con Supabase...")
         processor.sync_to_supabase(args.id, cv_data, text)
-        print("✨ Sync Complete. Check your Supabase Dashboard!")
-            
+        print("🎯 Protocolo Stark: OPERACIÓN COMPLETADA.")
+
     except Exception as e:
-        print(f"❌ Error during processing: {e}")
+        import traceback
+        print(f"❌ Error durante el procesamiento: {e}")
+        traceback.print_exc()

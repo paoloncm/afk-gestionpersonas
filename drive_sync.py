@@ -1,6 +1,7 @@
 import os
 import io
 import json
+import re
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
@@ -62,6 +63,33 @@ class DriveSync:
         self.service = build('drive', 'v3', credentials=self.creds) if self.creds else None
         self.processor = AFKProcessor()
 
+    def clean_folder_name(self, name):
+        """Removes leading numbers and punctuation like '1._', '02. ' etc."""
+        # This matches patterns like "1._", "01. ", "10-", "1. ", "1._ " at the start
+        cleaned = re.sub(r'^\d+[\s._-]*', '', name).strip()
+        return cleaned
+
+    def list_subfolders(self, folder_id):
+        """Lists subfolders within a parent folder."""
+        if not self.service:
+            print("❌ Drive service not initialized.")
+            return []
+        
+        print(f"📁 Listing subfolders of {folder_id}...")
+        query = f"'{folder_id}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false"
+        try:
+            results = self.service.files().list(
+                q=query, 
+                spaces='drive', 
+                fields='files(id, name)',
+                supportsAllDrives=True,
+                includeItemsFromAllDrives=True
+            ).execute()
+            return results.get('files', [])
+        except Exception as e:
+            print(f"❌ Error listing subfolders: {e}")
+            return []
+
     def list_files(self, folder_id):
         """Lists PDF and DOCX files in a folder."""
         if not self.service:
@@ -99,7 +127,7 @@ class DriveSync:
             status, done = downloader.next_chunk()
         return fh.getvalue()
 
-    def process_folder(self, folder_id, archive_folder_id=None):
+    def process_folder(self, folder_id, archive_folder_id=None, forced_cargo=None):
         """Processes all files in a folder and moves them to an archive folder."""
         files = self.list_files(folder_id)
         if not files:
@@ -123,6 +151,11 @@ class DriveSync:
                 cv_data = self.processor.process_cv_with_ai(text)
                 
                 if cv_data:
+                    # APPLY STARK PRIORITY: Overwrite cargo if it was provided via folder structure
+                    if forced_cargo:
+                        print(f"🎯 Stark Priority: Setting cargo to '{forced_cargo}'")
+                        cv_data.cargo_a_desempenar = forced_cargo
+
                     print(f"💾 Syncing to Supabase...")
                     self.processor.sync_to_supabase(None, cv_data, text)
                     print(f"✅ JARVIS: {f['name']} integrated successfully.")
@@ -166,6 +199,35 @@ class DriveSync:
         except Exception as e:
             print(f"❌ Error moving file {file_id}: {e}")
 
+    def sync_hierarchy(self, root_folder_id, archive_root_id=None):
+        """Orchestrates hierarchical sync from root folder."""
+        print(f"🚀 JARVIS: Starting Hierarchical Sync in folder {root_folder_id}")
+        
+        # 1. Process files in root (Cargo: General)
+        print("📍 Processing files in ROOT folder...")
+        self.process_folder(root_folder_id, archive_root_id, forced_cargo="General")
+        
+        # 2. Process subfolders
+        subfolders = self.list_subfolders(root_folder_id)
+        if not subfolders:
+            print("ℹ️ No subfolders found to process.")
+            return
+
+        for folder in subfolders:
+            folder_name = folder['name']
+            folder_id = folder['id']
+            
+            # Exclusion list
+            if folder_name == "00. LICITACIONES ANTERIOR PERSONAL":
+                print(f"⏩ Skipping ignored folder: {folder_name}")
+                continue
+            
+            cargo = self.clean_folder_name(folder_name)
+            print(f"📂 Entering subfolder: {folder_name} (Mapped Cargo: {cargo})")
+            self.process_folder(folder_id, archive_root_id, forced_cargo=cargo)
+
+        print("🎯 Hierarchical Sync COMPLETED.")
+
 if __name__ == "__main__":
     # Test run
     load_dotenv()
@@ -174,6 +236,6 @@ if __name__ == "__main__":
     
     if FOLDER_ID:
         sync = DriveSync()
-        sync.process_folder(FOLDER_ID, ARCHIVE_ID)
+        sync.sync_hierarchy(FOLDER_ID, ARCHIVE_ID)
     else:
         print("Set DRIVE_FOLDER_ID in .env to test.")

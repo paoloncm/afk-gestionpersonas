@@ -8,6 +8,7 @@ python-dotenv
 google-api-python-client
 google-auth
 pypdf
+pdfplumber
 python-docx
 openpyxl
 httpx

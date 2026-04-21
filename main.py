@@ -229,32 +229,33 @@ async def analyze_tender(req: AnalyzeTenderRequest):
             "1. IDENTIFICACIÓN DE TABLAS: Busca cargos seguidos de números. Estos son puestos obligatorios.\n"
             "2. EXTRACCIÓN DE RECADOS: Si el texto menciona 'Se requiere un X...', cuenta '1' para ese cargo.\n"
             "3. ESTRATEGIA DE BÚSQUEDA: Para cada cargo, define un 'perfil_ideal' táctico (ej. 'Especialista en MT con certificación SEC Clase A').\n"
-            "4. SEPARACIÓN: Requisitos técnicos en 'requirements', certificaciones en 'certificaciones'.\n"
-            "5. NO OMISIÓN: Si encuentras un cargo en un anexo, EXTRÁELO.\n"
-            "6. COMPLEJIDAD: Evalúa el riesgo y la criticidad operativa.\n\n"
-            "FORMATO DE SALIDA (JSON ESTRICTO):\n"
+            "4. SEPARACIÓN CRÍTICA: Requisitos técnicos van EXACTAMENTE en la clave 'requirements' (en inglés), certificaciones en 'certificaciones'. NO uses 'requisitos'.\n"
+            "5. NO OMISIÓN: Si encuentras un cargo en un anexo, tabla o lista, EXTRÁELO.\n"
+            "6. COMPLEJIDAD: Evalúa el riesgo global y la criticidad operativa de cada rol.\n"
+            "7. CLAVE OBLIGATORIA: Cada rol DEBE tener las claves: nombre, cantidad, criticidad, requirements, certificaciones, perfil_ideal, experiencia_minima.\n\n"
+            "FORMATO DE SALIDA (JSON ESTRICTO — usa EXACTAMENTE estas claves):\n"
             "{\n"
             "  \"tender_summary\": \"Resumen ejecutivo del proyecto y estrategia para ganar\",\n"
             "  \"global_risk\": \"Bajo | Medio | Alto\",\n"
             "  \"roles\": [\n"
             "    {\n"
             "      \"nombre\": \"Nombre exacto del cargo\",\n"
-            "      \"cantidad\": número_entero,\n"
+            "      \"cantidad\": 1,\n"
             "      \"criticidad\": \"Primario | Secundario\",\n"
-            "      \"requirements\": [\"Término Técnico\", ...],\n"
-            "      \"certificaciones\": [\"Certificación Especial\", ...],\n"
-            "      \"perfil_ideal\": \"Descripción táctica del candidato perfecto\",\n"
-            "      \"experiencia_minima\": \"Años y sector\"\n"
+            "      \"requirements\": [\"Término Técnico Corto\", \"Max 4 palabras\"],\n"
+            "      \"certificaciones\": [\"Certificación Específica\"],\n"
+            "      \"perfil_ideal\": \"Descripción táctica del candidato perfecto para este cargo\",\n"
+            "      \"experiencia_minima\": \"2 años en sector minero\"\n"
             "    }\n"
             "  ]\n"
             "}\n\n"
-            f"TEXTO A ANALIZAR (PRECISIÓN Y-AXIS):\n{req.text[:65000]}"
+            f"TEXTO DE LICITACIÓN A ANALIZAR:\n{req.text[:65000]}"
         )
         
         res = openai.chat.completions.create(
             model="gpt-4o",
             messages=[
-                {"role": "system", "content": "You are JARVIS, an elite industrial analyst for Stark Industries. You excel at extracting operational hierarchies from complex technical documents. Output ONLY valid JSON."},
+                {"role": "system", "content": "Eres JARVIS, analista industrial de élite de Stark Industries. Tu especialidad es extraer jerarquías operativas de documentos técnicos complejos. Responde ÚNICAMENTE con JSON válido. NUNCA uses la clave 'requisitos', usa siempre 'requirements'."},
                 {"role": "user", "content": prompt}
             ],
             temperature=0.1,
@@ -264,9 +265,9 @@ async def analyze_tender(req: AnalyzeTenderRequest):
         content = res.choices[0].message.content
         analysis = json.loads(content)
         
-        # Fallback if roles is missing
+        # Fallback si 'roles' falta o está vacío
         if "roles" not in analysis or not analysis["roles"]:
-             analysis["roles"] = [{"nombre": "PERFIL GENERAL", "cantidad": 1, "criticidad": "Primario", "requisitos": ["Análisis de bases técnicas"]}]
+             analysis["roles"] = [{"nombre": "PERFIL GENERAL", "cantidad": 1, "criticidad": "Primario", "requirements": ["Análisis de bases técnicas"], "certificaciones": [], "perfil_ideal": "Profesional polivalente con experiencia en el sector", "experiencia_minima": "1-3 años"}]
              
         return {"ok": True, "analysis": analysis}
         
@@ -312,7 +313,7 @@ def run_drive_sync():
             return
         
         sync = DriveSync()
-        sync.process_folder(FOLDER_ID, ARCHIVE_ID)
+        sync.sync_hierarchy(FOLDER_ID, ARCHIVE_ID)
         print("[JARVIS] ✅ Background task FINISHED.")
     except Exception as e:
         print(f"[JARVIS] 💥 ERROR: {e}")

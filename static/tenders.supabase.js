@@ -32,22 +32,33 @@
   const CACHE_TTL_MS = 60 * 1000;
 
   const REQUIREMENT_ALIASES = {
-    "altura fisica": ["altura fisica", "trabajo en altura", "altura", "altfis", "altura geográfica", "altura geografica"],
-    "silice": ["silice", "sílice"],
-    "ruido": ["ruido"],
-    "psicologico": ["psicologico", "psicológico", "infpsico", "informe psicologico", "informe psicológico"],
-    "examen preocupacional": ["preocupacional", "examen preocupacional", "preocupacional vigente"],
-    "contra incendios": ["contra incendios", "red humeda", "fuego", "fire system", "sistemas extinguidores", "sistemas contra incendios", "detectores de humo", "red seca"],
-    "instalacion": ["instalacion", "instalador", "montaje", "armado", "puesta en marcha"],
+    // Salud Ocupacional
+    "altura fisica": ["altura fisica", "trabajo en altura", "altura", "altfis", "altura geográfica", "altura geografica", "trabajo en alturas"],
+    "silice": ["silice", "sílice", "polvo de sílice", "polvo silice"],
+    "ruido": ["ruido", "exposición al ruido", "ruido ocupacional"],
+    "psicologico": ["psicologico", "psicológico", "infpsico", "informe psicologico", "informe psicológico", "evaluacion psicologica"],
+    "examen preocupacional": ["preocupacional", "examen preocupacional", "preocupacional vigente", "examen médico"],
+    // Sistemas Contra Incendios
+    "contra incendios": ["contra incendios", "red humeda", "fuego", "fire system", "sistemas extinguidores", "sistemas contra incendios", "detectores de humo", "red seca", "spci", "protección contra incendios", "extintor"],
+    // Habilidades Técnicas
+    "instalacion": ["instalacion", "instalador", "montaje", "armado", "puesta en marcha", "instalación"],
+    "mantenimiento": ["mantenimiento", "mantención", "mantencion", "manto", "overhaul"],
     "curso": ["curso", "capacitacion", "capacitación", "certificacion", "certificación"],
-    "certificacion": ["certificacion", "certificación", "acreditacion", "acreditación"],
-    "operador": ["operador", "operacion", "operación"],
-    "soldador": ["soldador", "soldadura"],
-    "electrico": ["electrico", "eléctrico", "electricidad"],
-    "mecanico": ["mecanico", "mecánico", "mecánica", "mecanica"],
-    "conductor": ["conductor", "chofer", "driver"],
-    "supervisor": ["supervisor", "jefe", "encargado"],
-    "ingeniero": ["ingeniero", "engineering"]
+    "certificacion": ["certificacion", "certificación", "acreditacion", "acreditación", "homologación"],
+    "operador": ["operador", "operacion", "operación", "operar"],
+    "soldador": ["soldador", "soldadura", "tig", "mig", "smaw", "fcaw"],
+    "electrico": ["electrico", "eléctrico", "electricidad", "instalación eléctrica", "baja tensión", "media tensión", "alta tensión", "eleéctrico"],
+    "mecanico": ["mecanico", "mecánico", "mecánica", "mecanica", "mecánica industrial"],
+    "conductor": ["conductor", "chofer", "driver", "licencia b", "licencia c", "licencia d"],
+    "supervisor": ["supervisor", "jefe", "encargado", "capataz", "líder de equipo"],
+    "ingeniero": ["ingeniero", "engineering", "ing.", "ingeniería"],
+    // Industria Minera
+    "mineria": ["mineria", "minería", "minero", "faena", "rajo", "underground", "subterráneo"],
+    "sap": ["sap", "sap pm", "sap mm", "sap co"],
+    "autocad": ["autocad", "cad", "diseño cad"],
+    "izaje": ["izaje", "grúa", "eslingas", "rigger"],
+    "espacio confinado": ["espacio confinado", "espacios confinados", "trabajo confinado"],
+    "bloqueo": ["bloqueo", "bloqueo y etiquetado", "loto", "lockout"]
   };
 
   // =========================================================
@@ -80,28 +91,74 @@
         const buf = await file.arrayBuffer();
         const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
         let txt = "";
-        const num = pdf.numPages || pdf.length;
-        for (let i = 1; i <= num; i++) {
-            this.updateRadar(`ESCANEANDO PÁGINA ${i}/${num}`, "Extrayendo jerarquía tabular con precisión Y-Axis...");
+        const numPages = pdf.numPages || pdf.length;
+        for (let i = 1; i <= numPages; i++) {
+            this.updateRadar(`ESCANEANDO PÁGINA ${i}/${numPages}`, "Extrayendo jerarquía tabular con precisión Y-Axis...");
             const page = await pdf.getPage(i);
             const content = await page.getTextContent();
-            
-            // Layout-Aware Sort: Priorizar Y (descendente) y luego X (ascendente)
-            const items = content.items.sort((a, b) => {
-              if (Math.abs(a.transform[5] - b.transform[5]) < 5) return a.transform[4] - b.transform[4];
-              return b.transform[5] - a.transform[5];
-            });
+            const viewport = page.getViewport({ scale: 1 });
+            const pageWidth = viewport.width;
 
-            let lastY = -1;
-            let pageTxt = "";
-            for (const item of items) {
-                if (lastY !== -1 && Math.abs(item.transform[5] - lastY) > 8) pageTxt += "\n";
-                pageTxt += item.str + " ";
-                lastY = item.transform[5];
+            // --- STARK COLUMN DETECTOR ---
+            // Detectar columnas dividiendo la página en mitades
+            // Si el PDF tiene 2 columnas, los items de la columna derecha tienen x > pageWidth/2
+            const midX = pageWidth / 2;
+            const leftItems = [];
+            const rightItems = [];
+
+            for (const item of content.items) {
+                if (!item.str || !item.str.trim()) continue;
+                const x = item.transform[4];
+                const y = item.transform[5];
+                if (x > midX * 0.7 && x < midX) {
+                    // Zona ambigua: tratar como columna izquierda
+                    leftItems.push({ str: item.str, x, y });
+                } else if (x >= midX) {
+                    rightItems.push({ str: item.str, x, y });
+                } else {
+                    leftItems.push({ str: item.str, x, y });
+                }
             }
-            txt += pageTxt + "\n[PÁGINA_BREAK]\n";
+
+            // Verificar si hay contenido real en la columna derecha (layout multi-columna)
+            const isMultiColumn = rightItems.length > 5 && rightItems.length > leftItems.length * 0.2;
+
+            let pageTxt = "";
+            if (isMultiColumn) {
+                // Procesar columna izquierda luego derecha
+                pageTxt += this._itemsToText(leftItems) + "\n";
+                pageTxt += this._itemsToText(rightItems) + "\n";
+            } else {
+                // Layout de una sola columna: ordenar todo junto
+                const allItems = [...leftItems, ...rightItems];
+                pageTxt += this._itemsToText(allItems) + "\n";
+            }
+
+            txt += pageTxt + `\n[PÁGINA_BREAK_${i}]\n`;
         }
         return txt;
+    },
+    _itemsToText(items) {
+        // Ordenar por Y descendente (top), luego X ascendente
+        const sorted = [...items].sort((a, b) => {
+            const yDiff = b.y - a.y;
+            if (Math.abs(yDiff) < 10) return a.x - b.x; // Misma línea: izq a der
+            return yDiff; // Distinta línea: arriba a abajo
+        });
+        let lines = [];
+        let currentLine = [];
+        let lastY = null;
+        for (const item of sorted) {
+            if (lastY === null || Math.abs(item.y - lastY) < 10) {
+                currentLine.push(item.str);
+            } else {
+                if (currentLine.length) lines.push(currentLine.join(" "));
+                currentLine = [item.str];
+            }
+            lastY = item.y;
+        }
+        if (currentLine.length) lines.push(currentLine.join(" "));
+        return lines.join("\n");
     },
     async analyzeTender(text) {
         const res = await fetch('/api/analyze-tender', { 
@@ -146,7 +203,19 @@
   }
 
   function getCandidateSourceText(candidate) {
-    return [candidate?.nombre_completo, candidate?.profesion, candidate?.evaluacion_general, candidate?.experiencia_general, candidate?.cargo_a_desempenar].filter(Boolean).join(' ');
+    // Incluir todos los campos relevantes para el matching
+    return [
+      candidate?.nombre_completo,
+      candidate?.profesion,
+      candidate?.cargo_a_desempenar,
+      candidate?.cargo,
+      candidate?.evaluacion_general,
+      candidate?.experiencia_general,
+      candidate?.experiencia_especifica,
+      candidate?.otras_experiencias,
+      candidate?.software_que_domina,
+      candidate?.antecedentes_academicos
+    ].filter(Boolean).join(' ');
   }
 
   // =========================================================
@@ -361,11 +430,11 @@
     if ($('#intelPreview')) $('#intelPreview').style.display = 'none';
   };
 
-  async function saveTender(e) {
+  async function saveTender(e, silent = false) {
     if (e) e.preventDefault();
     
     // DAR AVISO si hay inteligencia pendiente de importar
-    if (state.lastAiAnalysis && !confirm("JARVIS: Hay un análisis de IA pendiente de importar. ¿Deseas guardar SIN integrar estos datos?")) {
+    if (!silent && state.lastAiAnalysis && !confirm("JARVIS: Hay un análisis de IA pendiente de importar. ¿Deseas guardar SIN integrar estos datos?")) {
         return;
     }
 
@@ -377,12 +446,18 @@
         requirements: $$('.req-input').map(i => i.value.trim()).filter(Boolean)
       };
       
+      if (!payload.name) {
+          if (!silent) notifyError("Operación Abortada: El nombre de la licitación es obligatorio.");
+          return null;
+      }
+
       const { data: tRes, error: tErr } = id ? 
         await window.supabase.from('tenders').update(payload).eq('id', id).select() :
         await window.supabase.from('tenders').insert(payload).select();
 
       if (tErr) throw tErr;
       const tid = id || tRes[0].id;
+      if (!id) $('#tenderId').value = tid; // Guardar ID en el modal para futuras operaciones
 
       // Sincronizar vacantes
       if (state.detectedVacancies.length > 0) {
@@ -395,15 +470,22 @@
               await window.supabase.from('vacancies').delete().in('id', toDel);
           }
 
-          await window.supabase.from('vacancies').upsert(state.detectedVacancies.map(v => ({
+          const { data: savedV } = await window.supabase.from('vacancies').upsert(state.detectedVacancies.map(v => ({
             id: v.id || undefined,
             tender_id: tid,
             title: v.title,
             requirements: v.requirements,
             certifications: v.certifications,
             total_positions: v.total_positions || 1
-          })));
+          }))).select();
+          
+          // Actualizar IDs en memoria para que el matchmaking instantáneo funcione
+          if (savedV) {
+              state.detectedVacancies = savedV;
+          }
       }
+
+      if (silent) return tid;
 
       // --- DISPARAR RECLUTAMIENTO AUTÓNOMO ---
       if (state.detectedVacancies.length > 0) {
@@ -416,7 +498,10 @@
       notify('OPERACIÓN COMPLETADA: LICITACIÓN Y RECLUTAMIENTO SINCRONIZADOS.');
       closeModal($('#tenderModal'));
       loadTenders();
-    } catch (err) { notifyError('Error en persistencia industrial.', err); }
+    } catch (err) { 
+        if (!silent) notifyError('Error en persistencia industrial.', err); 
+        return null; 
+    }
   }
 
   async function autoAssignCandidates(tid, vacancies) {
@@ -497,8 +582,13 @@
     $('#matchTitle').textContent = `OPERACIÓN_HUD: ${tender.name.toUpperCase()}`;
     setMatchTab('workers');
 
-    const { data: v } = await window.supabase.from('vacancies').select('*').eq('tender_id', tender.id);
-    state.activeMatchVacancies = v?.length ? v : [{ id: 'global', title: 'Operación Global', requirements: tender.requirements, total_positions: 1 }];
+    // Priorizar vacantes en estado (detectadas) si existen, sino ir a DB
+    if (state.detectedVacancies.length > 0 && (!tender.id || state.detectedVacancies[0].tender_id === tender.id)) {
+        state.activeMatchVacancies = state.detectedVacancies;
+    } else {
+        const { data: v } = await window.supabase.from('vacancies').select('*').eq('tender_id', tender.id);
+        state.activeMatchVacancies = v?.length ? v : [{ id: 'global', title: 'Operación Global', requirements: tender.requirements, total_positions: 1 }];
+    }
     
     if ($('#vacancySelector')) {
         $('#vacancySelector').innerHTML = state.activeMatchVacancies.map((vac, i) => `<option value="${i}">[ ${escapeHtml(vac.title.toUpperCase())} ]</option>`).join('');
@@ -507,18 +597,33 @@
     evaluateVacancy(state.activeMatchVacancies[0]);
   }
 
+  async function runInstantMatchmaking() {
+      notify("Sincronizando Inteligencia antes del Matchmaking...");
+      const tid = await saveTender(null, true); // Silent Sync
+      if (tid) {
+          const t = { 
+              id: tid, 
+              name: $('#tenderName').value, 
+              requirements: $$('.req-input').map(i => i.value.trim()).filter(Boolean) 
+          };
+          runMatchmaking(t);
+      }
+  }
+
   async function evaluateVacancy(vacancy) {
     const talent = await ensureTalentDataLoaded();
     const sl = talent.shortlistsByVacancy[vacancy.id] || [];
 
     const scoredW = talent.workers.map(w => ({
-        person: w,
+        person: { ...w, full_name: w.full_name || w.nombre_completo },
+        personType: 'worker',
         ...scoreRequirements(getWorkerSourceText(w, talent.workerCredentials.filter(c => c.worker_id === w.id)), vacancy.requirements, vacancy.certifications),
         isS: sl.some(s => s.person_id === w.id)
     })).sort((a,b) => b.score - a.score);
 
     const scoredC = talent.candidates.map(c => ({
         person: { ...c, full_name: c.nombre_completo },
+        personType: 'candidate',
         ...scoreRequirements(getCandidateSourceText(c), vacancy.requirements, vacancy.certifications),
         isS: sl.some(s => s.person_id === c.id)
     })).sort((a,b) => b.score - a.score);
@@ -528,18 +633,31 @@
   }
 
   function renderMatchGrid(list, vacId, label) {
-    return list.map(item => `
-        <div class="stark-card" style="padding:15px; margin-bottom:10px; cursor:pointer; border:${item.isS ? '1px solid var(--accent)' : '1px solid rgba(255,255,255,0.05)'};">
-          <div style="display:flex; justify-content:space-between; align-items:start;" onclick="StarkUI.openPersonProfile('${item.person.id}', '${item.person.full_name ? 'worker':'candidate'}')">
-            <div><strong>${escapeHtml(item.person.full_name.toUpperCase())}</strong><div style="font-size:9px; color:var(--muted);">${escapeHtml(item.person.cargo || item.person.profesion || '')}</div></div>
-            <div style="text-align:right;"><span style="color:var(--accent); font-weight:900;">${item.score}%</span><div style="font-size:8px; color:var(--muted);">${label} MATCH</div></div>
+    if (!list.length) return `<div style="padding:30px; text-align:center; color:var(--muted); font-size:12px;">[ SIN RESULTADOS PARA ESTE PERFIL ]</div>`;
+    return list.map(item => {
+      // Determinar tipo de persona por el campo type_hint que se pasa explícitamente
+      const personType = item.personType || (item.person.nombre_completo ? 'candidate' : 'worker');
+      const scoreColor = item.score >= 70 ? 'var(--green)' : item.score >= 40 ? 'var(--accent)' : 'var(--muted)';
+      return `
+        <div class="stark-card" style="padding:15px; margin-bottom:10px; border:${item.isS ? '2px solid var(--accent)' : '1px solid rgba(255,255,255,0.05)'}; ${item.isS ? 'background:rgba(34,211,238,0.04);' : ''}">
+          <div style="display:flex; justify-content:space-between; align-items:start; cursor:pointer;" onclick="StarkUI.openPersonProfile('${item.person.id}', '${personType}')">
+            <div style="flex:1;">
+              <strong style="font-size:13px;">${escapeHtml((item.person.full_name || item.person.nombre_completo || '').toUpperCase())}</strong>
+              <div style="font-size:9px; color:var(--muted); margin-top:3px;">${escapeHtml(item.person.cargo || item.person.profesion || '')}</div>
+            </div>
+            <div style="text-align:right; margin-left:15px;">
+              <span style="color:${scoreColor}; font-weight:900; font-size:18px;">${item.score}%</span>
+              <div style="font-size:8px; color:var(--muted);">${label} MATCH</div>
+            </div>
           </div>
-          <div class="affinity-bar"><div class="affinity-fill" style="width:${item.score}%"></div></div>
-          ${item.missing.length ? `<div style="font-size:8px; color:#ff3264; margin-top:5px;">GAP: ${item.missing.join(' • ')}</div>` : ''}
+          <div class="affinity-bar" style="margin-top:10px;"><div class="affinity-fill" style="width:${item.score}%; background:${scoreColor};"></div></div>
+          ${item.matched?.length ? `<div style="font-size:8px; color:var(--green); margin-top:6px; display:flex; flex-wrap:wrap; gap:3px;">&#10003; ${item.matched.map(m => `<span style="background:rgba(46,231,165,0.1); border:1px solid rgba(46,231,165,0.25); padding:1px 5px; border-radius:3px;">${escapeHtml(m)}</span>`).join('')}</div>` : ''}
+          ${item.missing?.length ? `<div style="font-size:8px; color:#ff3264; margin-top:4px; display:flex; flex-wrap:wrap; gap:3px;">&#10007; GAP: ${item.missing.map(m => `<span style="background:rgba(255,50,100,0.1); border:1px solid rgba(255,50,100,0.25); padding:1px 5px; border-radius:3px;">${escapeHtml(m)}</span>`).join('')}</div>` : ''}
           <div style="margin-top:10px; text-align:right;">
-             ${!item.isS && vacId !== 'global' ? `<button class="btn btn--mini primary" onclick="shortlist('${vacId}', '${item.person.id}', '${item.person.full_name ? 'worker':'candidate'}', ${item.score})">+ PRESELECCIONAR</button>` : `<span style="color:var(--accent); font-size:10px;">[ SELECCIONADO ]</span>`}
+             ${!item.isS && vacId !== 'global' ? `<button class="btn btn--mini primary" onclick="shortlist('${vacId}', '${item.person.id}', '${personType}', ${item.score})">+ PRESELECCIONAR</button>` : `<span style="color:var(--accent); font-size:10px; font-weight:900;">[ SELECCIONADO ]</span>`}
           </div>
-        </div>`).join('');
+        </div>`;
+    }).join('');
   }
 
   window.shortlist = async (vid, pid, type, score) => {
@@ -576,6 +694,8 @@
         z.ondragleave = () => { z.style.borderColor = 'var(--border)'; z.style.background = 'transparent'; };
         z.ondrop = (e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f?.type === 'application/pdf') handleFile(f); };
     }
+
+    if ($('#btnInstantMatch')) $('#btnInstantMatch').onclick = () => runInstantMatchmaking();
 
     if ($('#btnStarkScan')) {
         $('#btnStarkScan').onclick = () => {
