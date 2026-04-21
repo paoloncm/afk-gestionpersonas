@@ -119,29 +119,34 @@ async function loadRecentCandidates(reset = false) {
     const from = currentPage * PAGE_SIZE;
     const to = from + PAGE_SIZE - 1;
 
-    const { data: candidates, error } = await query
-        .order('created_at', { ascending: false })
-        .range(from, to);
+    try {
+        const { data: candidates, error } = await query
+            .order('created_at', { ascending: false })
+            .range(from, to);
 
-    if (error) {
-        console.error("Error loading candidates:", error);
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--red);">Error al cargar datos.</td></tr>';
-        return;
+        if (error) {
+            console.error("Error loading candidates:", error);
+            if (reset) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--red);">Error al cargar flujo de datos.</td></tr>';
+            else alert("Error al cargar más candidatos.");
+            return;
+        }
+
+        if (reset) tbody.innerHTML = '';
+
+        if (candidates.length < PAGE_SIZE) {
+            isLastPage = true;
+        }
+
+        if (candidates.length === 0 && currentPage === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:40px; color:var(--muted);">No se encontraron candidatos con los criterios actuales.</td></tr>';
+        } else {
+            renderCandidateRows(candidates);
+        }
+    } catch (err) {
+        console.error("Critical failure in loadRecentCandidates:", err);
+    } finally {
+        updateLoadMoreButton();
     }
-
-    if (reset) tbody.innerHTML = '';
-
-    if (candidates.length < PAGE_SIZE) {
-        isLastPage = true;
-    }
-
-    if (candidates.length === 0 && currentPage === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:40px; color:var(--muted);">No se encontraron candidatos con los criterios actuales.</td></tr>';
-    } else {
-        renderCandidateRows(candidates);
-    }
-
-    updateLoadMoreButton();
 }
 
 function renderCandidateRows(candidates) {

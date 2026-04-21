@@ -43,7 +43,11 @@ body {
   min-height: 100vh;
 }
 
-.main { padding: 14px; overflow-y: auto; }
+.main { 
+  padding: 14px; 
+  padding-bottom: 120px; /* Espacio para la Bulk Bar */
+  overflow-y: auto; 
+}
 
 /* --- Sidebar Stark --- */
 .sidebar {
@@ -132,6 +136,36 @@ body {
 .btn.primary {
   background: linear-gradient(135deg, rgba(255, 15, 106, 0.22), rgba(255, 75, 145, 0.12));
   border-color: rgba(255, 75, 145, 0.3);
+}
+
+.btn-load-more-stark {
+  min-width: 280px;
+  margin: 40px auto;
+  padding: 14px 40px;
+  background: rgba(34, 211, 238, 0.05);
+  border: 1px dashed var(--cyan);
+  color: var(--cyan);
+  font-weight: 800;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-load-more-stark:hover:not(:disabled) {
+  background: rgba(34, 211, 238, 0.12);
+  border-style: solid;
+  box-shadow: 0 0 30px rgba(34, 211, 238, 0.2);
+  transform: translateY(-2px);
+  letter-spacing: 5px;
+}
+
+.btn-load-more-stark:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  border-color: var(--muted);
+  color: var(--muted);
 }
 
 /* --- Tablas Tácticas --- */
