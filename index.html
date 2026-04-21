@@ -726,9 +726,14 @@
 
       <section class="table-wrap">
         <div class="table-toolbar">
-          <input type="text" placeholder="Buscar candidatos..." id="search-input" />
+          <input type="text" placeholder="Rastrear candidato..." id="search-input" />
           <div class="section-tools">
-            <button class="btn">Filtrar</button>
+            <select id="filter-cargo" class="btn" style="background:rgba(255,255,255,0.05); color:#fff; border:1px solid rgba(255,255,255,0.1);">
+              <option value="">TODOS LOS CARGOS</option>
+            </select>
+            <select id="filter-status" class="btn" style="background:rgba(255,255,255,0.05); color:#fff; border:1px solid rgba(255,255,255,0.1);">
+              <option value="">TODOS LOS ESTADOS</option>
+            </select>
             <button class="btn">Exportar</button>
           </div>
         </div>
@@ -749,6 +754,12 @@
             <!-- Data injected by dashboard-v2.js -->
           </tbody>
         </table>
+        
+        <div style="padding: 20px; text-align: center; border-top: 1px solid rgba(65, 223, 255, 0.05);">
+          <button id="btn-load-more" class="btn" style="min-width: 200px; background: rgba(34, 211, 238, 0.1); border-color: var(--accent-glow);">
+            CARGAR MÁS CANDIDATOS
+          </button>
+        </div>
       </section>
     </main>
   </div>

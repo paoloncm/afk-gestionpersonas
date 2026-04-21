@@ -25,8 +25,9 @@ async function initDashboard() {
         // 2. Cargar KPIs Reales
         await loadKPIs();
 
-        // 3. Cargar Tabla de Candidatos Recientes
-        await loadRecentCandidates();
+        // 3. Cargar Tabla de Candidatos con Filtros
+        await fetchFilterOptions();
+        await loadRecentCandidates(true);
 
         // 4. Cargar Inteligencia Adicional (Pipeline y Top 5)
         await loadPipeline();
@@ -84,25 +85,67 @@ async function loadKPIs() {
 }
 
 let selectedCandidateIds = new Set();
+let currentPage = 0;
+const PAGE_SIZE = 50;
+let isLastPage = false;
 
-async function loadRecentCandidates() {
+async function loadRecentCandidates(reset = false) {
     const tbody = $('#candidates-tbody');
     if (!tbody) return;
 
-    console.log("[JARVIS] 📋 Cargando expediente de candidatos...");
+    if (reset) {
+        currentPage = 0;
+        isLastPage = false;
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:40px;">Sincronizando flujo de datos...</td></tr>';
+        
+        const master = $('#master-select');
+        if (master) master.checked = false;
+    }
 
-    const { data: candidates, error } = await supabase
+    console.log(`[JARVIS] 📋 Cargando página ${currentPage + 1} de candidatos...`);
+
+    const cargo = $('#filter-cargo')?.value;
+    const status = $('#filter-status')?.value;
+    const term = $('#search-input')?.value;
+
+    let query = supabase
         .from('candidates')
-        .select('id, nombre_completo, profesion, cargo_a_desempenar, nota, status')
+        .select('id, nombre_completo, profesion, cargo_a_desempenar, nota, status');
+
+    if (cargo) query = query.eq('cargo_a_desempenar', cargo);
+    if (status) query = query.eq('status', status);
+    if (term) query = query.or(`nombre_completo.ilike.%${term}%,profesion.ilike.%${term}%,rut.ilike.%${term}%`);
+
+    const from = currentPage * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
+
+    const { data: candidates, error } = await query
         .order('created_at', { ascending: false })
-        .limit(50);
+        .range(from, to);
 
     if (error) {
         console.error("Error loading candidates:", error);
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--red);">Error al cargar datos.</td></tr>';
         return;
     }
 
-    tbody.innerHTML = '';
+    if (reset) tbody.innerHTML = '';
+
+    if (candidates.length < PAGE_SIZE) {
+        isLastPage = true;
+    }
+
+    if (candidates.length === 0 && currentPage === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:40px; color:var(--muted);">No se encontraron candidatos con los criterios actuales.</td></tr>';
+    } else {
+        renderCandidateRows(candidates);
+    }
+
+    updateLoadMoreButton();
+}
+
+function renderCandidateRows(candidates) {
+    const tbody = $('#candidates-tbody');
     candidates.forEach(cand => {
         const tr = document.createElement('tr');
         tr.dataset.id = cand.id;
@@ -136,6 +179,46 @@ async function loadRecentCandidates() {
             updateBulkBar();
         };
     });
+}
+
+function updateLoadMoreButton() {
+    const btn = $('#btn-load-more');
+    if (!btn) return;
+    btn.style.display = isLastPage ? 'none' : 'inline-block';
+    btn.innerText = "CARGAR MÁS CANDIDATOS";
+    btn.disabled = false;
+}
+
+async function fetchFilterOptions() {
+    console.log("[JARVIS] 🔍 Poblando opciones de filtrado táctico...");
+    
+    // Cargos únicos
+    const { data: cargos } = await supabase.from('candidates').select('cargo_a_desempenar').not('cargo_a_desempenar', 'is', null);
+    if (cargos) {
+        const uniqueCargos = Array.from(new Set(cargos.map(c => c.cargo_a_desempenar))).sort();
+        const selCargo = $('#filter-cargo');
+        if (selCargo) {
+            uniqueCargos.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = opt.innerText = c;
+                selCargo.appendChild(opt);
+            });
+        }
+    }
+
+    // Estados únicos
+    const { data: statuses } = await supabase.from('candidates').select('status').not('status', 'is', null);
+    if (statuses) {
+        const uniqueStatus = Array.from(new Set(statuses.map(s => s.status))).sort();
+        const selStatus = $('#filter-status');
+        if (selStatus) {
+            uniqueStatus.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = opt.innerText = s;
+                selStatus.appendChild(opt);
+            });
+        }
+    }
 }
 
 function updateBulkBar() {
@@ -285,16 +368,30 @@ function setupEventListeners() {
         }
     });
 
-    // Búsqueda en tiempo real
+    // Búsqueda en tiempo real (Paginada)
     const searchInput = $('#search-input');
+    let searchTimeout;
     if (searchInput) {
         searchInput.oninput = (e) => {
-            const term = e.target.value.toLowerCase();
-            const rows = document.querySelectorAll('#candidates-tbody tr');
-            rows.forEach(row => {
-                const text = row.innerText.toLowerCase();
-                row.style.display = text.includes(term) ? '' : 'none';
-            });
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                loadRecentCandidates(true);
+            }, 400); // Debounce de 400ms para no saturar Supabase
+        };
+    }
+
+    // Filtros de Cargo y Estado
+    $('#filter-cargo')?.addEventListener('change', () => loadRecentCandidates(true));
+    $('#filter-status')?.addEventListener('change', () => loadRecentCandidates(true));
+
+    // Botón Cargar Más
+    const btnLoadMore = $('#btn-load-more');
+    if (btnLoadMore) {
+        btnLoadMore.onclick = () => {
+            currentPage++;
+            btnLoadMore.innerText = "Sincronizando...";
+            btnLoadMore.disabled = true;
+            loadRecentCandidates(false);
         };
     }
 }
