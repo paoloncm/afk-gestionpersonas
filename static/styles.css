@@ -45,7 +45,7 @@ body {
 
 .main { 
   padding: 14px; 
-  padding-bottom: 200px; /* Incrementado para asegurar visibilidad total tras la Bulk Bar */
+  padding-bottom: 350px; /* Despeje crítico para que el botón de carga suba por encima de la Bulk Bar */
   overflow-y: auto; 
 }
 
@@ -139,26 +139,26 @@ body {
 }
 
 .btn-load-more-stark {
-  min-width: 280px;
-  margin: 40px auto;
-  padding: 14px 40px;
-  background: rgba(34, 211, 238, 0.05);
-  border: 1px dashed var(--cyan);
-  color: var(--cyan);
-  font-weight: 800;
-  letter-spacing: 3px;
+  min-width: 350px;
+  margin: 60px auto;
+  padding: 18px 50px;
+  background: rgba(34, 211, 238, 0.1);
+  border: 2px solid var(--cyan);
+  box-shadow: 0 0 20px var(--cyan);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: 4px;
   text-transform: uppercase;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  overflow: hidden;
+  transition: all 0.3s ease;
+  cursor: pointer;
 }
 
-.btn-load-more-stark:hover:not(:disabled) {
-  background: rgba(34, 211, 238, 0.12);
-  border-style: solid;
-  box-shadow: 0 0 30px rgba(34, 211, 238, 0.2);
-  transform: translateY(-2px);
-  letter-spacing: 5px;
+.btn-load-more-stark:hover {
+  background: var(--cyan);
+  color: #000;
+  box-shadow: 0 0 40px var(--cyan);
+  transform: scale(1.05);
 }
 
 .btn-load-more-stark:disabled {

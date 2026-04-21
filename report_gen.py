@@ -41,13 +41,13 @@ class StarkReportGenerator:
         sheet = wb.active
         
         # HEADER STARK (Razón Social / Representante / Fecha)
-        self._safe_write(sheet, "H9", "AFK LIMITADA")
-        self._safe_write(sheet, "H11", "PAOLO NAVARRO")
+        self._safe_write(sheet, "C9", "AFK LIMITADA")
+        self._safe_write(sheet, "C11", "PAOLO NAVARRO")
         
         # Fecha en formato Stark (D-M-YYYY)
         from datetime import datetime
         fecha_stark = datetime.now().strftime("%d-%m-%Y")
-        self._safe_write(sheet, "U11", fecha_stark)
+        self._safe_write(sheet, "V11", fecha_stark)
 
         # Comenzamos la inserción en la fila 17 (según inspección visual del encabezado)
         start_row = 17
@@ -92,6 +92,8 @@ class StarkReportGenerator:
             # ---------------------------------------------------------
             # B17: Nombre
             self._safe_write(new_sheet, "B17", str(cand.get("nombre_completo", "")).upper())
+            # B19: Título Profesional
+            self._safe_write(new_sheet, "B19", str(cand.get("profesion", "")).upper())
             # B21: Cargo Destino
             self._safe_write(new_sheet, "B21", str(cand.get("cargo_a_desempenar", "")).upper())
             

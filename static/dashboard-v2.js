@@ -187,11 +187,20 @@ function renderCandidateRows(candidates) {
 }
 
 function updateLoadMoreButton() {
-    const btn = $('#btn-load-more');
-    if (!btn) return;
-    btn.style.display = isLastPage ? 'none' : 'inline-block';
-    btn.innerText = "CARGAR MÁS CANDIDATOS";
-    btn.disabled = false;
+    const btnBottom = $('#btn-load-more');
+    const btnTop = $('#btn-load-more-top');
+    
+    if (btnBottom) {
+        btnBottom.style.display = isLastPage ? 'none' : 'inline-block';
+        btnBottom.innerText = "CARGAR MÁS CANDIDATOS";
+        btnBottom.disabled = false;
+    }
+    
+    if (btnTop) {
+        btnTop.style.display = isLastPage ? 'none' : 'inline-block';
+        btnTop.innerText = "CARGAR MÁS";
+        btnTop.disabled = false;
+    }
 }
 
 async function fetchFilterOptions() {
@@ -389,16 +398,17 @@ function setupEventListeners() {
     $('#filter-cargo')?.addEventListener('change', () => loadRecentCandidates(true));
     $('#filter-status')?.addEventListener('change', () => loadRecentCandidates(true));
 
-    // Botón Cargar Más
-    const btnLoadMore = $('#btn-load-more');
-    if (btnLoadMore) {
-        btnLoadMore.onclick = () => {
-            currentPage++;
-            btnLoadMore.innerText = "Sincronizando...";
-            btnLoadMore.disabled = true;
-            loadRecentCandidates(false);
-        };
-    }
+    // Botones Cargar Más (Dual: Arriba y Abajo)
+    const handleLoadMore = () => {
+        currentPage++;
+        loadRecentCandidates(false);
+    };
+
+    const btnBottom = $('#btn-load-more');
+    if (btnBottom) btnBottom.onclick = handleLoadMore;
+
+    const btnTop = $('#btn-load-more-top');
+    if (btnTop) btnTop.onclick = handleLoadMore;
 }
 
 document.addEventListener('DOMContentLoaded', initDashboard);
