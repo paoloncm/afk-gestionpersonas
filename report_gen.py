@@ -42,12 +42,12 @@ class StarkReportGenerator:
         
         # HEADER STARK (Razón Social / Representante / Fecha)
         self._safe_write(sheet, "H9", "SERCOING LTDA")
-        self._safe_write(sheet, "H11", "GUIDO CORTEZ")
+        self._safe_write(sheet, "H11", "GUIDO CORTES ORDENES")
         
         # Fecha en formato Stark (D-M-YYYY)
         from datetime import datetime
         fecha_stark = datetime.now().strftime("%d-%m-%Y")
-        self._safe_write(sheet, "V11", fecha_stark)
+        self._safe_write(sheet, "W11", fecha_stark)
 
         # Comenzamos la inserción en la fila 17 (según inspección visual del encabezado)
         start_row = 17
@@ -90,10 +90,10 @@ class StarkReportGenerator:
             
             # Inyectar datos en la ficha individual (Anexo TEC-02A Stark)
             # ---------------------------------------------------------
-            # I10: Razón Social
-            self._safe_write(new_sheet, "I10", "SERCOING LTDA")
-            # I12: Representante Legal
-            self._safe_write(new_sheet, "I12", "GUIDO CORTEZ")
+            # H10: Razón Social
+            self._safe_write(new_sheet, "H10", "SERCOING LTDA")
+            # H12: Representante Legal
+            self._safe_write(new_sheet, "H12", "GUIDO CORTES ORDENES")
             # W12: Fecha
             from datetime import datetime
             fecha_stark = datetime.now().strftime("%d-%m-%Y")
