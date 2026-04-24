@@ -41,8 +41,8 @@ class StarkReportGenerator:
         sheet = wb.active
         
         # HEADER STARK (Razón Social / Representante / Fecha)
-        self._safe_write(sheet, "C9", "AFK LIMITADA")
-        self._safe_write(sheet, "C11", "PAOLO NAVARRO")
+        self._safe_write(sheet, "H9", "SERCOING LTDA")
+        self._safe_write(sheet, "H11", "GUIDO CORTEZ")
         
         # Fecha en formato Stark (D-M-YYYY)
         from datetime import datetime
@@ -91,11 +91,11 @@ class StarkReportGenerator:
             # Inyectar datos en la ficha individual (Anexo TEC-02A Stark)
             # ---------------------------------------------------------
             # B17: Nombre
-            self._safe_write(new_sheet, "B17", str(cand.get("nombre_completo", "")).upper())
+            self._safe_write(new_sheet, "H17", str(cand.get("nombre_completo", "")).upper())
             # B19: Título Profesional
-            self._safe_write(new_sheet, "B19", str(cand.get("profesion", "")).upper())
+            self._safe_write(new_sheet, "H19", str(cand.get("profesion", "")).upper())
             # B21: Cargo Destino
-            self._safe_write(new_sheet, "B21", str(cand.get("cargo_a_desempenar", "")).upper())
+            self._safe_write(new_sheet, "H21", str(cand.get("cargo_a_desempenar", "")).upper())
             
             # 1. BLOQUE EXPERIENCIA GENERAL (Header Row 23, Target B24)
             exp_gen = cand.get("experiencia_general", "")

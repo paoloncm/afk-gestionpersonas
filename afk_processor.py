@@ -29,10 +29,10 @@ class CandidateCV(BaseModel):
     experiencia: Optional[str] = Field(None, description="Resumen de la experiencia más reciente")
 
     cargo_a_desempenar: Optional[str] = Field(None, description="Cargo al que postula o último cargo objetivo")
-    experiencia_total: float = Field(0.0, description="Total de años de experiencia laboral (numérico)")
-    experiencia_en_empresa_actual: float = Field(0.0, description="Años en la empresa actual o más reciente")
-    exp_cargo_actual: float = Field(0.0, description="Años en el cargo actual o más reciente")
-    exp_proy_similares: float = Field(0.0, description="Años de experiencia en proyectos industriales/mineros similares al cargo objetivo")
+    experiencia_total: int = Field(0, description="Total de años de experiencia laboral (NÚMERO ENTERO, redondear al más cercano)")
+    experiencia_en_empresa_actual: int = Field(0, description="Años en la empresa actual o más reciente (NÚMERO ENTERO, redondear al más cercano)")
+    exp_cargo_actual: int = Field(0, description="Años en el cargo actual o más reciente (NÚMERO ENTERO, redondear al más cercano)")
+    exp_proy_similares: int = Field(0, description="Años de experiencia en proyectos industriales/mineros similares al cargo objetivo (NÚMERO ENTERO, redondear al más cercano)")
 
     antecedentes_academicos: str = Field("", description="Antecedentes académicos. Formato: 'TITULO - INSTITUCION - ESTADO (Titulado/Egresado/En Curso)', uno por línea.")
     experiencia_general: str = Field("", description="Experiencia General para informe TEC-02. NUNCA resumir. Reconstruir TODA la línea de tiempo. Formato EXACTO por entrada: 'YYYY-YYYY CARGO - EMPRESA - FAENA/ESTABLECIMIENTO'. Una entrada por línea.")
@@ -40,7 +40,7 @@ class CandidateCV(BaseModel):
     otras_experiencias: str = Field("", description="Otras experiencias relevantes, certificaciones, cursos. Mismo formato de lista.")
 
     evaluacion_general: str = Field("", description="Resumen táctico profesional en 3 párrafos: 1. Propuesta de Valor, 2. Dominio Técnico, 3. Aptitud Operacional. En español formal de Chile.")
-    match_score: float = Field(80.0, description="Índice de mérito de 0 a 100 basado en antigüedad, certificaciones y habilidades técnicas especializadas.")
+    match_score: int = Field(80, description="Índice de mérito de 0 a 100 basado en antigüedad, certificaciones y habilidades técnicas especializadas.")
     match_explicacion: str = Field("", description="Justificación clara y profesional del match_score. Destacar brechas o fortalezas técnicas.")
     nota: float = Field(1.0, description="Nota numérica de 1.0 a 7.0 (escala chilena). Basada en: 30% antigüedad, 40% certificaciones, 30% complejidad de proyectos.")
     ranking: int = Field(50, description="Ranking estratégico de 1 a 100 representando la competitividad del candidato en el sector industrial.")
@@ -168,7 +168,8 @@ class AFKProcessor:
             "4. REGISTROS ACADÉMICOS: Formato: 'TITULO - INSTITUCION - ESTADO (Titulado, Egresado, o En Curso)'. "
             "5. INVENTARIO DE SOFTWARE: Lista detallada de ERPs (SAP, Maximo), herramientas técnicas y software específico. "
             "6. EVALUACION GENERAL: Resumen de alta fidelidad en 3 párrafos: Propuesta de Valor, Dominio Técnico, Aptitud Operacional. "
-            "7. CALIFICACIÓN: 'nota' (1.0-7.0) y 'ranking' (1-100) deben reflejar el rigor del sector industrial/minero."
+            "7. CALIFICACIÓN: 'nota' (1.0-7.0) y 'ranking' (1-100) deben reflejar el rigor del sector industrial/minero.\n"
+            "8. NÚMEROS ENTEROS: Todos los campos de 'experiencia_total', 'experiencia_en_empresa_actual', 'exp_cargo_actual' y 'exp_proy_similares' DEBEN ser NÚMEROS ENTEROS. Redondea fracciones al entero más cercano (ej: 2.92 -> 3)."
         )
 
         tools = [
