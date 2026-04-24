@@ -90,11 +90,20 @@ class StarkReportGenerator:
             
             # Inyectar datos en la ficha individual (Anexo TEC-02A Stark)
             # ---------------------------------------------------------
-            # B17: Nombre
+            # I10: Razón Social
+            self._safe_write(new_sheet, "I10", "SERCOING LTDA")
+            # I12: Representante Legal
+            self._safe_write(new_sheet, "I12", "GUIDO CORTEZ")
+            # W12: Fecha
+            from datetime import datetime
+            fecha_stark = datetime.now().strftime("%d-%m-%Y")
+            self._safe_write(new_sheet, "W12", fecha_stark)
+
+            # H17: Nombre
             self._safe_write(new_sheet, "H17", str(cand.get("nombre_completo", "")).upper())
-            # B19: Título Profesional
+            # H19: Título Profesional
             self._safe_write(new_sheet, "H19", str(cand.get("profesion", "")).upper())
-            # B21: Cargo Destino
+            # H21: Cargo Destino
             self._safe_write(new_sheet, "H21", str(cand.get("cargo_a_desempenar", "")).upper())
             
             # 1. BLOQUE EXPERIENCIA GENERAL (Header Row 23, Target B24)
