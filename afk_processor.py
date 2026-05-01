@@ -244,6 +244,11 @@ class AFKProcessor:
         payload["cv_full_text"] = full_text
         payload["cv_embedding"] = embedding
 
+        # Sanitizar strings (PostgreSQL no soporta el carácter nulo \u0000)
+        for key, val in payload.items():
+            if isinstance(val, str):
+                payload[key] = val.replace('\x00', '')
+
         # match_score es integer en Supabase
         if "match_score" in payload and payload["match_score"] is not None:
             payload["match_score"] = int(payload["match_score"])
