@@ -17,8 +17,8 @@ class CandidateCV(BaseModel):
     nombre_completo: str = Field(..., description="Nombre completo del candidato")
     rut: Optional[str] = Field(None, description="RUT chileno si está presente, formato: 12.345.678-9")
     fecha_nacimiento: Optional[str] = Field(None, description="Fecha de nacimiento si está presente (formato YYYY-MM-DD)")
-    profesion: str = Field(..., description="Profesión principal o título")
-    correo: str = Field(..., description="Correo electrónico")
+    profesion: Optional[str] = Field(None, description="Profesión principal o título")
+    correo: Optional[str] = Field(None, description="Correo electrónico")
     telefono: Optional[str] = Field(None, description="Teléfono de contacto")
     direccion: Optional[str] = Field(None, description="Dirección física o ciudad de residencia")
 
