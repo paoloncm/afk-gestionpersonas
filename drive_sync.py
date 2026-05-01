@@ -148,7 +148,7 @@ class DriveSync:
                 print(f"🔍 Extracting and analyzing text with JARVIS...")
                 # Use the existing AFKProcessor logic
                 text = self.processor.extract_text(temp_path)
-                cv_data = self.processor.process_cv_with_ai(text)
+                cv_data = self.processor.process_cv_with_ai(text, filename=f['name'], file_path=temp_path)
                 
                 if cv_data:
                     # APPLY STARK PRIORITY: Overwrite cargo if it was provided via folder structure

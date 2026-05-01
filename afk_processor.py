@@ -1,7 +1,9 @@
 import os
 import re
 import json
+import base64
 from typing import Optional, List
+import fitz
 from pydantic import BaseModel, Field
 from pypdf import PdfReader
 import docx
@@ -153,10 +155,41 @@ class AFKProcessor:
         else:
             raise ValueError(f"Formato de archivo no soportado: '{ext}'")
 
-    def process_cv_with_ai(self, text: str) -> CandidateCV:
+    def _pdf_to_base64_images(self, file_path: str, max_pages: int = 3) -> List[str]:
+        """Convierte las primeras páginas de un PDF a imágenes base64 usando PyMuPDF."""
+        base64_images = []
+        try:
+            doc = fitz.open(file_path)
+            for page_num in range(min(len(doc), max_pages)):
+                page = doc.load_page(page_num)
+                # Renderizar página a imagen (zoom 2x para mejor resolución)
+                pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))
+                img_bytes = pix.tobytes("jpeg")
+                b64_str = base64.b64encode(img_bytes).decode("utf-8")
+                base64_images.append(b64_str)
+            doc.close()
+        except Exception as e:
+            print(f"❌ Error convirtiendo PDF a imágenes: {e}")
+        return base64_images
+
+    def process_cv_with_ai(self, text: str, filename: str = "", file_path: str = None) -> CandidateCV:
+        use_vision = False
+        base64_images = []
+
+        if len(text.strip()) < 50:
+            if file_path and file_path.lower().endswith(".pdf"):
+                print("⚠️ Texto insuficiente detectado. Activando Plan B: OCR con GPT-4o Vision API...")
+                base64_images = self._pdf_to_base64_images(file_path)
+                if not base64_images:
+                    raise ValueError("Texto extraído insuficiente y falló la conversión a imágenes. Abortando.")
+                use_vision = True
+            else:
+                raise ValueError("Texto extraído insuficiente y no es un PDF válido para OCR visual. Abortando para evitar alucinaciones de IA.")
+
         system_prompt = (
             "Eres JARVIS (Just A Rather Very Intelligent System), Analista Táctico de RRHH de élite de Stark Industries. "
             "REGLA CRÍTICA DE IDIOMA: TODOS los campos de salida DEBEN estar en ESPAÑOL (Español Profesional de Chile). "
+            "REGLA CRÍTICA DE IDENTIDAD: NUNCA inventes nombres genéricos como 'Juan Pérez'. Si no encuentras el nombre en el texto, usa el nombre del 'Archivo original'. "
             "NUNCA uses inglés para resúmenes, cargos o evaluaciones. "
             "Tu objetivo es realizar una extracción EXHAUSTIVA, PROFESIONAL y SIN PÉRDIDA DE DATOS del CV proporcionado. "
             "TONO: Formal, táctico y eficiente. Usa terminología de alta precisión. "
@@ -183,12 +216,30 @@ class AFKProcessor:
             }
         ]
 
+        messages = [
+            {"role": "system", "content": system_prompt}
+        ]
+
+        if use_vision:
+            # Construir mensaje con imágenes para GPT-4o Vision
+            user_content = [
+                {"type": "text", "text": f"Archivo original: {filename}\n\nEste CV no contiene texto seleccionable. Aquí están las imágenes de las páginas para que las leas:"}
+            ]
+            for b64_img in base64_images:
+                user_content.append({
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:image/jpeg;base64,{b64_img}",
+                        "detail": "high"
+                    }
+                })
+            messages.append({"role": "user", "content": user_content})
+        else:
+            messages.append({"role": "user", "content": f"Archivo original: {filename}\n\nTexto extraído:\n{text[:55000]}"})
+        
         response = self.openai.chat.completions.create(
             model="gpt-4o",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": text[:55000]}  # Cap at 55k chars para evitar overflow
-            ],
+            messages=messages,
             tools=tools,
             tool_choice={"type": "function", "function": {"name": "extract_cv_data"}}
         )
@@ -302,7 +353,7 @@ if __name__ == "__main__":
         char_count = len(text)
         print(f"📝 Texto extraído: {char_count:,} caracteres. Enviando a JARVIS...")
 
-        cv_data = processor.process_cv_with_ai(text)
+        cv_data = processor.process_cv_with_ai(text, filename=os.path.basename(args.file), file_path=args.file)
         print(f"✅ Extracción IA completada: {cv_data.nombre_completo} | Nota: {cv_data.nota} | Ranking: {cv_data.ranking}")
 
         print("🔄 Sincronizando con Supabase...")
