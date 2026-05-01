@@ -32,10 +32,10 @@ class CandidateCV(BaseModel):
     experiencia: Optional[str] = Field(None, description="Resumen de la experiencia más reciente")
 
     cargo_a_desempenar: Optional[str] = Field(None, description="Cargo al que postula o último cargo objetivo")
-    experiencia_total: int = Field(0, description="Total de años de experiencia laboral (NÚMERO ENTERO, redondear al más cercano)")
-    experiencia_en_empresa_actual: int = Field(0, description="Años en la empresa actual o más reciente (NÚMERO ENTERO, redondear al más cercano)")
-    exp_cargo_actual: int = Field(0, description="Años en el cargo actual o más reciente (NÚMERO ENTERO, redondear al más cercano)")
-    exp_proy_similares: int = Field(0, description="Años de experiencia en proyectos industriales/mineros similares al cargo objetivo (NÚMERO ENTERO, redondear al más cercano)")
+    experiencia_total: int = Field(0, description="Total de años profesionales de experiencia laboral (NÚMERO ENTERO, redondear al más cercano)")
+    experiencia_en_empresa_actual: int = Field(0, description="Años en la empresa en la que se encuentra trabajando actualmente (NÚMERO ENTERO, redondear al más cercano)")
+    exp_cargo_actual: int = Field(0, description="Años de experiencia relacionada al cargo desempeñado actualmente (NÚMERO ENTERO, redondear al más cercano)")
+    exp_proy_similares: int = Field(0, description="Años de experiencia en proyectos similares en base al área de profesión o trabajo (NÚMERO ENTERO, redondear al más cercano)")
 
     antecedentes_academicos: str = Field("", description="Antecedentes académicos. Formato: 'TITULO - INSTITUCION - ESTADO (Titulado/Egresado/En Curso)', uno por línea.")
     experiencia_general: str = Field("", description="Experiencia General para informe TEC-02. NUNCA resumir. Reconstruir TODA la línea de tiempo. Formato EXACTO por entrada: 'YYYY-YYYY CARGO - EMPRESA - FAENA/ESTABLECIMIENTO'. Una entrada por línea.")
