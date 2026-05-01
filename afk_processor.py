@@ -10,6 +10,7 @@ import docx
 from openai import OpenAI
 from supabase import create_client, Client
 from dotenv import load_dotenv
+from datetime import datetime
 
 load_dotenv()
 
@@ -202,7 +203,8 @@ class AFKProcessor:
             "5. INVENTARIO DE SOFTWARE: Lista detallada de ERPs (SAP, Maximo), herramientas técnicas y software específico. "
             "6. EVALUACION GENERAL: Resumen de alta fidelidad en 3 párrafos: Propuesta de Valor, Dominio Técnico, Aptitud Operacional. "
             "7. CALIFICACIÓN: 'nota' (1.0-7.0) y 'ranking' (1-100) deben reflejar el rigor del sector industrial/minero.\n"
-            "8. NÚMEROS ENTEROS: Todos los campos de 'experiencia_total', 'experiencia_en_empresa_actual', 'exp_cargo_actual' y 'exp_proy_similares' DEBEN ser NÚMEROS ENTEROS. Redondea fracciones al entero más cercano (ej: 2.92 -> 3)."
+            "8. NÚMEROS ENTEROS: Todos los campos de 'experiencia_total', 'experiencia_en_empresa_actual', 'exp_cargo_actual' y 'exp_proy_similares' DEBEN ser NÚMEROS ENTEROS. Redondea fracciones al entero más cercano (ej: 2.92 -> 3).\n"
+            f"9. AÑO ACTUAL: Asume que hoy es el año {datetime.now().year}. Calcula los tiempos de experiencia 'hasta la fecha' (Presente) usando este año."
         )
 
         tools = [
