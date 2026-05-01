@@ -145,13 +145,13 @@ class AFKProcessor:
         return "\n".join(paragraphs)
 
     def extract_text(self, file_path: str) -> str:
-        ext = os.path.splitext(file_path)[1].lower()
+        ext = os.path.splitext(file_path)[1].lower().strip()
         if ext == ".pdf":
             return self.extract_text_from_pdf(file_path)
         elif ext == ".docx":
             return self.extract_text_from_docx(file_path)
         else:
-            raise ValueError(f"Formato de archivo no soportado: {ext}")
+            raise ValueError(f"Formato de archivo no soportado: '{ext}'")
 
     def process_cv_with_ai(self, text: str) -> CandidateCV:
         system_prompt = (
@@ -199,13 +199,23 @@ class AFKProcessor:
         return CandidateCV(**data)
 
     def generate_embedding(self, text: str) -> List[float]:
-        # Limitar texto para embedding (máx 8191 tokens ~ 32k chars)
-        truncated = text[:30000]
-        response = self.openai.embeddings.create(
-            input=truncated,
-            model="text-embedding-3-small"
-        )
-        return response.data[0].embedding
+        # Limitar texto para embedding (máx 8191 tokens)
+        # Reducido de 30000 a 15000 caracteres para asegurar que no exceda los 8192 tokens
+        truncated = text[:15000]
+        try:
+            response = self.openai.embeddings.create(
+                input=truncated,
+                model="text-embedding-3-small"
+            )
+            return response.data[0].embedding
+        except Exception as e:
+            print(f"⚠️ Error al generar embedding, reduciendo texto: {e}")
+            truncated_fallback = text[:8000]
+            response_fallback = self.openai.embeddings.create(
+                input=truncated_fallback,
+                model="text-embedding-3-small"
+            )
+            return response_fallback.data[0].embedding
 
     def sync_to_supabase(self, candidate_id: Optional[str], cv_data: CandidateCV, full_text: str):
         if not self.supabase:
