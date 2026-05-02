@@ -72,8 +72,9 @@ class StarkReportGenerator:
             # We MUST cleanly rebuild the merged_cells.ranges list without any overlapping ranges for this row.
             new_ranges = []
             for mr in sheet.merged_cells.ranges:
-                overlap = (mr.min_row == current_row and mr.max_row == current_row)
-                if not overlap:
+                row_overlap = (mr.min_row == current_row and mr.max_row == current_row)
+                col_overlap = not (mr.max_col < 2 or mr.min_col > 27)
+                if not (row_overlap and col_overlap):
                     new_ranges.append(mr)
             sheet.merged_cells.ranges = new_ranges
                 
@@ -215,9 +216,9 @@ class StarkReportGenerator:
                 # Completely rebuild ranges list to aggressively purge ANY overlaps and duplicates
                 new_ranges = []
                 for mr in new_sheet.merged_cells.ranges:
-                    overlap = (mr.min_row >= r_min and mr.max_row <= r_max) or \
-                              (mr.min_row <= r_max and mr.max_row >= r_min)
-                    if not overlap:
+                    row_overlap = not (mr.max_row < r_min or mr.min_row > r_max)
+                    col_overlap = not (mr.max_col < c_min or mr.min_col > c_max)
+                    if not (row_overlap and col_overlap):
                         new_ranges.append(mr)
                 new_sheet.merged_cells.ranges = new_ranges
                 
