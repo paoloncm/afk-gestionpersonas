@@ -164,12 +164,7 @@ class StarkReportGenerator:
             self._safe_write(new_sheet, "H19", str(cand.get("profesion", "")).upper())
             # H21: Cargo Destino
             self._safe_write(new_sheet, "H21", str(cand.get("cargo_a_desempenar", "")).upper())
-            # B59: Nombre
-            self._safe_write(new_sheet, "B59", str(cand.get("nombre_completo", "")).upper())
-            # K59 : Fecha
-            from datetime import datetime
-            fecha_stark = datetime.now().strftime("%d-%m-%Y")
-            self._safe_write(new_sheet, "K59", fecha_stark)
+
 
 
             
@@ -210,8 +205,18 @@ class StarkReportGenerator:
                 for mr in ranges_to_remove:
                     new_sheet.merged_cells.ranges.remove(mr)
                     
-                # Re-apply correct merge
-                new_sheet.merge_cells(start_row=t_r_min, start_column=c_min, end_row=t_r_max, end_column=c_max)
+                # Re-apply correct merge using coordinate string format
+                coord = f"{get_column_letter(c_min)}{t_r_min}:{get_column_letter(c_max)}{t_r_max}"
+                try:
+                    new_sheet.merge_cells(coord)
+                except Exception:
+                    pass
+            
+            # 6. Escribir Nombre y Fecha en la posición final correcta (después de todo el offset y fixes)
+            from datetime import datetime
+            fecha_stark = datetime.now().strftime("%d-%m-%Y")
+            self._safe_write(new_sheet, f"B{59 + offset}", str(cand.get("nombre_completo", "")).upper())
+            self._safe_write(new_sheet, f"K{59 + offset}", fecha_stark)
             
         # Borrar la hoja original de plantilla
         if len(wb.sheetnames) > 1:
