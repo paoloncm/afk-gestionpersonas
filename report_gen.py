@@ -241,6 +241,12 @@ class StarkReportGenerator:
             self._safe_write(new_sheet, f"B{59 + offset4}", str(cand.get("nombre_completo", "")).upper())
             self._safe_write(new_sheet, f"K{59 + offset4}", fecha_stark)
             
+            # 7. Redibujar la línea de la firma unificada (openpyxl borra las formas insertadas)
+            from openpyxl.styles import Border, Side
+            line_border = Border(bottom=Side(style='thin', color='000000'))
+            for c_idx in range(5, 25): # Columnas E(5) hasta X(24)
+                new_sheet.cell(row=59 + offset4, column=c_idx).border = line_border
+            
         # Borrar la hoja original de plantilla
         if len(wb.sheetnames) > 1:
             wb.remove(wb[original_title])
