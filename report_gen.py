@@ -68,18 +68,20 @@ class StarkReportGenerator:
                         target_cell.protection = copy(source_cell.protection)
                         target_cell.alignment = copy(source_cell.alignment)
             
-            # Openpyxl insert_rows corrupts merged cells. We MUST re-merge B:AA manually for this row.
-            # First remove any corrupted merges on this row
-            ranges_to_remove = []
+            # Openpyxl insert_rows corrupts merged cells and creates duplicates. 
+            # We MUST cleanly rebuild the merged_cells.ranges list without any overlapping ranges for this row.
+            new_ranges = []
             for mr in sheet.merged_cells.ranges:
-                # If the merge is exactly on this row, remove it so we can cleanly re-merge
-                if mr.min_row == current_row and mr.max_row == current_row:
-                    ranges_to_remove.append(mr)
-            for mr in ranges_to_remove:
-                sheet.merged_cells.ranges.remove(mr)
+                overlap = (mr.min_row == current_row and mr.max_row == current_row)
+                if not overlap:
+                    new_ranges.append(mr)
+            sheet.merged_cells.ranges = new_ranges
                 
             # Now explicitly merge B to AA
-            sheet.merge_cells(start_row=current_row, start_column=2, end_row=current_row, end_column=27)
+            try:
+                sheet.merge_cells(start_row=current_row, start_column=2, end_row=current_row, end_column=27)
+            except Exception:
+                pass
             
             if i < len(lines):
                 line = lines[i]
@@ -168,55 +170,74 @@ class StarkReportGenerator:
 
 
             
-            offset = 0
-            
             # 1. BLOQUE EXPERIENCIA GENERAL (Header Row 23, Target B24 to B31 -> max 8 rows)
             exp_gen = cand.get("experiencia_general", "")
-            offset += self._write_multiline(new_sheet, 24 + offset, "B", exp_gen, max_rows=8, auto_height=True)
+            added1 = self._write_multiline(new_sheet, 24, "B", exp_gen, max_rows=8, auto_height=True)
+            offset1 = added1
 
             # 2. BLOQUE EXPERIENCIA ESPECÍFICA (Header Row 31, Target B33 to B39 -> max 7 rows)
             exp_esp = cand.get("experiencia_especifica", "")
-            offset += self._write_multiline(new_sheet, 33 + offset, "B", exp_esp, max_rows=7, auto_height=True)
+            added2 = self._write_multiline(new_sheet, 33 + offset1, "B", exp_esp, max_rows=7, auto_height=True)
+            offset2 = offset1 + added2
             
             # 3. BLOQUE OTRAS EXPERIENCIAS (Header Row 40, Target B41 to B47 -> max 7 rows)
             exp_otras = cand.get("otras_experiencias", "")
-            offset += self._write_multiline(new_sheet, 41 + offset, "B", exp_otras, max_rows=7, auto_height=True)
+            added3 = self._write_multiline(new_sheet, 41 + offset2, "B", exp_otras, max_rows=7, auto_height=True)
+            offset3 = offset2 + added3
             
             # 4. BLOQUE ANTECEDENTES ACADÉMICOS (Header Row 48, Target B49 to B55 -> max 7 rows)
             aca = cand.get("antecedentes_academicos", "")
-            offset += self._write_multiline(new_sheet, 49 + offset, "B", aca, max_rows=7, auto_height=True)
+            added4 = self._write_multiline(new_sheet, 49 + offset3, "B", aca, max_rows=7, auto_height=True)
+            offset4 = offset3 + added4
             
-            # 5. Fix bottom merges that openpyxl insert_rows corrupted
-            bottom_merges = [
-                (59, 2, 59, 8),    # B:H for Name
-                (59, 11, 59, 17),  # K:Q for Date
-                (65, 3, 66, 26)    # C:Z for Notes
-            ]
-            for r_min, c_min, r_max, c_max in bottom_merges:
-                t_r_min = r_min + offset
-                t_r_max = r_max + offset
+            # 5. Fix ALL merges that openpyxl insert_rows corrupted (Headers + Bottom Block)
+            merges_to_enforce = [
+                # Headers
+                (23, 2, 23, 27), # Exp General
+                (32 + offset1, 2, 32 + offset1, 27), # Exp Especifica
+                (40 + offset2, 2, 40 + offset2, 27), # Otras Exp
+                (48 + offset3, 2, 48 + offset3, 27), # Antecedentes Acad
                 
-                # Remove corrupted merges
-                ranges_to_remove = []
+                # Signature Block Name/Date
+                (59 + offset4, 2, 59 + offset4, 8),   # B:H Name
+                (59 + offset4, 11, 59 + offset4, 17), # K:Q Date
+                
+                # Signature Block Labels (Nombre y Apellido, Fecha, Firma)
+                (60 + offset4, 2, 60 + offset4, 8),   # B:H Nombre y Apellido
+                (60 + offset4, 11, 60 + offset4, 17), # K:Q Fecha
+                (60 + offset4, 21, 60 + offset4, 26), # U:Z Firma
+                
+                # Notes
+                (65 + offset4, 3, 66 + offset4, 26)   # C:Z Notes
+            ]
+            
+            for r_min, c_min, r_max, c_max in merges_to_enforce:
+                # Completely rebuild ranges list to aggressively purge ANY overlaps and duplicates
+                new_ranges = []
                 for mr in new_sheet.merged_cells.ranges:
-                    if (mr.min_row >= t_r_min and mr.max_row <= t_r_max) or \
-                       (mr.min_row <= t_r_max and mr.max_row >= t_r_min):
-                        ranges_to_remove.append(mr)
-                for mr in ranges_to_remove:
-                    new_sheet.merged_cells.ranges.remove(mr)
-                    
-                # Re-apply correct merge using coordinate string format
-                coord = f"{get_column_letter(c_min)}{t_r_min}:{get_column_letter(c_max)}{t_r_max}"
+                    overlap = (mr.min_row >= r_min and mr.max_row <= r_max) or \
+                              (mr.min_row <= r_max and mr.max_row >= r_min)
+                    if not overlap:
+                        new_ranges.append(mr)
+                new_sheet.merged_cells.ranges = new_ranges
+                
+                # Re-apply correct merge
+                coord = f"{get_column_letter(c_min)}{r_min}:{get_column_letter(c_max)}{r_max}"
                 try:
                     new_sheet.merge_cells(coord)
                 except Exception:
                     pass
+                
+                # Re-center headers and signature labels
+                if r_min in [23, 32 + offset1, 40 + offset2, 48 + offset3, 60 + offset4]:
+                    master = new_sheet.cell(row=r_min, column=c_min)
+                    master.alignment = Alignment(horizontal='center', vertical='center')
             
             # 6. Escribir Nombre y Fecha en la posición final correcta (después de todo el offset y fixes)
             from datetime import datetime
             fecha_stark = datetime.now().strftime("%d-%m-%Y")
-            self._safe_write(new_sheet, f"B{59 + offset}", str(cand.get("nombre_completo", "")).upper())
-            self._safe_write(new_sheet, f"K{59 + offset}", fecha_stark)
+            self._safe_write(new_sheet, f"B{59 + offset4}", str(cand.get("nombre_completo", "")).upper())
+            self._safe_write(new_sheet, f"K{59 + offset4}", fecha_stark)
             
         # Borrar la hoja original de plantilla
         if len(wb.sheetnames) > 1:
