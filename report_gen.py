@@ -203,11 +203,6 @@ class StarkReportGenerator:
                 (59 + offset4, 2, 59 + offset4, 8),   # B:H Name
                 (59 + offset4, 11, 59 + offset4, 17), # K:Q Date
                 
-                # Signature Block Labels (Nombre y Apellido, Fecha, Firma)
-                (60 + offset4, 2, 60 + offset4, 8),   # B:H Nombre y Apellido
-                (60 + offset4, 11, 60 + offset4, 17), # K:Q Fecha
-                (60 + offset4, 21, 60 + offset4, 26), # U:Z Firma
-                
                 # Notes
                 (65 + offset4, 3, 66 + offset4, 26)   # C:Z Notes
             ]
@@ -230,7 +225,7 @@ class StarkReportGenerator:
                     pass
                 
                 # Re-center headers and signature labels
-                if r_min in [23, 32 + offset1, 40 + offset2, 48 + offset3, 60 + offset4]:
+                if r_min in [23, 32 + offset1, 40 + offset2, 48 + offset3]:
                     master = new_sheet.cell(row=r_min, column=c_min)
                     master.alignment = Alignment(horizontal='center', vertical='center')
             
