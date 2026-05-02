@@ -2,6 +2,7 @@ import io
 import os
 import openpyxl
 from openpyxl.utils.cell import get_column_letter
+from openpyxl.styles import Alignment
 
 class StarkReportGenerator:
     """Motor de Generación de Reportes Técnicos Nivel Stark (Arquitectura Dual)."""
@@ -24,12 +25,37 @@ class StarkReportGenerator:
                 return merged_range.coord.split(':')[0]
         return cell_ref
 
-    def _safe_write(self, sheet, cell_ref, value):
+    def _safe_write(self, sheet, cell_ref, value, auto_height=False, chars_per_line=130):
         try:
             master_ref = self._get_master_cell_coord(sheet, cell_ref)
             sheet[master_ref] = value
+            if auto_height and value:
+                sheet[master_ref].alignment = Alignment(wrap_text=True, vertical='top')
+                lines = str(value).split('\n')
+                total_lines = 0
+                for line in lines:
+                    wraps = len(line) // chars_per_line
+                    total_lines += (1 + wraps)
+                row_idx = openpyxl.utils.cell.coordinate_from_string(master_ref)[1]
+                # Excel default row height is ~15. Adding padding.
+                sheet.row_dimensions[row_idx].height = max(15, total_lines * 15 + 10)
         except Exception:
             pass
+
+    def _write_multiline(self, sheet, start_row, col_letter, text, max_rows=8, auto_height=True):
+        if not text:
+            return
+        lines = [line.rstrip('\r') for line in str(text).split('\n') if line.strip()]
+        for i, line in enumerate(lines):
+            if i >= max_rows - 1 and len(lines) > max_rows:
+                # If we hit the last row but have more lines, combine the remaining lines
+                remaining = "\n".join(lines[i:])
+                cell_ref = f"{col_letter}{start_row + i}"
+                self._safe_write(sheet, cell_ref, remaining, auto_height=auto_height)
+                break
+            
+            cell_ref = f"{col_letter}{start_row + i}"
+            self._safe_write(sheet, cell_ref, line, auto_height=auto_height)
 
     def _safe_write_rc(self, sheet, row, col, value):
         coord = f"{get_column_letter(col)}{row}"
@@ -105,26 +131,30 @@ class StarkReportGenerator:
             self._safe_write(new_sheet, "H19", str(cand.get("profesion", "")).upper())
             # H21: Cargo Destino
             self._safe_write(new_sheet, "H21", str(cand.get("cargo_a_desempenar", "")).upper())
-            
-            # 1. BLOQUE EXPERIENCIA GENERAL (Header Row 23, Target B24)
-            exp_gen = cand.get("experiencia_general", "")
-            if exp_gen:
-                self._safe_write(new_sheet, "B24", str(exp_gen).strip())
+            # B59: Nombre
+            self._safe_write(new_sheet, "B59", str(cand.get("nombre_completo", "")).upper())
+            # K59 : Fecha
+            from datetime import datetime
+            fecha_stark = datetime.now().strftime("%d-%m-%Y")
+            self._safe_write(new_sheet, "K59", fecha_stark)
 
-            # 2. BLOQUE EXPERIENCIA ESPECÍFICA (Header Row 31, Target B32)
+
+            
+            # 1. BLOQUE EXPERIENCIA GENERAL (Header Row 23, Target B24 to B31 -> max 8 rows)
+            exp_gen = cand.get("experiencia_general", "")
+            self._write_multiline(new_sheet, 24, "B", exp_gen, max_rows=8, auto_height=True)
+
+            # 2. BLOQUE EXPERIENCIA ESPECÍFICA (Header Row 31, Target B33 to B39 -> max 7 rows)
             exp_esp = cand.get("experiencia_especifica", "")
-            if exp_esp:
-                self._safe_write(new_sheet, "B33", str(exp_esp).strip())
+            self._write_multiline(new_sheet, 33, "B", exp_esp, max_rows=7, auto_height=True)
             
-            # 3. BLOQUE OTRAS EXPERIENCIAS (Header Row 40, Target B41)
+            # 3. BLOQUE OTRAS EXPERIENCIAS (Header Row 40, Target B41 to B47 -> max 7 rows)
             exp_otras = cand.get("otras_experiencias", "")
-            if exp_otras:
-                self._safe_write(new_sheet, "B41", str(exp_otras).strip())
+            self._write_multiline(new_sheet, 41, "B", exp_otras, max_rows=7, auto_height=True)
             
-            # 4. BLOQUE ANTECEDENTES ACADÉMICOS (Header Row 48, Target B49)
+            # 4. BLOQUE ANTECEDENTES ACADÉMICOS (Header Row 48, Target B49 to B55 -> max 7 rows)
             aca = cand.get("antecedentes_academicos", "")
-            if aca:
-                self._safe_write(new_sheet, "B49", str(aca).strip())
+            self._write_multiline(new_sheet, 49, "B", aca, max_rows=7, auto_height=True)
             
         # Borrar la hoja original de plantilla
         if len(wb.sheetnames) > 1:
