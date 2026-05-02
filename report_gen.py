@@ -30,7 +30,13 @@ class StarkReportGenerator:
             master_ref = self._get_master_cell_coord(sheet, cell_ref)
             sheet[master_ref] = value
             if auto_height and value:
-                sheet[master_ref].alignment = Alignment(wrap_text=True, vertical='top')
+                from copy import copy
+                old_align = sheet[master_ref].alignment
+                new_align = copy(old_align) if old_align else Alignment()
+                new_align.wrap_text = True
+                new_align.vertical = 'center'
+                sheet[master_ref].alignment = new_align
+                
                 lines = str(value).split('\n')
                 total_lines = 0
                 for line in lines:
