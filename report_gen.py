@@ -210,7 +210,7 @@ class StarkReportGenerator:
             ]
             
             # Dinámicamente detectar las celdas combinadas de la fila 59 en la plantilla original
-            for mr in sheet.merged_cells.ranges:
+            for mr in template_sheet.merged_cells.ranges:
                 if mr.min_row == 59 and mr.max_row == 59:
                     merges_to_enforce.append((59 + offset4, mr.min_col, 59 + offset4, mr.max_col))
             
