@@ -44,18 +44,38 @@ class StarkReportGenerator:
 
     def _write_multiline(self, sheet, start_row, col_letter, text, max_rows=8, auto_height=True):
         if not text:
-            return
+            return 0
         lines = [line.rstrip('\r') for line in str(text).split('\n') if line.strip()]
+        added_rows = 0
+        current_row = start_row
+        
+        from copy import copy
         for i, line in enumerate(lines):
-            if i >= max_rows - 1 and len(lines) > max_rows:
-                # If we hit the last row but have more lines, combine the remaining lines
-                remaining = "\n".join(lines[i:])
-                cell_ref = f"{col_letter}{start_row + i}"
-                self._safe_write(sheet, cell_ref, remaining, auto_height=auto_height)
-                break
+            if i >= max_rows:
+                insert_idx = current_row
+                sheet.insert_rows(insert_idx, 1)
+                added_rows += 1
+                
+                # Merge B to AA (2 to 27)
+                sheet.merge_cells(start_row=insert_idx, start_column=2, end_row=insert_idx, end_column=27)
+                
+                # Copy style from row above
+                for col in range(2, 28):
+                    source_cell = sheet.cell(row=insert_idx - 1, column=col)
+                    target_cell = sheet.cell(row=insert_idx, column=col)
+                    if source_cell.has_style:
+                        target_cell.font = copy(source_cell.font)
+                        target_cell.border = copy(source_cell.border)
+                        target_cell.fill = copy(source_cell.fill)
+                        target_cell.number_format = copy(source_cell.number_format)
+                        target_cell.protection = copy(source_cell.protection)
+                        target_cell.alignment = copy(source_cell.alignment)
             
-            cell_ref = f"{col_letter}{start_row + i}"
+            cell_ref = f"{col_letter}{current_row}"
             self._safe_write(sheet, cell_ref, line, auto_height=auto_height)
+            current_row += 1
+            
+        return added_rows
 
     def _safe_write_rc(self, sheet, row, col, value):
         coord = f"{get_column_letter(col)}{row}"
@@ -140,21 +160,23 @@ class StarkReportGenerator:
 
 
             
+            offset = 0
+            
             # 1. BLOQUE EXPERIENCIA GENERAL (Header Row 23, Target B24 to B31 -> max 8 rows)
             exp_gen = cand.get("experiencia_general", "")
-            self._write_multiline(new_sheet, 24, "B", exp_gen, max_rows=8, auto_height=True)
+            offset += self._write_multiline(new_sheet, 24 + offset, "B", exp_gen, max_rows=8, auto_height=True)
 
             # 2. BLOQUE EXPERIENCIA ESPECÍFICA (Header Row 31, Target B33 to B39 -> max 7 rows)
             exp_esp = cand.get("experiencia_especifica", "")
-            self._write_multiline(new_sheet, 33, "B", exp_esp, max_rows=7, auto_height=True)
+            offset += self._write_multiline(new_sheet, 33 + offset, "B", exp_esp, max_rows=7, auto_height=True)
             
             # 3. BLOQUE OTRAS EXPERIENCIAS (Header Row 40, Target B41 to B47 -> max 7 rows)
             exp_otras = cand.get("otras_experiencias", "")
-            self._write_multiline(new_sheet, 41, "B", exp_otras, max_rows=7, auto_height=True)
+            offset += self._write_multiline(new_sheet, 41 + offset, "B", exp_otras, max_rows=7, auto_height=True)
             
             # 4. BLOQUE ANTECEDENTES ACADÉMICOS (Header Row 48, Target B49 to B55 -> max 7 rows)
             aca = cand.get("antecedentes_academicos", "")
-            self._write_multiline(new_sheet, 49, "B", aca, max_rows=7, auto_height=True)
+            offset += self._write_multiline(new_sheet, 49 + offset, "B", aca, max_rows=7, auto_height=True)
             
         # Borrar la hoja original de plantilla
         if len(wb.sheetnames) > 1:
