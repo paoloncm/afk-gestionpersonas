@@ -247,6 +247,11 @@ class StarkReportGenerator:
             line_border = Border(bottom=Side(style='thin', color='000000'))
             for c_idx in range(5, 25): # Columnas E(5) hasta X(24)
                 new_sheet.cell(row=59 + offset4, column=c_idx).border = line_border
+                
+            # 8. Limitar estrictamente el área de impresión para evitar páginas fantasma
+            # El documento termina en las "NOTAS" (fila 66 aprox). Damos un margen hasta la 75.
+            final_row = 75 + offset4
+            new_sheet.print_area = f"A1:AA{final_row}"
             
         # Borrar la hoja original de plantilla
         if len(wb.sheetnames) > 1:
