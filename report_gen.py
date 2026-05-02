@@ -43,21 +43,18 @@ class StarkReportGenerator:
             pass
 
     def _write_multiline(self, sheet, start_row, col_letter, text, max_rows=8, auto_height=True):
-        if not text:
-            return 0
-        lines = [line.rstrip('\r') for line in str(text).split('\n') if line.strip()]
+        lines = [line.rstrip('\r') for line in str(text).split('\n') if line.strip()] if text else []
         added_rows = 0
         current_row = start_row
         
         from copy import copy
-        for i, line in enumerate(lines):
+        total_rows = max(len(lines), max_rows)
+        
+        for i in range(total_rows):
             if i >= max_rows:
                 insert_idx = current_row
                 sheet.insert_rows(insert_idx, 1)
                 added_rows += 1
-                
-                # Merge B to AA (2 to 27)
-                sheet.merge_cells(start_row=insert_idx, start_column=2, end_row=insert_idx, end_column=27)
                 
                 # Copy style from row above
                 for col in range(2, 28):
@@ -71,8 +68,24 @@ class StarkReportGenerator:
                         target_cell.protection = copy(source_cell.protection)
                         target_cell.alignment = copy(source_cell.alignment)
             
-            cell_ref = f"{col_letter}{current_row}"
-            self._safe_write(sheet, cell_ref, line, auto_height=auto_height)
+            # Openpyxl insert_rows corrupts merged cells. We MUST re-merge B:AA manually for this row.
+            # First remove any corrupted merges on this row
+            ranges_to_remove = []
+            for mr in sheet.merged_cells.ranges:
+                # If the merge is exactly on this row, remove it so we can cleanly re-merge
+                if mr.min_row == current_row and mr.max_row == current_row:
+                    ranges_to_remove.append(mr)
+            for mr in ranges_to_remove:
+                sheet.merged_cells.ranges.remove(mr)
+                
+            # Now explicitly merge B to AA
+            sheet.merge_cells(start_row=current_row, start_column=2, end_row=current_row, end_column=27)
+            
+            if i < len(lines):
+                line = lines[i]
+                cell_ref = f"{col_letter}{current_row}"
+                self._safe_write(sheet, cell_ref, line, auto_height=auto_height)
+                
             current_row += 1
             
         return added_rows
