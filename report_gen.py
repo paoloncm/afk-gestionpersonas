@@ -205,13 +205,14 @@ class StarkReportGenerator:
                 (40 + offset2, 2, 40 + offset2, 27), # Otras Exp
                 (48 + offset3, 2, 48 + offset3, 27), # Antecedentes Acad
                 
-                # Signature Block Name/Date
-                (59 + offset4, 2, 59 + offset4, 8),   # B:H Name
-                (59 + offset4, 11, 59 + offset4, 17), # K:Q Date
-                
                 # Notes
                 (65 + offset4, 3, 66 + offset4, 26)   # C:Z Notes
             ]
+            
+            # Dinámicamente detectar las celdas combinadas de la fila 59 en la plantilla original
+            for mr in sheet.merged_cells.ranges:
+                if mr.min_row == 59 and mr.max_row == 59:
+                    merges_to_enforce.append((59 + offset4, mr.min_col, 59 + offset4, mr.max_col))
             
             for r_min, c_min, r_max, c_max in merges_to_enforce:
                 # Completely rebuild ranges list to aggressively purge ANY overlaps and duplicates
@@ -238,8 +239,8 @@ class StarkReportGenerator:
             # 6. Escribir Nombre y Fecha en la posición final correcta (después de todo el offset y fixes)
             from datetime import datetime
             fecha_stark = datetime.now().strftime("%d-%m-%Y")
-            self._safe_write(new_sheet, f"B{59 + offset4}", str(cand.get("nombre_completo", "")).upper())
-            self._safe_write(new_sheet, f"K{59 + offset4}", fecha_stark)
+            self._safe_write(new_sheet, f"E{59 + offset4}", str(cand.get("nombre_completo", "")).upper())
+            self._safe_write(new_sheet, f"Q{59 + offset4}", fecha_stark)
             
             # 7. Redibujar la línea de la firma unificada (openpyxl borra las formas insertadas)
             from openpyxl.styles import Border, Side
