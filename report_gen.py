@@ -209,10 +209,20 @@ class StarkReportGenerator:
                 (65 + offset4, 3, 66 + offset4, 26)   # C:Z Notes
             ]
             
-            # Dinámicamente detectar las celdas combinadas de la fila 59 en la plantilla original
+            # Dinámicamente detectar la fila del bloque de firma en la plantilla original
+            template_sig_row = 60
+            for r in range(40, 100):
+                if template_sheet.cell(row=r, column=12).value and "Nombre, Fecha" in str(template_sheet.cell(row=r, column=12).value):
+                    template_sig_row = r
+                    break
+            
+            template_name_row = template_sig_row - 1
+            target_name_row = template_name_row + offset4
+            
+            # Dinámicamente detectar las celdas combinadas de la fila del nombre en la plantilla original
             for mr in template_sheet.merged_cells.ranges:
-                if mr.min_row == 59 and mr.max_row == 59:
-                    merges_to_enforce.append((59 + offset4, mr.min_col, 59 + offset4, mr.max_col))
+                if mr.min_row == template_name_row and mr.max_row == template_name_row:
+                    merges_to_enforce.append((target_name_row, mr.min_col, target_name_row, mr.max_col))
             
             for r_min, c_min, r_max, c_max in merges_to_enforce:
                 # Completely rebuild ranges list to aggressively purge ANY overlaps and duplicates
@@ -236,17 +246,17 @@ class StarkReportGenerator:
                     master = new_sheet.cell(row=r_min, column=c_min)
                     master.alignment = Alignment(horizontal='center', vertical='center')
             
-            # 6. Escribir Nombre y Fecha en la posición final correcta (después de todo el offset y fixes)
+            # 6. Escribir Nombre y Fecha en la posición final correcta (dinámica)
             from datetime import datetime
             fecha_stark = datetime.now().strftime("%d-%m-%Y")
-            self._safe_write(new_sheet, f"E{59 + offset4}", str(cand.get("nombre_completo", "")).upper())
-            self._safe_write(new_sheet, f"Q{59 + offset4}", fecha_stark)
+            self._safe_write(new_sheet, f"E{target_name_row}", str(cand.get("nombre_completo", "")).upper())
+            self._safe_write(new_sheet, f"Q{target_name_row}", fecha_stark)
             
             # 7. Redibujar la línea de la firma unificada (openpyxl borra las formas insertadas)
             from openpyxl.styles import Border, Side
             line_border = Border(bottom=Side(style='thin', color='000000'))
             for c_idx in range(5, 25): # Columnas E(5) hasta X(24)
-                new_sheet.cell(row=59 + offset4, column=c_idx).border = line_border
+                new_sheet.cell(row=target_name_row, column=c_idx).border = line_border
                 
             # 8. Limitar estrictamente el área de impresión para evitar páginas fantasma
             # El documento termina en las "NOTAS" (fila 66 aprox). Damos un margen hasta la 75.
