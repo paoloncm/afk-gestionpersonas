@@ -250,7 +250,7 @@ class StarkReportGenerator:
                 
             # 8. Limitar estrictamente el área de impresión para evitar páginas fantasma
             # El documento termina en las "NOTAS" (fila 66 aprox). Damos un margen hasta la 75.
-            final_row = 75 + offset4
+            final_row = 105 + offset4
             new_sheet.print_area = f"A1:AA{final_row}"
             
         # Borrar la hoja original de plantilla
