@@ -191,6 +191,28 @@ class StarkReportGenerator:
             aca = cand.get("antecedentes_academicos", "")
             offset += self._write_multiline(new_sheet, 49 + offset, "B", aca, max_rows=7, auto_height=True)
             
+            # 5. Fix bottom merges that openpyxl insert_rows corrupted
+            bottom_merges = [
+                (59, 2, 59, 8),    # B:H for Name
+                (59, 11, 59, 17),  # K:Q for Date
+                (65, 3, 66, 26)    # C:Z for Notes
+            ]
+            for r_min, c_min, r_max, c_max in bottom_merges:
+                t_r_min = r_min + offset
+                t_r_max = r_max + offset
+                
+                # Remove corrupted merges
+                ranges_to_remove = []
+                for mr in new_sheet.merged_cells.ranges:
+                    if (mr.min_row >= t_r_min and mr.max_row <= t_r_max) or \
+                       (mr.min_row <= t_r_max and mr.max_row >= t_r_min):
+                        ranges_to_remove.append(mr)
+                for mr in ranges_to_remove:
+                    new_sheet.merged_cells.ranges.remove(mr)
+                    
+                # Re-apply correct merge
+                new_sheet.merge_cells(start_row=t_r_min, start_column=c_min, end_row=t_r_max, end_column=c_max)
+            
         # Borrar la hoja original de plantilla
         if len(wb.sheetnames) > 1:
             wb.remove(wb[original_title])
