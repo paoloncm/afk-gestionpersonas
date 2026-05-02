@@ -249,6 +249,17 @@ class StarkReportGenerator:
             # 6. Escribir Nombre y Fecha en la posición final correcta (dinámica)
             from datetime import datetime
             fecha_stark = datetime.now().strftime("%d-%m-%Y")
+            
+            # CRÍTICO: Asegurar que las filas objetivo NO estén ocultas.
+            # openpyxl insert_rows no desplaza los row_dimensions, por lo que si una fila 
+            # cae matemáticamente en una fila oculta de la plantilla (ej: 69), se volverá invisible.
+            if target_name_row in new_sheet.row_dimensions:
+                new_sheet.row_dimensions[target_name_row].hidden = False
+                new_sheet.row_dimensions[target_name_row].height = 15
+            if target_name_row + 1 in new_sheet.row_dimensions:
+                new_sheet.row_dimensions[target_name_row + 1].hidden = False
+                new_sheet.row_dimensions[target_name_row + 1].height = 15
+            
             self._safe_write(new_sheet, f"E{target_name_row}", str(cand.get("nombre_completo", "")).upper())
             self._safe_write(new_sheet, f"Q{target_name_row}", fecha_stark)
             
