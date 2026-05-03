@@ -582,18 +582,36 @@
     $('#matchTitle').textContent = `OPERACIÓN_HUD: ${tender.name.toUpperCase()}`;
     setMatchTab('workers');
 
-    // Priorizar vacantes en estado (detectadas) si existen, sino ir a DB
+    // 1. Definir opción global (Match contra requerimientos de la cabecera de la licitación)
+    const globalOption = { 
+        id: 'global', 
+        title: 'Operación Global (Toda la Licitación)', 
+        requirements: tender.requirements || [], 
+        certifications: [],
+        total_positions: 1 
+    };
+
+    let vacancies = [];
+    // 2. Priorizar vacantes en estado (detectadas) si existen y corresponden a esta licitación
     if (state.detectedVacancies.length > 0 && (!tender.id || state.detectedVacancies[0].tender_id === tender.id)) {
-        state.activeMatchVacancies = state.detectedVacancies;
-    } else {
+        vacancies = state.detectedVacancies;
+    } else if (tender.id && tender.id !== 'unsaved') {
+        // Si no hay en memoria, buscar en la DB
         const { data: v } = await window.supabase.from('vacancies').select('*').eq('tender_id', tender.id);
-        state.activeMatchVacancies = v?.length ? v : [{ id: 'global', title: 'Operación Global', requirements: tender.requirements, total_positions: 1 }];
+        vacancies = v || [];
     }
     
+    // 3. Unificar: Global + Específicas
+    state.activeMatchVacancies = [globalOption, ...vacancies];
+    
     if ($('#vacancySelector')) {
-        $('#vacancySelector').innerHTML = state.activeMatchVacancies.map((vac, i) => `<option value="${i}">[ ${escapeHtml(vac.title.toUpperCase())} ]</option>`).join('');
+        $('#vacancySelector').innerHTML = state.activeMatchVacancies.map((vac, i) => `
+            <option value="${i}">[ ${escapeHtml(vac.title.toUpperCase())} ]</option>
+        `).join('');
         $('#vacancySelector').onchange = () => evaluateVacancy(state.activeMatchVacancies[$('#vacancySelector').value]);
     }
+
+    // Por defecto evaluar la primera opción (Global)
     evaluateVacancy(state.activeMatchVacancies[0]);
   }
 
