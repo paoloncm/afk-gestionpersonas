@@ -582,37 +582,54 @@
     $('#matchTitle').textContent = `OPERACIÓN_HUD: ${tender.name.toUpperCase()}`;
     setMatchTab('workers');
 
-    // 1. Definir opción global (Match contra requerimientos de la cabecera de la licitación)
+    // 1. Obtener requerimientos globales (priorizar UI si estamos en edición activa)
+    const uiReqs = $$('.req-input').map(i => i.value.trim()).filter(Boolean);
+    const requirements = uiReqs.length > 0 ? uiReqs : (tender.requirements || []);
+
     const globalOption = { 
         id: 'global', 
         title: 'Operación Global (Toda la Licitación)', 
-        requirements: tender.requirements || [], 
+        requirements: requirements, 
         certifications: [],
         total_positions: 1 
     };
 
     let vacancies = [];
-    // 2. Priorizar vacantes en estado (detectadas) si existen y corresponden a esta licitación
-    if (state.detectedVacancies.length > 0 && (!tender.id || state.detectedVacancies[0].tender_id === tender.id)) {
+    
+    // 2. Cargar vacantes: Forzar DB si hay ID, sino usar estado local
+    if (tender.id && tender.id !== 'unsaved') {
+        try {
+            const { data: v, error } = await window.supabase.from('vacancies').select('*').eq('tender_id', tender.id);
+            if (!error && v) {
+                vacancies = v;
+                // Sincronizar estado local para consistencia
+                state.detectedVacancies = v;
+            }
+        } catch (e) { console.error("Error cargando vacantes para match:", e); }
+    } 
+    
+    if (vacancies.length === 0 && state.detectedVacancies.length > 0) {
+        // Fallback a memoria si la DB no devolvió nada pero JARVIS detectó algo
         vacancies = state.detectedVacancies;
-    } else if (tender.id && tender.id !== 'unsaved') {
-        // Si no hay en memoria, buscar en la DB
-        const { data: v } = await window.supabase.from('vacancies').select('*').eq('tender_id', tender.id);
-        vacancies = v || [];
     }
     
-    // 3. Unificar: Global + Específicas
+    // 3. Unificar y Renderizar Selector
     state.activeMatchVacancies = [globalOption, ...vacancies];
     
     if ($('#vacancySelector')) {
         $('#vacancySelector').innerHTML = state.activeMatchVacancies.map((vac, i) => `
             <option value="${i}">[ ${escapeHtml(vac.title.toUpperCase())} ]</option>
         `).join('');
-        $('#vacancySelector').onchange = () => evaluateVacancy(state.activeMatchVacancies[$('#vacancySelector').value]);
+        
+        $('#vacancySelector').onchange = () => {
+            const selected = state.activeMatchVacancies[$('#vacancySelector').value];
+            evaluateVacancy(selected);
+        };
     }
 
-    // Por defecto evaluar la primera opción (Global)
+    // Ejecutar primer match (Global)
     evaluateVacancy(state.activeMatchVacancies[0]);
+    notify(`JARVIS: HUD Sincronizado. ${vacancies.length} perfiles críticos cargados.`);
   }
 
   async function runInstantMatchmaking() {
