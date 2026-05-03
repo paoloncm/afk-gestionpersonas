@@ -308,7 +308,7 @@
   window.removeVacancy = (i) => { state.detectedVacancies.splice(i, 1); renderDetectedVacancies(); };
 
   async function updateIntelTab(id) {
-    const tender = getTenderById(id);
+    const tender = state.allTenders.find(t => t.id === id);
     if ($('#intelTenderInfo')) $('#intelTenderInfo').textContent = tender?.description || '';
     try {
       const [{ data: vacs }, talent] = await Promise.all([
