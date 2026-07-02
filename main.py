@@ -1,369 +1,63 @@
 import os
-import threading
-from fastapi import FastAPI, BackgroundTasks, HTTPException, Request
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, JSONResponse, FileResponse, RedirectResponse
+from fastapi import FastAPI, HTTPException, Security, Depends
+from fastapi.security.api_key import APIKeyHeader
 from pydantic import BaseModel
-from pathlib import Path
-from typing import Optional
-from supabase import create_client
+from typing import Optional, Dict, Any
+from agent.core import AgentManager
 
-app = FastAPI(title="AFK RRHH - STARK INDUSTRIES")
+app = FastAPI(title="AFK Agent API", description="API para el Agente RAG + SQL Multitenant", version="2.0.0")
 
-FRONTEND_DIR = Path(__file__).resolve().parent
+# --- SEGURIDAD: API Key ---
+API_KEY_NAME = "X-API-Key"
+api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=False)
 
-# --- Security Dependencies ---
-
-def get_supabase_client():
-    url = os.getenv("SUPABASE_URL")
-    key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-    if not url or not key:
-        raise HTTPException(status_code=500, detail="Missing Supabase configuration")
-    return create_client(url, key)
-
-async def get_current_user(request: Request):
-    """Verifica el JWT de Supabase desde la cookie segura."""
-    token = request.cookies.get("sb-access-token")
-    if not token:
-        raise HTTPException(status_code=401, detail="No session found")
-    try:
-        supabase = get_supabase_client()
-        user_res = supabase.auth.get_user(token)
-        if not user_res.user:
-            raise HTTPException(status_code=401, detail="Invalid session")
-        return user_res.user
-    except Exception:
-        raise HTTPException(status_code=401, detail="Authentication failed")
-
-# --- Middleware: HTML Route Protection (Stark-Gatekeeper) ---
-
-@app.middleware("http")
-async def auth_middleware(request: Request, call_next):
-    path = request.url.path
+def get_api_key(api_key_header: str = Security(api_key_header)):
+    # Leemos la contraseña secreta de nuestro .env
+    # Si no hay ninguna en .env, por seguridad el servidor bloquea todo hasta que se configure.
+    expected_api_key = os.getenv("AGENT_API_KEY")
     
-    # Public routes
-    PUBLIC_PATHS = ["/login.html", "/landing.html", "/static", "/favicon.ico", "/api/auth/session"]
-    
-    # Check if it's a private HTML node or the root
-    is_private_html = (path.endswith(".html") or path == "/") and not any(path.startswith(p) for p in PUBLIC_PATHS)
-
-    if is_private_html:
-        token = request.cookies.get("sb-access-token")
-        if not token:
-            return RedirectResponse(url="/login.html")
-            
-        try:
-            supabase = get_supabase_client()
-            user_res = supabase.auth.get_user(token)
-            if not user_res.user:
-                raise Exception("Invalid Session")
-        except Exception:
-            return RedirectResponse(url="/login.html")
-
-    response = await call_next(request)
-    return response
-
-# --- STACK PRIORITARIO: Estáticos y Puentes ---
-
-# Montar los estáticos al inicio absoluto para evitar sombreado de rutas
-app.mount("/static", StaticFiles(directory=FRONTEND_DIR / "static"), name="static")
-
-# --- HTML Routes ---
-
-@app.get("/", response_class=FileResponse)
-def root():
-    return FileResponse(FRONTEND_DIR / "index.html")
-
-@app.get("/login.html", response_class=FileResponse)
-def login_page():
-    return FileResponse(FRONTEND_DIR / "login.html")
-
-@app.get("/{file_name}")
-def get_html_page(file_name: str):
-    """Sirve archivos HTML de la raíz (Analytics, Tenders, etc.)"""
-    if not file_name.endswith(".html"):
-        raise HTTPException(status_code=404)
+    if not expected_api_key:
+        raise HTTPException(status_code=500, detail="El servidor no tiene configurada una AGENT_API_KEY")
         
-    file_path = FRONTEND_DIR / file_name
-    if not file_path.exists():
-        raise HTTPException(status_code=404, detail="Nodo no encontrado.")
-    return FileResponse(file_path)
+    if api_key_header == expected_api_key:
+        return api_key_header
+        
+    raise HTTPException(status_code=401, detail="API Key inválida o ausente")
 
-# --- Session Support: Secure Cookie Bridge (HttpOnly) ---
+# Instancia del manejador del agente
+agent_manager = AgentManager()
 
-class SessionRequest(BaseModel):
-    access_token: str
+class QueryRequest(BaseModel):
+    query: str
+    tenant_id: str = "cpnnet"        # Para aislar bases de datos de clientes
+    session_id: str = "default_chat" # Para mantener la memoria de la conversación
+    user_id: Optional[str] = "internal_user"
+    context: Optional[Dict[str, Any]] = None
 
-@app.post("/api/auth/session")
-async def set_session(req: SessionRequest):
-    """Sella la sesión en una cookie HttpOnly."""
+class QueryResponse(BaseModel):
+    status: str
+    data: Dict[str, Any]
+
+@app.get("/")
+def read_root():
+    return {"message": "AFK Agent API is running securely"}
+
+@app.post("/api/v1/agent/query", response_model=QueryResponse)
+async def process_query(request: QueryRequest, api_key: str = Depends(get_api_key)):
     try:
-        supabase = get_supabase_client()
-        user_res = supabase.auth.get_user(req.access_token)
-        if not user_res.user: raise Exception("Invalid Token")
-        
-        response = JSONResponse({"ok": True})
-        response.set_cookie(
-            key="sb-access-token",
-            value=req.access_token,
-            httponly=True,
-            secure=True,
-            samesite="lax",
-            path="/"
-        )
-        return response
-    except Exception:
-        raise HTTPException(status_code=401, detail="Session Rejected")
-
-@app.delete("/api/auth/session")
-async def clear_session():
-    """Purga la cookie de sesión."""
-    response = JSONResponse({"ok": True})
-    response.delete_cookie(key="sb-access-token", path="/")
-    return response
-
-# --- AI Semantic Matchmaking Endpoint ---
-class TenderMatchRequest(BaseModel):
-    tender_id: str
-    tender_name: str
-    requirements: list[str]
-
-@app.post("/api/match-tender-candidates")
-async def match_tender_candidates(req: TenderMatchRequest):
-    try:
-        import json
-        from openai import OpenAI
-        from supabase import create_client
-        
-        url = os.getenv("SUPABASE_URL")
-        key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-        openai_key = os.getenv("OPENAI_API_KEY")
-        
-        if not all([url, key, openai_key]):
-            return JSONResponse({"ok": False, "detail": "Missing API keys"}, status_code=500)
-            
-        supabase = create_client(url, key)
-        openai = OpenAI(api_key=openai_key)
-        
-        # 1. Create embedding for the Tender
-        req_text = f"Rol o Servicio: {req.tender_name}. Requisitos claves: " + ". ".join(req.requirements)
-        res = openai.embeddings.create(input=req_text, model="text-embedding-3-small")
-        query_emb = res.data[0].embedding
-        
-        # 2. Fetch all candidates with their vectors
-        candidates = supabase.table("candidates").select("id, nombre_completo, rut, profesion, cargo_a_desempenar, evaluacion_general, status, cv_embedding").execute()
-        
-        # 3. Compute Cosine Similarity
-        matches = []
-        for c in candidates.data:
-            emb = c.get("cv_embedding")
-            if not emb: continue
-            
-            if isinstance(emb, str):
-                try:
-                    emb = json.loads(emb)
-                except:
-                    continue
-                    
-            if len(emb) != len(query_emb): continue
-            
-            score = sum(a * b for a, b in zip(query_emb, emb))
-            base_score = max(0, score - 0.25) / 0.6 
-            pct = min(100.0, max(0.0, round(base_score * 100, 1)))
-            
-            if pct > 40.0:
-                c.pop("cv_embedding", None)
-                c["ai_match_score"] = pct
-                matches.append(c)
-                
-        matches.sort(key=lambda x: x["ai_match_score"], reverse=True)
-        return {"ok": True, "matches": matches[:15]}
-        
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return JSONResponse({"ok": False, "detail": str(e)}, status_code=500)
-
-# --- JARVIS Vector Engine ---
-class VectorRequest(BaseModel):
-    text: str
-
-@app.post("/api/vectorize")
-async def vectorize(req: VectorRequest):
-    """JARVIS: Transforma texto en vectores de alta dimensionalidad."""
-    try:
-        from openai import OpenAI
-        openai_key = os.getenv("OPENAI_API_KEY")
-        if not openai_key:
-            return JSONResponse({"ok": False, "detail": "Missing OpenAI Key"}, status_code=500)
-            
-        openai = OpenAI(api_key=openai_key)
-        res = openai.embeddings.create(input=req.text, model="text-embedding-3-small")
-        embedding = res.data[0].embedding
-        return {"ok": True, "embedding": embedding}
-    except Exception as e:
-        return JSONResponse({"ok": False, "detail": str(e)}, status_code=500)
-
-# --- JARVIS Tender Analysis Endpoint ---
-class AnalyzeTenderRequest(BaseModel):
-    text: str
-
-@app.post("/api/analyze-tender")
-async def analyze_tender(req: AnalyzeTenderRequest):
-    """ACTÚA COMO JARVIS: Extrae la jerarquía operativa de una licitación."""
-    try:
-        import json
-        from openai import OpenAI
-        
-        openai_key = os.getenv("OPENAI_API_KEY")
-        if not openai_key:
-            return JSONResponse({"ok": False, "detail": "Missing OpenAI Key"}, status_code=500)
-            
-        openai = OpenAI(api_key=openai_key)
-        
-        prompt = (
-            "ACTÚA COMO JARVIS (STARK INDUSTRIES), DIRECTOR DE PROYECTOS Y LÍDER DE RECLUTAMIENTO.\n"
-            "Tu misión es analizar la licitación para GANAR el contrato mediante una estrategia de personal perfecta.\n"
-            "Analiza el contenido con EXHAUSTIVIDAD TOTAL. Debes encontrar TODOS los cargos y sus cantidades exactas.\n\n"
-            "REGLAS ESTRATÉGICAS:\n"
-            "1. IDENTIFICACIÓN DE TABLAS: Busca cargos seguidos de números. Estos son puestos obligatorios.\n"
-            "2. EXTRACCIÓN DE RECADOS: Si el texto menciona 'Se requiere un X...', cuenta '1' para ese cargo.\n"
-            "3. ESTRATEGIA DE BÚSQUEDA: Para cada cargo, define un 'perfil_ideal' táctico (ej. 'Especialista en MT con certificación SEC Clase A').\n"
-            "4. SEPARACIÓN CRÍTICA: Requisitos técnicos van EXACTAMENTE en la clave 'requirements' (en inglés), certificaciones en 'certificaciones'. NO uses 'requisitos'.\n"
-            "5. NO OMISIÓN: Si encuentras un cargo en un anexo, tabla o lista, EXTRÁELO.\n"
-            "6. COMPLEJIDAD: Evalúa el riesgo global y la criticidad operativa de cada rol.\n"
-            "7. CLAVE OBLIGATORIA: Cada rol DEBE tener las claves: nombre, cantidad, criticidad, requirements, certificaciones, perfil_ideal, experiencia_minima.\n\n"
-            "FORMATO DE SALIDA (JSON ESTRICTO — usa EXACTAMENTE estas claves):\n"
-            "{\n"
-            "  \"tender_summary\": \"Resumen ejecutivo del proyecto y estrategia para ganar\",\n"
-            "  \"global_risk\": \"Bajo | Medio | Alto\",\n"
-            "  \"roles\": [\n"
-            "    {\n"
-            "      \"nombre\": \"Nombre exacto del cargo\",\n"
-            "      \"cantidad\": 1,\n"
-            "      \"criticidad\": \"Primario | Secundario\",\n"
-            "      \"requirements\": [\"Término Técnico Corto\", \"Max 4 palabras\"],\n"
-            "      \"certificaciones\": [\"Certificación Específica\"],\n"
-            "      \"perfil_ideal\": \"Descripción táctica del candidato perfecto para este cargo\",\n"
-            "      \"experiencia_minima\": \"2 años en sector minero\"\n"
-            "    }\n"
-            "  ]\n"
-            "}\n\n"
-            f"TEXTO DE LICITACIÓN A ANALIZAR:\n{req.text[:65000]}"
+        # Aquí delegamos la consulta al Agente LangChain
+        response_data = await agent_manager.process_query(
+            query=request.query,
+            tenant_id=request.tenant_id,
+            session_id=request.session_id,
+            user_id=request.user_id,
+            context=request.context if request.context else {}
         )
         
-        res = openai.chat.completions.create(
-            model="gpt-4o",
-            messages=[
-                {"role": "system", "content": "Eres JARVIS, analista industrial de élite de Stark Industries. Tu especialidad es extraer jerarquías operativas de documentos técnicos complejos. Responde ÚNICAMENTE con JSON válido. NUNCA uses la clave 'requisitos', usa siempre 'requirements'."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.1,
-            response_format={"type": "json_object"}
-        )
-        
-        content = res.choices[0].message.content
-        analysis = json.loads(content)
-        
-        # Fallback si 'roles' falta o está vacío
-        if "roles" not in analysis or not analysis["roles"]:
-             analysis["roles"] = [{"nombre": "PERFIL GENERAL", "cantidad": 1, "criticidad": "Primario", "requirements": ["Análisis de bases técnicas"], "certificaciones": [], "perfil_ideal": "Profesional polivalente con experiencia en el sector", "experiencia_minima": "1-3 años"}]
-             
-        return {"ok": True, "analysis": analysis}
-        
+        return QueryResponse(status="success", data=response_data)
     except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return JSONResponse({"ok": False, "detail": str(e)}, status_code=500)
+        raise HTTPException(status_code=500, detail=str(e))
 
-# --- JARVIS CV Processing Endpoint ---
-class CVProcessRequest(BaseModel):
-    candidate_id: str
-    signed_url: Optional[str] = None
-
-def run_afk_processor(candidate_id: str, signed_url: str):
-    """Runs in a background thread."""
-    import subprocess, sys
-    try:
-        subprocess.run(
-            [sys.executable, str(Path(__file__).parent / "afk_processor.py"),
-             signed_url, "--id", candidate_id],
-            capture_output=True, text=True
-        )
-    except Exception as e:
-        print(f"[JARVIS] Pipeline error: {e}")
-
-@app.post("/api/process-cv")
-async def process_cv(req: CVProcessRequest, background_tasks: BackgroundTasks):
-    if not req.signed_url:
-        return JSONResponse({"ok": False, "detail": "No signed_url provided"}, status_code=400)
-    background_tasks.add_task(run_afk_processor, req.candidate_id, req.signed_url)
-    return {"ok": True, "message": f"JARVIS pipeline triggered for candidate {req.candidate_id}"}
-
-# --- Google Drive Sync Interaction ---
-def run_drive_sync():
-    print("[JARVIS] ⚙️ Background task START: run_drive_sync")
-    try:
-        from drive_sync import DriveSync
-        FOLDER_ID = os.getenv("DRIVE_FOLDER_ID")
-        ARCHIVE_ID = os.getenv("DRIVE_ARCHIVE_ID")
-        
-        if not FOLDER_ID:
-            print("[JARVIS] ❌ No DRIVE_FOLDER_ID found.")
-            return
-        
-        sync = DriveSync()
-        sync.sync_hierarchy(FOLDER_ID, ARCHIVE_ID)
-        print("[JARVIS] ✅ Background task FINISHED.")
-    except Exception as e:
-        print(f"[JARVIS] 💥 ERROR: {e}")
-
-@app.post("/api/sync-drive")
-async def sync_drive(background_tasks: BackgroundTasks):
-    background_tasks.add_task(run_drive_sync)
-    return {"ok": True, "message": "Google Drive sync started in background."}
-
-# --- STARK REPORTABILITY ENGINE (TEC-02 / TEC-02A) ---
-
-class BulkReportRequest(BaseModel):
-    ids: list[str]
-    report_type: str # 'tec02' or 'tec02a'
-
-@app.post("/api/reports/bulk-generate")
-async def bulk_generate_reports(req: BulkReportRequest):
-    """JARVIS: Genera un lote de reportes técnicos industriales."""
-    try:
-        from report_gen import StarkReportGenerator
-        from fastapi.responses import StreamingResponse
-        
-        supabase = get_supabase_client()
-        
-        # 1. Fetch Candidates
-        res = supabase.table("candidates").select("*").in_("id", req.ids).execute()
-        candidates = res.data
-        
-        if not candidates:
-            raise HTTPException(status_code=404, detail="No se encontraron candidatos seleccionados.")
-            
-        # 2. Generación Dual Stark v5.0
-        gen = StarkReportGenerator()
-        if req.report_type == 'tec02':
-            # Resumen de todos en una sola tabla
-            xlsx_buffer = gen.generate_tec02_summary(candidates)
-            filename = f"Anexo_TEC02_Resumen_{len(candidates)}_Candidatos.xlsx"
-        else:
-            # Expediente con una hoja por candidato
-            xlsx_buffer = gen.generate_tec02a_workbook(candidates)
-            filename = f"Anexo_TEC02A_Expediente_Consolidado.xlsx"
-        
-        # 3. Stream Response (.xlsx)
-        return StreamingResponse(
-            xlsx_buffer,
-            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            headers={"Content-Disposition": f"attachment; filename={filename}"}
-        )
-        
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Falla del motor de reportabilidad: {str(e)}")
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
