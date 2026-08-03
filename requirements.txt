@@ -13,3 +13,7 @@ python-docx
 openpyxl
 httpx
 pymupdf
+langchain
+langgraph
+langchain-openai
+langchain-core
