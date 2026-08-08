@@ -1,6 +1,7 @@
 import os
 from fastapi import FastAPI, HTTPException, Security, Depends
 from fastapi.security.api_key import APIKeyHeader
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
 from agent.core import AgentManager
@@ -38,9 +39,9 @@ class QueryResponse(BaseModel):
     status: str
     data: Dict[str, Any]
 
-@app.get("/")
-def read_root():
-    return {"message": "AFK Agent API is running securely"}
+@app.get("/api/v1/health")
+def health_check():
+    return {"status": "ok", "message": "AFK Agent API is running securely"}
 
 @app.post("/api/v1/agent/query", response_model=QueryResponse)
 async def process_query(request: QueryRequest, api_key: str = Depends(get_api_key)):
@@ -58,6 +59,10 @@ async def process_query(request: QueryRequest, api_key: str = Depends(get_api_ke
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# Servir archivos estáticos (HTML, CSS, JS, imágenes, etc.) desde el directorio raíz
+app.mount("/", StaticFiles(directory=".", html=True), name="static")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+
