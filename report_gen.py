@@ -144,17 +144,39 @@ class StarkReportGenerator:
 
     def generate_tec02a_workbook(self, candidates):
         """Genera un archivo con MÚLTIPLES HOJAS (TEC-02A), una por cada perfil de candidato."""
+        import copy
+        from openpyxl.drawing.image import Image
+
         wb = openpyxl.load_workbook(self.tec02a_path)
         template_sheet = wb.active
         original_title = template_sheet.title
         
+        # Extraer imágenes (logo CODELCO, etc.) de la hoja plantilla
+        template_images = []
+        for img in template_sheet._images:
+            try:
+                img_bytes = img._data()
+                template_images.append((img_bytes, copy.deepcopy(img.anchor)))
+            except Exception as ie:
+                print(f"Advertencia al extraer imagen de la plantilla: {ie}")
+
         for cand in candidates:
             # Clonar la pestaña de perfil
             new_sheet = wb.copy_worksheet(template_sheet)
             
+            # Copiar las imágenes (logo CODELCO, etc.) a la nueva hoja clonada
+            for img_bytes, img_anchor in template_images:
+                try:
+                    new_img = Image(io.BytesIO(img_bytes))
+                    new_img.anchor = copy.deepcopy(img_anchor)
+                    new_sheet.add_image(new_img)
+                except Exception as ie:
+                    print(f"Advertencia al agregar imagen a la nueva hoja: {ie}")
+            
             # Nombrar la pestaña (máx 31 caracteres)
             nombre = str(cand.get("nombre_completo", "Candidato"))[:25].strip()
             new_sheet.title = f"{nombre}_{str(cand.get('id', ''))[:4]}"
+
             
             # Inyectar datos en la ficha individual (Anexo TEC-02A Stark)
             # ---------------------------------------------------------
