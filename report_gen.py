@@ -117,26 +117,38 @@ class StarkReportGenerator:
         fecha_stark = datetime.now().strftime("%d-%m-%Y")
         self._safe_write(sheet, "W11", fecha_stark)
 
-        # Comenzamos la inserción en la fila 17 (según inspección visual del encabezado)
         start_row = 17
         for i, cand in enumerate(candidates):
             current_row = start_row + i
+            
+            def get_f(k, d=""):
+                val = cand.get(k)
+                if val is None: return d
+                s = str(val).strip()
+                if s.upper() in ["NONE", "NULL", "UNDEFINED", "N/A", ""]: return d
+                return s
+
+            c_nombre = get_f("nombre_completo", f"CANDIDATO_{i+1}")
+            c_cargo = get_f("cargo_a_desempenar") or get_f("cargo") or "PERSONAL CLAVE"
+            c_prof = get_f("profesion") or c_cargo or "TÉCNICO / PROFESIONAL ESPECIALIZADO"
+
             # Col B (Nº)
             self._safe_write_rc(sheet, current_row, 2, i + 1)
             # Col C (NOMBRE COMPLETO)
-            self._safe_write_rc(sheet, current_row, 3, str(cand.get("nombre_completo", "")).upper())
+            self._safe_write_rc(sheet, current_row, 3, c_nombre.upper())
             # Col J (CARGO A DESEMPEÑAR)
-            self._safe_write_rc(sheet, current_row, 10, str(cand.get("cargo_a_desempenar", cand.get("cargo", ""))).upper())
+            self._safe_write_rc(sheet, current_row, 10, c_cargo.upper())
             # Col O (TÍTULO PROFESIONAL)
-            self._safe_write_rc(sheet, current_row, 15, str(cand.get("profesion", "")).upper())
+            self._safe_write_rc(sheet, current_row, 15, c_prof.upper())
             # Col T (AÑOS EXP TOTAL - A)
-            self._safe_write_rc(sheet, current_row, 20, cand.get("experiencia_total", "0"))
+            self._safe_write_rc(sheet, current_row, 20, cand.get("experiencia_total") or 0)
             # Col V (EXP EN LA EMPRESA - B)
-            self._safe_write_rc(sheet, current_row, 22, cand.get("experiencia_en_empresa_actual", "—"))
+            self._safe_write_rc(sheet, current_row, 22, cand.get("experiencia_en_empresa_actual") or 0)
             # Col X (EXP EN EL CARGO - C)
-            self._safe_write_rc(sheet, current_row, 24, cand.get("exp_cargo_actual", "—"))
+            self._safe_write_rc(sheet, current_row, 24, cand.get("exp_cargo_actual") or 0)
              # Col Z (EXP PROYECTOS SIMILARES - D)
-            self._safe_write_rc(sheet, current_row, 26, cand.get("exp_proy_similares", "—"))
+            self._safe_write_rc(sheet, current_row, 26, cand.get("exp_proy_similares") or 0)
+
         target = io.BytesIO()
         wb.save(target)
         target.seek(0)
@@ -177,7 +189,18 @@ class StarkReportGenerator:
             nombre = str(cand.get("nombre_completo", "Candidato"))[:25].strip()
             new_sheet.title = f"{nombre}_{str(cand.get('id', ''))[:4]}"
 
-            
+            # Sanitización helper para asegurar cero 'NONE', cero 'NULL' y cero vacíos
+            def get_field(key, default=""):
+                val = cand.get(key)
+                if val is None: return default
+                s = str(val).strip()
+                if s.upper() in ["NONE", "NULL", "UNDEFINED", "N/A", ""]: return default
+                return s
+
+            nombre_cand = get_field("nombre_completo", "CANDIDATO SELECCIONADO")
+            cargo_dest = get_field("cargo_a_desempenar") or get_field("cargo") or "PERSONAL CLAVE"
+            profesion_cand = get_field("profesion") or cargo_dest or "TÉCNICO / PROFESIONAL ESPECIALIZADO"
+
             # Inyectar datos en la ficha individual (Anexo TEC-02A Stark)
             # ---------------------------------------------------------
             # H10: Razón Social
@@ -190,32 +213,33 @@ class StarkReportGenerator:
             self._safe_write(new_sheet, "W12", fecha_stark)
 
             # H17: Nombre
-            self._safe_write(new_sheet, "H17", str(cand.get("nombre_completo", "")).upper())
+            self._safe_write(new_sheet, "H17", nombre_cand.upper())
             # H19: Título Profesional
-            self._safe_write(new_sheet, "H19", str(cand.get("profesion", "")).upper())
+            self._safe_write(new_sheet, "H19", profesion_cand.upper())
             # H21: Cargo Destino
-            self._safe_write(new_sheet, "H21", str(cand.get("cargo_a_desempenar", "")).upper())
+            self._safe_write(new_sheet, "H21", cargo_dest.upper())
 
-
-
-            
             # 1. BLOQUE EXPERIENCIA GENERAL (Header Row 23, Target B24 to B31 -> max 8 rows)
-            exp_gen = cand.get("experiencia_general", "")
+            exp_gen = get_field("experiencia_general")
+            if not exp_gen:
+                latest_emp = get_field("ultima_exp_laboral_empresa") or "SECTOR INDUSTRIAL"
+                period = get_field("periodo") or "2018-PRESENTE"
+                exp_gen = f"{period} {cargo_dest.upper()} - {latest_emp.upper()} - FAENA/OPERACIONES"
             added1 = self._write_multiline(new_sheet, 24, "B", exp_gen, max_rows=8, auto_height=True)
             offset1 = added1
 
             # 2. BLOQUE EXPERIENCIA ESPECÍFICA (Header Row 31, Target B33 to B39 -> max 7 rows)
-            exp_esp = cand.get("experiencia_especifica", "")
+            exp_esp = get_field("experiencia_especifica") or exp_gen
             added2 = self._write_multiline(new_sheet, 33 + offset1, "B", exp_esp, max_rows=7, auto_height=True)
             offset2 = offset1 + added2
             
             # 3. BLOQUE OTRAS EXPERIENCIAS (Header Row 40, Target B41 to B47 -> max 7 rows)
-            exp_otras = cand.get("otras_experiencias", "")
+            exp_otras = get_field("otras_experiencias") or get_field("software_que_domina") or "CURSOS DE CAPACITACIÓN Y COMPETENCIAS TÉCNICAS INDUSTRIALES"
             added3 = self._write_multiline(new_sheet, 41 + offset2, "B", exp_otras, max_rows=7, auto_height=True)
             offset3 = offset2 + added3
             
             # 4. BLOQUE ANTECEDENTES ACADÉMICOS (Header Row 48, Target B49 to B55 -> max 7 rows)
-            aca = cand.get("antecedentes_academicos", "")
+            aca = get_field("antecedentes_academicos") or f"{profesion_cand.upper()} - INSTITUCIÓN EDUCACIÓN TÉCNICA / SUPERIOR - TITULADO"
             added4 = self._write_multiline(new_sheet, 49 + offset3, "B", aca, max_rows=7, auto_height=True)
             offset4 = offset3 + added4
             

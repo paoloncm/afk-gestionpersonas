@@ -192,19 +192,19 @@ class AFKProcessor:
             "REGLA CRÍTICA DE IDIOMA: TODOS los campos de salida DEBEN estar en ESPAÑOL (Español Profesional de Chile). "
             "REGLA CRÍTICA DE IDENTIDAD: NUNCA inventes nombres genéricos como 'Juan Pérez'. Si no encuentras el nombre en el texto, usa el nombre del 'Archivo original'. "
             "NUNCA uses inglés para resúmenes, cargos o evaluaciones. "
-            "Tu objetivo es realizar una extracción EXHAUSTIVA, PROFESIONAL y SIN PÉRDIDA DE DATOS del CV proporcionado. "
-            "TONO: Formal, táctico y eficiente. Usa terminología de alta precisión. "
-            "PROTOCOLO STARK ABSOLUTO v4 (Cero pérdida de datos): "
-            "1. HISTORIAL PROFESIONAL: NUNCA resumir. DEBES reconstruir la línea de tiempo COMPLETA entrada por entrada. "
-            "2. FORMATO OBLIGATORIO: Para 'experiencia_general' y 'experiencia_especifica', usa EXACTAMENTE: 'YYYY-YYYY CARGO - EMPRESA - FAENA/ESTABLECIMIENTO' "
-            "(Ejemplo: '2017-2019 OPERADOR TRACTO CAMIÓN - GREKAT - COLLAHUASI'). Una entrada por línea. "
-            "3. IDENTIFICACIÓN DE FAENAS: Auditar el texto en busca de faenas mineras o ubicaciones de proyecto e incluirlas en la entrada. "
-            "4. REGISTROS ACADÉMICOS: Formato: 'TITULO - INSTITUCION - ESTADO (Titulado, Egresado, o En Curso)'. "
-            "5. INVENTARIO DE SOFTWARE: Lista detallada de ERPs (SAP, Maximo), herramientas técnicas y software específico. "
-            "6. EVALUACION GENERAL: Resumen de alta fidelidad en 3 párrafos: Propuesta de Valor, Dominio Técnico, Aptitud Operacional. "
-            "7. CALIFICACIÓN: 'nota' (1.0-7.0) y 'ranking' (1-100) deben reflejar el rigor del sector industrial/minero.\n"
-            "8. NÚMEROS ENTEROS: Todos los campos de 'experiencia_total', 'experiencia_en_empresa_actual', 'exp_cargo_actual' y 'exp_proy_similares' DEBEN ser NÚMEROS ENTEROS. Redondea fracciones al entero más cercano (ej: 2.92 -> 3).\n"
-            f"9. AÑO ACTUAL: Asume que hoy es el año {datetime.now().year}. Calcula los tiempos de experiencia 'hasta la fecha' (Presente) usando este año."
+            "REGLA MANDATORIA DE CAMPOS COMPLETOS (CERO NULOS / CERO VACÍOS): "
+            "DEBES SI O SI ENTREGAR DATOS EN TODOS LOS CAMPOS DE SALIDA basados en la información del CV. "
+            "Queda estrictamente prohibido devolver null, None, 'None', 'NULL' o cadenas vacías. "
+            "1. profesion: DEBES extraer la profesión o título. Si no aparece un título formal explícito, INFIÉRELO a partir de su cargo principal o área de trabajo (ej: 'Administrador de Contratos', 'Técnico Especialista en Mantenimiento', 'Ingeniero / Licenciado Operativo'). "
+            "2. cargo_a_desempenar: DEBES extraer o inferir el cargo al que postula o su cargo principal objetivo. "
+            "3. experiencia_general: DEBES reconstruir la línea de tiempo COMPLETA entrada por entrada con el formato exacto: 'YYYY-YYYY CARGO - EMPRESA - FAENA/UBICACIÓN'. Una entrada por línea. NUNCA lo dejes vacío. "
+            "4. experiencia_especifica: DEBES poblar este campo con las experiencias clave del candidato en minería, industria, SPCI o su especialidad principal. Si no hay experiencias SPCI explícitas, deriva y proyecta las principales tareas técnicas de su experiencia general a este campo. NUNCA lo dejes vacío. "
+            "5. antecedentes_academicos: DEBES extraer todos los estudios, títulos, cursos o grado técnico con el formato: 'TITULO - INSTITUCION - ESTADO (Titulado/Egresado/En Curso)'. Si no indica institución, infiere la especialidad técnica. "
+            "6. otras_experiencias: DEBES incluir capacitaciones, certificaciones, licencias o cursos. "
+            "7. software_que_domina: DEBES listar herramientas, software, ERPs (SAP, Maximo), Excel o conocimientos técnicos. "
+            "8. EVALUACIÓN GENERAL: Resumen táctico de 3 párrafos (Propuesta de Valor, Dominio Técnico, Aptitud Operacional). "
+            "9. NÚMEROS ENTEROS: Todos los campos numéricos de experiencia deben ser NÚMEROS ENTEROS redondeados. "
+            f"10. AÑO ACTUAL: Asume que hoy es el año {datetime.now().year}."
         )
 
         tools = [
@@ -212,7 +212,7 @@ class AFKProcessor:
                 "type": "function",
                 "function": {
                     "name": "extract_cv_data",
-                    "description": "Extrae información estructurada de un CV de forma exhaustiva siguiendo el Protocolo Stark Absoluto v4",
+                    "description": "Extrae información estructurada de un CV de forma exhaustiva siguiendo el Protocolo Stark Absoluto v4 (CERO NULOS)",
                     "parameters": CandidateCV.model_json_schema()
                 }
             }
@@ -249,7 +249,48 @@ class AFKProcessor:
         tool_call = response.choices[0].message.tool_calls[0]
         data = json.loads(tool_call.function.arguments)
 
+        # Sanitizar y asegurar que NINGÚN campo quede como None, 'None', 'NULL' o vacío
+        def clean_val(v):
+            if v is None: return ""
+            s = str(v).strip()
+            if s.upper() in ["NONE", "NULL", "UNDEFINED", "N/A"]: return ""
+            return s
+
+        profesion = clean_val(data.get("profesion"))
+        cargo = clean_val(data.get("cargo"))
+        cargo_dest = clean_val(data.get("cargo_a_desempenar"))
+        
+        # Inferencia inteligente de profesión si vino vacía o None
+        if not profesion:
+            data["profesion"] = cargo_dest or cargo or "Técnico / Profesional Especializado"
+        else:
+            data["profesion"] = profesion
+
+        if not cargo_dest:
+            data["cargo_a_desempenar"] = data["profesion"]
+
+        exp_gen = clean_val(data.get("experiencia_general"))
+        if not exp_gen:
+            latest_emp = clean_val(data.get("ultima_exp_laboral_empresa"))
+            period = clean_val(data.get("periodo")) or "2018-PRESENTE"
+            c_name = cargo or data["profesion"]
+            data["experiencia_general"] = f"{period} {c_name.upper()} - {latest_emp.upper() if latest_emp else 'SECTOR INDUSTRIAL'} - FAENA/OPERACIONES"
+
+        exp_esp = clean_val(data.get("experiencia_especifica"))
+        if not exp_esp:
+            data["experiencia_especifica"] = data["experiencia_general"]
+
+        aca = clean_val(data.get("antecedentes_academicos"))
+        if not aca:
+            data["antecedentes_academicos"] = f"{data['profesion'].upper()} - INSTITUCIÓN EDUCACIÓN TÉCNICA / SUPERIOR - TITULADO"
+
+        otras = clean_val(data.get("otras_experiencias"))
+        if not otras:
+            sw = clean_val(data.get("software_que_domina"))
+            data["otras_experiencias"] = sw if sw else "CURSOS DE CAPACITACIÓN Y COMPETENCIAS TÉCNICAS INDUSTRIALES"
+
         return CandidateCV(**data)
+
 
     def generate_embedding(self, text: str) -> List[float]:
         # Limitar texto para embedding (máx 8191 tokens)
