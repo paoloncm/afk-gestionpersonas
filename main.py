@@ -57,9 +57,79 @@ class AnalyzeTenderRequest(BaseModel):
 class VectorizeRequest(BaseModel):
     text: str
 
+class ContactRequest(BaseModel):
+    nombre: str
+    empresa: str
+    email: str
+    telefono: Optional[str] = ""
+    cantidad_cvs: Optional[str] = ""
+
 @app.get("/api/v1/health")
 def health_check():
     return {"status": "ok", "message": "AFK Agent API is running securely"}
+
+@app.post("/api/contact")
+async def contact_lead(req: ContactRequest):
+    try:
+        # 1) Guardar en Supabase si está configurado
+        supabase_url = os.getenv("SUPABASE_URL") or os.getenv("NEXT_PUBLIC_SUPABASE_URL")
+        supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_KEY") or os.getenv("NEXT_PUBLIC_SUPABASE_ANON_KEY")
+        if supabase_url and supabase_key:
+            try:
+                from supabase import create_client
+                sb = create_client(supabase_url, supabase_key)
+                sb.table("leads").insert({
+                    "nombre": req.nombre,
+                    "empresa": req.empresa,
+                    "email": req.email,
+                    "telefono": req.telefono,
+                    "cantidad_cvs": req.cantidad_cvs,
+                    "origen": "landing_cvs_v2"
+                }).execute()
+            except Exception as se:
+                print(f"Supabase error (leads): {se}")
+
+        # 2) Enviar email vía SMTP si está configurado
+        smtp_host = os.getenv("SMTP_HOST", "smtp.gmail.com")
+        smtp_port = int(os.getenv("SMTP_PORT", "587"))
+        smtp_user = os.getenv("SMTP_USER", "")
+        smtp_pass = os.getenv("SMTP_PASS", "")
+        if smtp_user and smtp_pass:
+            try:
+                import smtplib
+                from email.mime.text import MIMEText
+                from email.mime.multipart import MIMEMultipart
+                destinatarios = [
+                    "paolo.cossio@afkservices.com",
+                    "carlos.zurita@afkservices.com",
+                    "nicolas.morales@afkservices.com"
+                ]
+                msg = MIMEMultipart()
+                msg["From"]    = smtp_user
+                msg["To"]      = ", ".join(destinatarios)
+                msg["Subject"] = f"🟡 Nuevo lead AFK RRHH — {req.empresa}"
+                body = f"""\
+Nuevo contacto desde la landing page:
+
+Nombre:       {req.nombre}
+Empresa:      {req.empresa}
+Email:        {req.email}
+Teléfono:     {req.telefono}
+Cantidad CVs: {req.cantidad_cvs}
+"""
+                msg.attach(MIMEText(body, "plain"))
+                with smtplib.SMTP(smtp_host, smtp_port) as server:
+                    server.starttls()
+                    server.login(smtp_user, smtp_pass)
+                    server.sendmail(smtp_user, destinatarios, msg.as_string())
+            except Exception as me:
+                print(f"SMTP error: {me}")
+
+        return {"success": True}
+    except Exception as e:
+        print(f"Error en /api/contact: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.post("/api/v1/agent/query", response_model=QueryResponse)
 async def process_query(request: QueryRequest, api_key: str = Depends(get_api_key)):

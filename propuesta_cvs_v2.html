@@ -852,20 +852,17 @@ async function sendForm(e){
     empresa:      document.getElementById('f-empresa').value,
     email:        document.getElementById('f-email').value,
     telefono:     document.getElementById('f-tel').value,
-    cantidad_cvs: document.getElementById('f-cvs').value,
-    _subject:     '🟡 Nuevo lead AFK RRHH — Solicitud de propuesta',
-    _cc:          'carlos.zurita@afkservices.com,nicolas.morales@afkservices.com',
-    _captcha:     'false'
+    cantidad_cvs: document.getElementById('f-cvs').value
   };
 
   try {
-    const res = await fetch('https://formsubmit.co/ajax/paolo.cossio@afkservices.com', {
+    const res = await fetch('/api/contact', {
       method:  'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify(payload)
     });
     const data = await res.json();
-    if(data.success === 'true' || data.success === true){
+    if(data.success){
       document.getElementById('contact-form').style.display = 'none';
       document.getElementById('success-msg').style.display  = 'block';
     } else {
