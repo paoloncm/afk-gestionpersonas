@@ -640,9 +640,6 @@ footer p{font-size:12px;color:var(--text-3);}
       </div>
 
       <div class="roi-results">
-
-        <!-- TIEMPO -->
-        <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text-3);padding:4px 0;">⏱ Tiempo</div>
         <div class="r-card reveal d1">
           <div class="r-card-lbl">📋 Horas invertidas hoy (proceso manual)</div>
           <div class="r-card-val" id="r-total-h">450 hrs</div>
@@ -653,25 +650,16 @@ footer p{font-size:12px;color:var(--text-3);}
           <div class="r-card-val" id="r-days">56 días</div>
           <div class="r-card-note">A jornada de 8 horas</div>
         </div>
-
-        <!-- COSTO -->
-        <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text-3);padding:4px 0;margin-top:8px;">💰 Comparación de costo</div>
-        <div class="r-card reveal d3" style="border-color:rgba(239,68,68,.2);">
-          <div class="r-card-lbl" style="color:#f87171;">❌ Costo si lo hace tu equipo</div>
-          <div class="r-card-val" id="r-cost-manual" style="color:#f87171;">$4.500.000</div>
-          <div class="r-card-note">HH RRHH a $10.000/hr × horas totales</div>
-        </div>
         <div class="r-card reveal d3">
-          <div class="r-card-lbl">✅ Costo con AFK RRHH</div>
-          <div class="r-card-val" id="r-cost-afk">$1.050.000</div>
-          <div class="r-card-note">$3.500 por CV procesado, precio fijo</div>
+          <div class="r-card-lbl">📆 Semanas de trabajo de tu equipo</div>
+          <div class="r-card-val" id="r-weeks">11 semanas</div>
+          <div class="r-card-note">Tiempo que tu equipo deja de hacer RRHH real</div>
         </div>
         <div class="r-card featured reveal d4">
-          <div class="r-card-lbl">🏆 Ahorro estimado</div>
-          <div class="r-card-val" id="r-savings">$3.450.000</div>
-          <div class="r-card-note">+ <span id="r-saved">450 hrs libres</span> devueltas a tu equipo</div>
+          <div class="r-card-lbl">✅ Tiempo recuperado con AFK</div>
+          <div class="r-card-val" id="r-saved">450 hrs libres</div>
+          <div class="r-card-note">Para selección, capacitación y retención — no digitación</div>
         </div>
-
       </div>
     </div>
   </div>
@@ -737,7 +725,7 @@ footer p{font-size:12px;color:var(--text-3);}
     <div class="pricing-grid" style="max-width:480px;">
       <div class="p-card hot reveal">
         <div class="p-badge">Servicio por proyecto</div>
-        <div class="p-price" style="color:var(--gold);">$3.500</div>
+        <div class="p-price" style="color:var(--gold);">$2.000</div>
         <div class="p-unit">CLP por CV procesado · precio fijo</div>
         <ul class="p-list">
           <li>Extracción de +40 campos por CV</li>
@@ -803,24 +791,13 @@ function calcROI(){
   const hrs=w*m/60;
   const days=hrs/8;
   const weeks=days/5;
-
-  // Costos
-  const HH_RATE = 10000; // $10.000 CLP por hora-hombre RRHH
-  const AFK_RATE = 3500;  // $3.500 CLP por CV
-  const costManual = Math.round(hrs * HH_RATE);
-  const costAFK    = w * AFK_RATE;
-  const savings    = costManual - costAFK;
-
-  const clp = n => '$' + n.toLocaleString('es-CL');
-
-  document.getElementById('v-workers').textContent  = w.toLocaleString('es-CL');
-  document.getElementById('v-mins').textContent      = fmtMin(m);
-  document.getElementById('r-total-h').textContent  = Math.round(hrs).toLocaleString('es-CL') + ' hrs';
-  document.getElementById('r-days').textContent     = Math.round(days).toLocaleString('es-CL') + ' días';
-  document.getElementById('r-cost-manual').textContent = clp(costManual);
-  document.getElementById('r-cost-afk').textContent    = clp(costAFK);
-  document.getElementById('r-savings').textContent     = savings > 0 ? clp(savings) : '$0';
-  document.getElementById('r-saved').textContent       = Math.round(hrs).toLocaleString('es-CL') + ' hrs libres';
+  document.getElementById('v-workers').textContent=w.toLocaleString('es-CL');
+  document.getElementById('v-mins').textContent=fmtMin(m);
+  document.getElementById('r-total-h').textContent=Math.round(hrs).toLocaleString('es-CL')+' hrs';
+  document.getElementById('r-days').textContent=Math.round(days).toLocaleString('es-CL')+' días';
+  const wv=Math.round(weeks*10)/10;
+  document.getElementById('r-weeks').textContent=wv+(wv===1?' semana':' semanas');
+  document.getElementById('r-saved').textContent=Math.round(hrs).toLocaleString('es-CL')+' hrs libres';
 
   // slider fill
   ['r-workers','r-mins'].forEach(id=>{
