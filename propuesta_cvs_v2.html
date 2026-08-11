@@ -770,14 +770,14 @@ footer p{font-size:12px;color:var(--text-3);}
     <p class="cta-sub reveal">Cuéntanos cuántos CVs tienes. Te enviamos una propuesta en 24 horas.</p>
     <form class="contact-form reveal" id="contact-form" onsubmit="sendForm(event)">
       <div class="form-row">
-        <input class="field" type="text" placeholder="Tu nombre" required/>
-        <input class="field" type="text" placeholder="Empresa / Contratista" required/>
+        <input id="f-nombre" name="nombre" class="field" type="text" placeholder="Tu nombre" required/>
+        <input id="f-empresa" name="empresa" class="field" type="text" placeholder="Empresa / Contratista" required/>
       </div>
       <div class="form-row">
-        <input class="field" type="email" placeholder="Email corporativo" required/>
-        <input class="field" type="tel" placeholder="WhatsApp / Teléfono"/>
+        <input id="f-email" name="email" class="field" type="email" placeholder="Email corporativo" required/>
+        <input id="f-tel" name="telefono" class="field" type="tel" placeholder="WhatsApp / Teléfono"/>
       </div>
-      <input class="field" type="number" placeholder="¿Cuántos trabajadores / CVs tienes?" min="1"/>
+      <input id="f-cvs" name="cantidad_cvs" class="field" type="number" placeholder="¿Cuántos trabajadores / CVs tienes?" min="1"/>
       <button type="submit" class="submit-btn" id="s-btn">Solicitar propuesta gratuita →</button>
       <p class="form-note">🔒 Tus datos son confidenciales. Te contactamos en menos de 24 horas hábiles.</p>
     </form>
@@ -842,14 +842,40 @@ document.querySelectorAll('.bento-card').forEach(card=>{
 });
 
 // ── FORM ──
-function sendForm(e){
+async function sendForm(e){
   e.preventDefault();
-  const btn=document.getElementById('s-btn');
-  btn.textContent='Enviando…';btn.disabled=true;
-  setTimeout(()=>{
-    document.getElementById('contact-form').style.display='none';
-    document.getElementById('success-msg').style.display='block';
-  },1200);
+  const btn = document.getElementById('s-btn');
+  btn.textContent = 'Enviando…'; btn.disabled = true;
+
+  const payload = {
+    nombre:       document.getElementById('f-nombre').value,
+    empresa:      document.getElementById('f-empresa').value,
+    email:        document.getElementById('f-email').value,
+    telefono:     document.getElementById('f-tel').value,
+    cantidad_cvs: document.getElementById('f-cvs').value,
+    _subject:     '🟡 Nuevo lead AFK RRHH — Solicitud de propuesta',
+    _cc:          'carlos.zurita@afkservices.com,nicolas.morales@afkservices.com',
+    _captcha:     'false'
+  };
+
+  try {
+    const res = await fetch('https://formsubmit.co/ajax/paolo.cossio@afkservices.com', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body:    JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if(data.success === 'true' || data.success === true){
+      document.getElementById('contact-form').style.display = 'none';
+      document.getElementById('success-msg').style.display  = 'block';
+    } else {
+      btn.textContent = 'Solicitar propuesta gratuita →'; btn.disabled = false;
+      alert('Hubo un problema al enviar. Inténtalo de nuevo.');
+    }
+  } catch(err){
+    btn.textContent = 'Solicitar propuesta gratuita →'; btn.disabled = false;
+    alert('Error de conexión. Inténtalo de nuevo.');
+  }
 }
 </script>
 </body>
