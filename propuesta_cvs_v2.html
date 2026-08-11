@@ -619,7 +619,7 @@ footer p{font-size:12px;color:var(--text-3);}
         <h3>Parámetros de tu empresa</h3>
         <div class="inp-group">
           <label>Número de CVs a procesar</label>
-          <input type="range" id="r-workers" min="50" max="2000" value="300" step="50" oninput="calcROI()"/>
+          <input type="range" id="r-workers" min="1" max="2000" value="300" step="1" oninput="calcROI()"/>
           <div class="inp-display">
             <span class="inp-val" id="v-workers">300</span>
             <span class="inp-unit">CVs</span>
@@ -627,7 +627,7 @@ footer p{font-size:12px;color:var(--text-3);}
         </div>
         <div class="inp-group">
           <label>Tiempo actual de tu equipo por trabajador</label>
-          <input type="range" id="r-mins" min="10" max="240" value="90" step="10" oninput="calcROI()"/>
+          <input type="range" id="r-mins" min="1" max="240" value="90" step="1" oninput="calcROI()"/>
           <div class="inp-display">
             <span class="inp-val" id="v-mins">1h 30min</span>
             <span class="inp-unit">por trabajador</span>
