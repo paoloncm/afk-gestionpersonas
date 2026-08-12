@@ -8,6 +8,8 @@
 
   let allWorkers = [];
   let allCandidates = [];
+  let filteredWorkers = [];
+  let filteredCandidates = [];
   let allExams = [];
   let allVacancies = [];
   let filteredData = [];
@@ -105,6 +107,8 @@
 
       allWorkers = workers || [];
       allCandidates = candidates || [];
+      filteredWorkers = [...allWorkers];
+      filteredCandidates = [...allCandidates];
       allExams = exams || [];
       allVacancies = vacancies || [];
 
@@ -121,7 +125,29 @@
   }
 
   // --- RENDERING ---
+
+  function applyAnalyticsFilters() {
+      const prof = ($('#af-profesion')?.value || '').toLowerCase();
+      const cargo = ($('#af-cargo')?.value || '').toLowerCase();
+      const region = ($('#af-region')?.value || '').toLowerCase();
+
+      filteredWorkers = allWorkers.filter(p => {
+          const pProf = (p.position || p.cargo || 'Operativo').toLowerCase();
+          const pCargo = (p.cargo_a_desempenar || '').toLowerCase();
+          const pReg = (p.company_name || '').toLowerCase();
+          return pProf.includes(prof) && pCargo.includes(cargo) && pReg.includes(region);
+      });
+
+      filteredCandidates = allCandidates.filter(p => {
+          const pProf = (p.profesion || 'Candidato').toLowerCase();
+          const pCargo = (p.cargo_a_desempenar || '').toLowerCase();
+          const pReg = (p.direccion || '').toLowerCase();
+          return pProf.includes(prof) && pCargo.includes(cargo) && pReg.includes(region);
+      });
+  }
+
   function renderAll() {
+    applyAnalyticsFilters();
     renderKPIs();
     renderCharts();
     renderMap();
@@ -129,22 +155,22 @@
   }
 
   function renderKPIs() {
-    const total = allWorkers.length + allCandidates.length;
+    const total = filteredWorkers.length + filteredCandidates.length;
     animateValue("kpi_total_workers", 0, total, 1000);
 
     // Edad Promedio
-    const ages = [...allWorkers, ...allCandidates].map(p => getAge(p.birth_date || p.fecha_nacimiento)).filter(a => a !== null);
+    const ages = [...filteredWorkers, ...filteredCandidates].map(p => getAge(p.birth_date || p.fecha_nacimiento)).filter(a => a !== null);
     const avgAge = ages.length ? Math.round(ages.reduce((a, b) => a + b, 0) / ages.length) : 0;
     animateValue("kpi_avg_age", 0, avgAge, 1200);
 
     // Antigüedad (solo Workers por ahora)
-    const seniorities = allWorkers.map(w => getSeniorityMonths(w.created_at)).filter(s => s > 0);
+    const seniorities = filteredWorkers.map(w => getSeniorityMonths(w.created_at)).filter(s => s > 0);
     const avgSeniority = seniorities.length ? Math.round(seniorities.reduce((a, b) => a + b, 0) / seniorities.length) : 0;
     animateValue("kpi_avg_seniority", 1, Math.max(1, avgSeniority), 1200);
 
     // Certificación Crítica (Simulado basado en docs válidos)
-    const healthyCount = allWorkers.length * 0.85; 
-    const certPct = Math.round((healthyCount / (allWorkers.length || 1)) * 100);
+    const healthyCount = filteredWorkers.length * 0.85; 
+    const certPct = Math.round((healthyCount / (filteredWorkers.length || 1)) * 100);
     animateValue("kpi_critical_cert_pct", 0, certPct, 1500, "%");
 
     // Riesgo de Vacancia (Exámenes vencidos)
@@ -170,7 +196,7 @@
     const ctxAge = $("#chart_age_dist")?.getContext("2d");
     if (ctxAge) {
         const ranges = {"18-25": 0, "26-35": 0, "36-45": 0, "46-55": 0, "56+": 0};
-        [...allWorkers, ...allCandidates].forEach(p => {
+        [...filteredWorkers, ...filteredCandidates].forEach(p => {
             const age = getAge(p.birth_date || p.fecha_nacimiento);
             if (!age) return;
             if (age <= 25) ranges["18-25"]++;
@@ -193,7 +219,7 @@
     const ctxProf = $("#chart_professions")?.getContext("2d");
     if (ctxProf) {
         const counts = {};
-        [...allWorkers, ...allCandidates].forEach(p => {
+        [...filteredWorkers, ...filteredCandidates].forEach(p => {
             const prof = (p.position || p.profesion || "Otros").toUpperCase();
             counts[prof] = (counts[prof] || 0) + 1;
         });
@@ -212,7 +238,7 @@
     const ctxSenior = $("#chart_seniority_dist")?.getContext("2d");
     if (ctxSenior) {
         const ranges = {"0-6m": 0, "6-12m": 0, "1-2a": 0, "2a+": 0};
-        allWorkers.forEach(w => {
+        filteredWorkers.forEach(w => {
             const m = getSeniorityMonths(w.created_at);
             if (m <= 6) ranges["0-6m"]++;
             else if (m <= 12) ranges["6-12m"]++;
@@ -234,7 +260,7 @@
     if (ctxRisk) {
         const riskLocs = {};
         allExams.filter(e => e.expiry_date && new Date(e.expiry_date) < new Date()).forEach(e => {
-            const w = allWorkers.find(x => x.id === e.worker_id);
+            const w = filteredWorkers.find(x => x.id === e.worker_id);
             const loc = w?.company_name || "EXTERNO";
             riskLocs[loc] = (riskLocs[loc] || 0) + 1;
         });
@@ -264,7 +290,7 @@
     markersLayer.clearLayers();
 
     // Plot Candidates (Cyan)
-    allCandidates.forEach(cand => {
+    filteredCandidates.forEach(cand => {
       const coords = findCoords(cand.direccion);
       if (coords) {
         const marker = L.circleMarker(coords, {
@@ -281,7 +307,7 @@
     });
 
     // Plot Workers (Orange)
-    allWorkers.forEach(w => {
+    filteredWorkers.forEach(w => {
       const coords = findCoords(w.company_name);
       if (coords) {
         const marker = L.circleMarker(coords, {
@@ -339,7 +365,7 @@
       `).join("") || '<div style="color:var(--muted); font-size:11px;">No hay vacantes activas detectadas.</div>';
 
       // Gaps Calculation
-      const internalCoverage = allWorkers.length;
+      const internalCoverage = filteredWorkers.length;
       const totalDemand = allVacancies.length;
       const gapPct = totalDemand ? Math.round((internalCoverage / (internalCoverage + totalDemand)) * 100) : 100;
       gapBox.innerHTML = `
@@ -351,7 +377,7 @@
       `;
 
       const insights = [
-          `Optimización de Seniority: El ${Math.round((allWorkers.length/((allWorkers.length+allCandidates.length)||1))*100)}% de la dotación es interna. Posibilidad de ascenso para ${Math.ceil(allVacancies.length/3)} perfiles críticos.`,
+          `Optimización de Seniority: El ${Math.round((filteredWorkers.length/((filteredWorkers.length+filteredCandidates.length)||1))*100)}% de la dotación es interna. Posibilidad de ascenso para ${Math.ceil(allVacancies.length/3)} perfiles críticos.`,
           "Alerta Geográfica: Concentración elevada en Zona Central. Se recomienda diversificar reclutamiento hacia el Norte.",
           `Capacitación: ${allExams.filter(e => e.expiry_date && new Date(e.expiry_date) < new Date()).length} operarios requieren renovación de examen de altura física de inmediato.`
       ];
@@ -362,8 +388,12 @@
   function bindEvents() {
     $("#btnExportAnalytics")?.addEventListener("click", () => window.print());
     $("#btnTriggerRecs")?.addEventListener("click", () => {
-        window.notificar?.("JARVIS: Ejecutando algoritmos de optimización de dotación...", "info");
+        window.notificar?.("JARVIS: Ejecutando algoritmos de optimizacin de dotacin...", "info");
     });
+    
+    $('#af-profesion')?.addEventListener('input', renderAll);
+    $('#af-cargo')?.addEventListener('input', renderAll);
+    $('#af-region')?.addEventListener('input', renderAll);
   }
 
   // --- BOOTSTRAP ---
