@@ -9,72 +9,91 @@
     body {
       display: flex; align-items: center; justify-content: center;
       min-height: 100vh; overflow: hidden;
+      background-color: #0a0a0a;
+      font-family: 'Inter', system-ui, sans-serif;
+      color: #fff;
     }
     .login-container {
-      max-width: 420px; width: 100%; padding: 20px;
-      animation: emerge 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+      max-width: 400px; width: 100%; padding: 20px;
+      animation: emerge 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
     }
     @keyframes emerge {
-      from { opacity: 0; transform: scale(0.9) translateY(30px); filter: blur(10px); }
-      to { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); }
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
     }
     .login-card {
-      background: rgba(7, 18, 37, 0.8);
-      backdrop-filter: blur(20px);
-      border: 1px solid var(--cyan);
-      border-radius: var(--radius-lg);
+      background: #111;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
       padding: 40px;
-      box-shadow: 0 0 60px rgba(65, 223, 255, 0.15), inset 0 0 20px rgba(65, 223, 255, 0.05);
       position: relative;
     }
-    .login-card::before {
-      content: ''; position: absolute; top: -2px; left: -2px; right: -2px; bottom: -2px;
-      border-radius: inherit; background: linear-gradient(45deg, var(--cyan), transparent, var(--pink), transparent);
-      z-index: -1; opacity: 0.3;
+    .brand {
+      display: flex; align-items: center; justify-content: center;
+      gap: 10px; margin-bottom: 24px;
+    }
+    .brand-dot {
+      width: 8px; height: 8px; background: #f59e0b; border-radius: 50%;
+    }
+    .brand-name {
+      font-size: 20px; font-weight: 700; letter-spacing: -0.5px;
     }
     .login-title {
-      font-size: 24px; font-weight: 900; letter-spacing: 2px;
-      text-align: center; margin-bottom: 30px; text-transform: uppercase;
+      font-size: 24px; font-weight: 700; letter-spacing: -0.5px;
+      text-align: center; margin-bottom: 30px;
+    }
+    label {
+      display: block; font-size: 13px; color: #888; margin-bottom: 8px;
     }
     input {
-      width: 100%; background: rgba(0,0,0,0.4); border: 1px solid var(--border);
-      padding: 14px; border-radius: 12px; color: white; margin-bottom: 20px;
-      transition: all 0.3s; font-size: 14px;
+      width: 100%; background: #0a0a0a; border: 1px solid rgba(255,255,255,0.1);
+      padding: 14px; border-radius: 8px; color: white; margin-bottom: 20px;
+      transition: all 0.2s; font-size: 15px;
     }
-    input:focus { outline: none; border-color: var(--cyan); box-shadow: 0 0 15px rgba(65, 223, 255, 0.2); }
+    input:focus { outline: none; border-color: #f59e0b; }
+    .btn-login {
+      width: 100%; background: #f59e0b; color: #000;
+      border: none; padding: 14px; border-radius: 8px;
+      font-weight: 600; font-size: 15px; cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .btn-login:hover { opacity: 0.9; }
+    .btn-login:disabled { opacity: 0.5; cursor: not-allowed; }
     .error-box {
-      background: rgba(255, 15, 106, 0.1); border: 1px solid var(--pink);
-      color: var(--pink-2); padding: 12px; border-radius: 8px; font-size: 12px;
+      background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444;
+      color: #ef4444; padding: 12px; border-radius: 8px; font-size: 14px;
       margin-bottom: 20px; display: none; text-align: center;
     }
+    .footer-link {
+      margin-top: 25px; text-align: center; font-size: 13px; color: #666;
+    }
+    .footer-link a { color: #f59e0b; text-decoration: none; }
   </style>
 </head>
 <body>
   <div class="login-container">
     <div class="login-card">
-      <div class="scan-line"></div>
-      
-      <div class="brand" style="justify-content:center; border:none; margin-bottom:10px;">
-        <div class="brand-logo">AFK</div>
-        <h1 style="font-size:18px; letter-spacing:3px;">STARK_GATEWAY</h1>
+      <div class="brand">
+        <div class="brand-dot"></div>
+        <div class="brand-name">AFK RRHH</div>
       </div>
       
-      <div class="login-title text-cyan">Identificación Requerida</div>
+      <div class="login-title">Iniciar sesión</div>
 
       <div id="errorBox" class="error-box"></div>
 
       <form id="loginForm">
-        <div style="margin-bottom:5px; font-size:10px; color:var(--muted); font-weight:800;">USER_ID (EMAIL)</div>
+        <label>Correo electrónico</label>
         <input type="email" id="email" placeholder="nombre@empresa.com" required>
         
-        <div style="margin-bottom:5px; font-size:10px; color:var(--muted); font-weight:800;">ACCESS_KEY (PASSWORD)</div>
+        <label>Contraseña</label>
         <input type="password" id="password" placeholder="••••••••" required>
 
-        <button type="submit" class="btn primary" id="btnLogin" style="width:100%; justify-content:center; padding:16px; font-weight:900; letter-spacing:1px;">AUTENTICAR EN LA RED</button>
+        <button type="submit" class="btn-login" id="btnLogin">Ingresar a la plataforma</button>
       </form>
 
-      <div style="margin-top:25px; text-align:center; font-size:11px; color:var(--muted);">
-        ¿Acceso denegado? <a href="#" class="text-cyan" style="text-decoration:none; font-weight:800;">SOPORTE_STARK</a>
+      <div class="footer-link">
+        ¿Problemas para acceder? <a href="#">Soporte</a>
       </div>
     </div>
   </div>
