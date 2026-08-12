@@ -257,3 +257,9 @@ tr { cursor: pointer; }
   outline: none; transition: 0.2s;
 }
 .stark-input:focus { border-color: var(--cyan); background: rgba(255,255,255,0.06); }
+
+/* Fix para opciones de dropdown en tema oscuro */
+.stark-input option {
+  background-color: #111;
+  color: #fff;
+}
