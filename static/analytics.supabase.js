@@ -177,13 +177,13 @@
       allWorkers.forEach(p => {
           if (p.position) profs.add(groupProfession(p.position));
           if (p.cargo) profs.add(groupProfession(p.cargo));
-          if (p.cargo_a_desempenar) cargos.add(p.cargo_a_desempenar);
+          if (p.cargo_a_desempenar) cargos.add(groupProfession(p.cargo_a_desempenar));
           if (p.company_name) regiones.add(groupCity(p.company_name));
       });
 
       allCandidates.forEach(p => {
           if (p.profesion) profs.add(groupProfession(p.profesion));
-          if (p.cargo_a_desempenar) cargos.add(p.cargo_a_desempenar);
+          if (p.cargo_a_desempenar) cargos.add(groupProfession(p.cargo_a_desempenar));
           if (p.direccion) regiones.add(groupCity(p.direccion));
       });
 
@@ -224,14 +224,14 @@
 
       filteredWorkers = allWorkers.filter(p => {
           const pProf = groupProfession(p.position || p.cargo || 'Operativo').toLowerCase();
-          const pCargo = (p.cargo_a_desempenar || '').toLowerCase();
+          const pCargo = groupProfession(p.cargo_a_desempenar || '').toLowerCase();
           const pReg = groupCity(p.company_name || '').toLowerCase();
           return pProf.includes(prof) && pCargo.includes(cargo) && pReg.includes(region);
       });
 
       filteredCandidates = allCandidates.filter(p => {
           const pProf = groupProfession(p.profesion || 'Candidato').toLowerCase();
-          const pCargo = (p.cargo_a_desempenar || '').toLowerCase();
+          const pCargo = groupProfession(p.cargo_a_desempenar || '').toLowerCase();
           const pReg = groupCity(p.direccion || '').toLowerCase();
           return pProf.includes(prof) && pCargo.includes(cargo) && pReg.includes(region);
       });
