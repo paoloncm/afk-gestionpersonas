@@ -370,8 +370,8 @@ function setupEventListeners() {
         finally { btn.disabled = false; btn.innerText = oldText; }
     };
 
-    $('#btn-bulk-tec02')?.addEventListener('click', () => generateReport('tec02'));
-    $('#btn-bulk-tec02a')?.addEventListener('click', () => generateReport('tec02a'));
+    $('#btn-bulk-tec02')?.addEventListener('click', () => openTecModal('tec02', true));
+    $('#btn-bulk-tec02a')?.addEventListener('click', () => openTecModal('tec02a', true));
 
     // Logout Seguro
     $('#side-btn-logout')?.addEventListener('click', async (e) => {
@@ -481,7 +481,7 @@ let currentTecType = '';
 let tecCandidatesData = [];
 let selectedTecIds = new Set();
 
-window.openTecModal = async function(type) {
+window.openTecModal = async function(type, fromBulk = false) {
     currentTecType = type;
     const modal = $('#tec-modal');
     if (!modal) return;
@@ -495,7 +495,12 @@ window.openTecModal = async function(type) {
         tecCandidatesData = data;
     }
     
+    
     selectedTecIds.clear();
+    if (fromBulk && typeof selectedCandidateIds !== 'undefined') {
+        selectedCandidateIds.forEach(id => selectedTecIds.add(id));
+    }
+
     $('#tec-master-cb').checked = false;
     
     // Clear filters
