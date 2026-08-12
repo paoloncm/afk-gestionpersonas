@@ -263,3 +263,8 @@ tr { cursor: pointer; }
   background-color: #111;
   color: #fff;
 }
+
+/* Fix Chrome Select Options */
+select.stark-input {
+  background-color: #0a0a0a !important;
+}
