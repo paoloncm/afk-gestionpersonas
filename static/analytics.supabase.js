@@ -10,6 +10,47 @@
   let allCandidates = [];
   let filteredWorkers = [];
   let filteredCandidates = [];
+
+  function groupCity(str) {
+      if (!str) return 'Desconocida';
+      str = str.toUpperCase();
+      if (str.includes('ANTOFAGASTA')) return 'Antofagasta';
+      if (str.includes('CALAMA')) return 'Calama';
+      if (str.includes('SANTIAGO')) return 'Santiago';
+      if (str.includes('IQUIQUE')) return 'Iquique';
+      if (str.includes('COPIAP')) return 'Copiapó';
+      if (str.includes('LA SERENA')) return 'La Serena';
+      if (str.includes('CONCEPCI')) return 'Concepción';
+      if (str.includes('VALPARAISO') || str.includes('VALPARAÍSO')) return 'Valparaíso';
+      if (str.includes('COQUIMBO')) return 'Coquimbo';
+      if (str.includes('RANCAGUA')) return 'Rancagua';
+      if (str.includes('TALCA')) return 'Talca';
+      if (str.includes('ARICA')) return 'Arica';
+      if (str.includes('TEMUCO')) return 'Temuco';
+      if (str.includes('PUERTO MONTT')) return 'Puerto Montt';
+      const parts = str.split(',');
+      if (parts.length > 1) {
+          let candidate = parts[parts.length - 2] || parts[parts.length - 1];
+          return candidate.trim();
+      }
+      return str.trim();
+  }
+
+  function groupProfession(str) {
+      if (!str) return 'Otros';
+      str = str.toUpperCase();
+      if (str.includes('INGENIERO') || str.includes('INGENIERÍA') || str.includes('INGENIERIA')) return 'Ingeniería';
+      if (str.includes('TÉCNICO') || str.includes('TECNICO') || str.includes('TÉC.') || str.includes('TEC.')) return 'Técnicos';
+      if (str.includes('OPERADOR') || str.includes('CHOFER') || str.includes('CONDUCTOR') || str.includes('MAQUINARIA')) return 'Operadores';
+      if (str.includes('SUPERVISOR') || str.includes('JEFATURA') || str.includes('JEFE') || str.includes('ENCARGADO') || str.includes('CAPATAZ')) return 'Supervisores/Jefaturas';
+      if (str.includes('ADMINISTRATIVO') || str.includes('ASISTENTE') || str.includes('SECRETARI') || str.includes('RECURSOS HUMANOS') || str.includes('RRHH')) return 'Administrativos';
+      if (str.includes('MECÁNICO') || str.includes('MECANICO') || str.includes('ELÉCTRICO') || str.includes('ELECTRICO') || str.includes('SOLDADOR') || str.includes('MANTENIMIENTO')) return 'Mantenimiento / Oficios';
+      if (str.includes('PREVENCION') || str.includes('PREVENCIÓN') || str.includes('HSEC') || str.includes('SEGURIDAD')) return 'Prevención y Seguridad';
+      if (str.includes('GEÓLOGO') || str.includes('GEOLOGO') || str.includes('TOPÓGRAFO') || str.includes('TOPOGRAFO')) return 'Geología y Topografía';
+      if (str.includes('MÉDICO') || str.includes('MEDICO') || str.includes('ENFERMER') || str.includes('PARAMEDICO')) return 'Salud';
+      return 'Otros Profesionales';
+  }
+
   let allExams = [];
   let allVacancies = [];
   let filteredData = [];
@@ -134,16 +175,16 @@
       const regiones = new Set();
 
       allWorkers.forEach(p => {
-          if (p.position) profs.add(p.position);
-          if (p.cargo) profs.add(p.cargo);
+          if (p.position) profs.add(groupProfession(p.position));
+          if (p.cargo) profs.add(groupProfession(p.cargo));
           if (p.cargo_a_desempenar) cargos.add(p.cargo_a_desempenar);
-          if (p.company_name) regiones.add(p.company_name);
+          if (p.company_name) regiones.add(groupCity(p.company_name));
       });
 
       allCandidates.forEach(p => {
-          if (p.profesion) profs.add(p.profesion);
+          if (p.profesion) profs.add(groupProfession(p.profesion));
           if (p.cargo_a_desempenar) cargos.add(p.cargo_a_desempenar);
-          if (p.direccion) regiones.add(p.direccion);
+          if (p.direccion) regiones.add(groupCity(p.direccion));
       });
 
       const selProf = $('#af-profesion');
@@ -182,16 +223,16 @@
       const region = ($('#af-region')?.value || '').toLowerCase();
 
       filteredWorkers = allWorkers.filter(p => {
-          const pProf = (p.position || p.cargo || 'Operativo').toLowerCase();
+          const pProf = groupProfession(p.position || p.cargo || 'Operativo').toLowerCase();
           const pCargo = (p.cargo_a_desempenar || '').toLowerCase();
-          const pReg = (p.company_name || '').toLowerCase();
+          const pReg = groupCity(p.company_name || '').toLowerCase();
           return pProf.includes(prof) && pCargo.includes(cargo) && pReg.includes(region);
       });
 
       filteredCandidates = allCandidates.filter(p => {
-          const pProf = (p.profesion || 'Candidato').toLowerCase();
+          const pProf = groupProfession(p.profesion || 'Candidato').toLowerCase();
           const pCargo = (p.cargo_a_desempenar || '').toLowerCase();
-          const pReg = (p.direccion || '').toLowerCase();
+          const pReg = groupCity(p.direccion || '').toLowerCase();
           return pProf.includes(prof) && pCargo.includes(cargo) && pReg.includes(region);
       });
   }
@@ -270,7 +311,7 @@
     if (ctxProf) {
         const counts = {};
         [...filteredWorkers, ...filteredCandidates].forEach(p => {
-            const prof = (p.position || p.profesion || "Otros").toUpperCase();
+            const prof = groupProfession(p.position || p.profesion || "Otros").toUpperCase();
             counts[prof] = (counts[prof] || 0) + 1;
         });
         const sorted = Object.entries(counts).sort((a,b) => b[1] - a[1]).slice(0, 5);
