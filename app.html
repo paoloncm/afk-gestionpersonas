@@ -131,8 +131,8 @@
     }
 
     .card {
-      background: linear-gradient(180deg, rgba(7, 18, 37, 0.98), rgba(4, 12, 28, 0.98));
-      border: 1px solid var(--border);
+      background: #111;
+      border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
       padding: 16px;
@@ -171,7 +171,7 @@
       display: block;
       height: 100%;
       border-radius: inherit;
-      background: linear-gradient(90deg, var(--cyan), #7db8ff);
+      background: linear-gradient(90deg, #f59e0b, #7db8ff);
     }
 
     .card.red {
@@ -195,7 +195,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      background: linear-gradient(180deg, rgba(6, 22, 38, 0.98), rgba(4, 13, 28, 0.98));
+      background: #111;
       border: 1px solid rgba(65, 223, 255, 0.15);
       box-shadow: var(--shadow);
       border-radius: var(--radius);
@@ -272,7 +272,7 @@
       width: 160px;
       height: 160px;
       border-radius: 50%;
-      background: conic-gradient(var(--green) 0 288deg, rgba(255, 255, 255, 0.08) 288deg 360deg);
+      background: conic-gradient(#10b981 0 288deg, rgba(255, 255, 255, 0.08) 288deg 360deg);
       display: grid;
       place-items: center;
       position: relative;
@@ -357,8 +357,8 @@
     }
 
     .table-wrap {
-      background: linear-gradient(180deg, rgba(7, 18, 37, 0.98), rgba(4, 12, 28, 0.98));
-      border: 1px solid var(--border);
+      background: #111;
+      border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
       overflow: hidden;
@@ -543,46 +543,14 @@
         <button class="btn primary">Abrir Chatbot</button>
       </div>
 
-      <section class="critical-banner">
-        <div>
-          <strong>1 trabajador BLOQUEADO (atención inmediata)</strong>
-          <span>Por incumplimiento crítico. Riesgo operacional alto si intenta ingresar a faena.</span>
-        </div>
-        <button class="btn" style="background:rgba(255,255,255,0.18);border-color:rgba(255,255,255,0.25);">Resolver
-          bloqueo ahora</button>
-      </section>
+      
 
-      <section class="hero">
-        <div>
-          <h2>Centro de Control Inteligente</h2>
-          <p>Capital humano, cumplimiento laboral, filtros y bloqueo en faena automatizados. Visualiza riesgos,
-            vencimientos y candidatos en un solo lugar.</p>
-
-          <div class="ai-row">
-            <div class="search">
-              <span>🤖</span>
-              <input value="Pregunta a AFK: ¿Quién está en riesgo hoy?" />
-              <button class="btn">Consultar</button>
-            </div>
-          </div>
-
-          <div class="chips">
-            <span class="chip">Bloqueados hoy</span>
-            <span class="chip">Vencimientos semana</span>
-            <span class="chip">Top riesgo</span>
-          </div>
-        </div>
-
-        <div class="status-box">
-          <div class="status-pill">● Sistema Protegido</div>
-          <small>Última actualización: hoy, hace pocos segundos</small>
-        </div>
-      </section>
+      
 
       <section class="grid-5">
-        <article class="card green">
+        <article class="card">
           <div class="metric-label">Total personal</div>
-          <div class="metric-value" id="kpi-workers" style="color:var(--green)">...</div>
+          <div class="metric-value" id="kpi-workers" style="color:#10b981">...</div>
           <div class="metric-sub">Dotación vigente</div>
         </article>
 
@@ -592,111 +560,32 @@
           <div class="metric-sub">Candidatos activos</div>
         </article>
 
-        <article class="card red">
+        <article class="card">
           <div class="metric-label">Riesgos críticos</div>
-          <div class="metric-value" id="kpi-risks" style="color:var(--red)">...</div>
+          <div class="metric-value" id="kpi-risks" style="color:#ef4444">...</div>
           <div class="metric-sub">Trabajadores bloqueados</div>
           <div class="progress"><span id="bar-risks" style="width:0%"></span></div>
         </article>
 
         <article class="card">
           <div class="metric-label">Próximos vencimientos</div>
-          <div class="metric-value" id="kpi-expiring" style="color:var(--cyan)">...</div>
+          <div class="metric-value" id="kpi-expiring" style="color:#f59e0b">...</div>
           <div class="metric-sub">En seguimiento semanal</div>
           <div class="progress"><span id="bar-expiring" style="width:0%"></span></div>
         </article>
 
-        <article class="card green">
+        <article class="card">
           <div class="metric-label">Índice de cumplimiento</div>
-          <div class="metric-value" id="kpi-compliance" style="color:var(--green)">...</div>
+          <div class="metric-value" id="kpi-compliance" style="color:#10b981">...</div>
           <div class="metric-sub">Salud documental total</div>
         </article>
       </section>
 
-      <section class="notice">
-        <div>
-          <strong>Recomendación de Inteligencia AFK</strong>
-          <p>Alerta operativa detectada: trabajador bloqueado por incumplimiento crítico. Se recomienda acción inmediata
-            para evitar detención de faena.</p>
-        </div>
-        <button class="btn">Ejecutar acción</button>
-      </section>
+      
 
-      <section class="chart-grid">
-        <article class="card">
-          <h4 class="chart-title">Distribución por tipo de examen</h4>
-          <div class="bars">
-            <div class="bar-row"><span>Ruido</span>
-              <div class="bar-track"><span style="width:94%"></span></div><strong>4</strong>
-            </div>
-            <div class="bar-row"><span>Sílice</span>
-              <div class="bar-track"><span style="width:71%"></span></div><strong>3</strong>
-            </div>
-            <div class="bar-row"><span>Altura</span>
-              <div class="bar-track"><span style="width:71%"></span></div><strong>3</strong>
-            </div>
-            <div class="bar-row"><span>Inf. Psico</span>
-              <div class="bar-track"><span style="width:49%"></span></div><strong>2</strong>
-            </div>
-            <div class="bar-row"><span>Conductores</span>
-              <div class="bar-track"><span style="width:49%"></span></div><strong>2</strong>
-            </div>
-          </div>
-        </article>
+      
 
-        <article class="card">
-          <h4 class="chart-title">Cumplimiento de credenciales</h4>
-          <div class="donut-wrap">
-            <div>
-              <div class="donut">
-                <div class="donut-center">
-                  <strong>80%</strong>
-                  <span>Cumple</span>
-                </div>
-              </div>
-              <div class="chart-legend">
-                <span><i class="dot" style="background:var(--green)"></i>Con exámenes</span>
-                <span><i class="dot" style="background:rgba(255,255,255,0.22)"></i>Sin exámenes</span>
-              </div>
-            </div>
-          </div>
-        </article>
-
-        <article class="card">
-          <h4 class="chart-title">Distribución de exámenes</h4>
-          <div class="bars">
-            <div class="bar-row"><span>Examen preocupacional</span>
-              <div class="bar-track"><span style="width:100%"></span></div><strong>17</strong>
-            </div>
-            <div class="bar-row"><span>Calificador</span>
-              <div class="bar-track"><span style="width:22%"></span></div><strong>4</strong>
-            </div>
-            <div class="bar-row"><span>Curso</span>
-              <div class="bar-track"><span style="width:14%"></span></div><strong>2</strong>
-            </div>
-          </div>
-        </article>
-      </section>
-
-      <section class="two-col">
-        <article class="card">
-          <h4 class="chart-title">Pipeline de vacantes</h4>
-          <div style="height:120px;display:flex;align-items:flex-end;padding-top:10px;" id="dashboard-pipeline">
-            <!-- Barra dinámica de Pipeline -->
-            <div
-              style="width:0%;height:0px;background:linear-gradient(180deg, rgba(87,168,255,0.85), rgba(87,168,255,0.35));border-radius:10px 10px 0 0;border:1px solid rgba(255,255,255,0.05);transition:all 1s ease;">
-            </div>
-          </div>
-          <div style="text-align:center;color:var(--muted);font-size:12px;margin-top:8px;">Analizado por IA</div>
-        </article>
-
-        <article class="card">
-          <h4 class="chart-title">Top 5 candidatos por similitud</h4>
-          <ol class="mini-list" id="dashboard-top-candidates">
-            <li style="color:var(--muted); font-style:italic;">Analizando red de candidatos...</li>
-          </ol>
-        </article>
-      </section>
+      
 
       <div class="section-header">
         <h3>Candidatos</h3>
@@ -709,7 +598,7 @@
       <!-- Barra de Acciones Masivas Flotante -->
       <div id="bulk-actions-bar" class="bulk-bar-fixed" style="display:none;">
         <div style="display:flex; align-items:center; gap:20px;">
-           <div style="background:var(--cyan); color:#000; width:34px; height:34px; border-radius:50%; display:grid; place-items:center; font-weight:900;">
+           <div style="background:#f59e0b; color:#000; width:34px; height:34px; border-radius:50%; display:grid; place-items:center; font-weight:900;">
              <span id="selected-count">0</span>
            </div>
            <div>
@@ -728,7 +617,7 @@
         <div class="table-toolbar">
           <input type="text" placeholder="Rastrear candidato..." id="search-input" />
           <div class="section-tools">
-            <button id="btn-load-more-top" class="btn" style="border-color: var(--cyan); color: var(--cyan);">CARGAR MÁS</button>
+            <button id="btn-load-more-top" class="btn" style="border-color: #f59e0b; color: #f59e0b;">CARGAR MÁS</button>
             <select id="filter-cargo" class="btn" style="background:rgba(255,255,255,0.05); color:#fff; border:1px solid rgba(255,255,255,0.1);">
               <option value="">TODOS LOS CARGOS</option>
             </select>
