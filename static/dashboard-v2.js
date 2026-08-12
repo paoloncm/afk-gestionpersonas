@@ -370,8 +370,7 @@ function setupEventListeners() {
         finally { btn.disabled = false; btn.innerText = oldText; }
     };
 
-    $('#btn-bulk-tec02')?.addEventListener('click', () => openTecModal('tec02', true));
-    $('#btn-bulk-tec02a')?.addEventListener('click', () => openTecModal('tec02a', true));
+    $('#btn-bulk-cuadrilla')?.addEventListener('click', () => openTecModal('cuadrilla', true));
 
     // Logout Seguro
     $('#side-btn-logout')?.addEventListener('click', async (e) => {
@@ -441,32 +440,41 @@ function setupEventListeners() {
         const filename = $('#tec-filename').value.trim();
 
         try {
-            const res = await fetch('/api/reports/bulk-generate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    ids: Array.from(selectedTecIds),
-                    report_type: currentTecType,
-                    filename: filename
-                })
-            });
+            const typesToGenerate = currentTecType === 'cuadrilla' ? ['tec02', 'tec02a'] : [currentTecType];
+            let successCount = 0;
             
-            if (res.ok) {
-                const blob = await res.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = filename ? `${filename}.xlsx` : `Anexo_${currentTecType.toUpperCase()}_AFK_${new Date().getTime()}.xlsx`;
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
+            for (const rType of typesToGenerate) {
+                const res = await fetch('/api/reports/bulk-generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        ids: Array.from(selectedTecIds),
+                        report_type: rType,
+                        filename: filename
+                    })
+                });
+                
+                if (res.ok) {
+                    const blob = await res.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = (filename || 'Cuadrilla') + '_' + rType.toUpperCase() + '.xlsx';
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    successCount++;
+                } else {
+                    alert("Error al generar reporte " + rType + ": " + res.statusText);
+                }
+            }
+            if (successCount === typesToGenerate.length) {
                 closeTecModal();
-            } else {
-                const err = await res.json();
-                alert("Error generando reporte: " + (err.detail || "Falla desconocida"));
             }
         } catch (e) {
-            alert("Error de red al generar reporte.");
+            console.error(e);
+            alert("Error de red o servidor al generar la cuadrilla.");
         } finally {
             btn.disabled = false;
             btn.innerText = oldText;
@@ -486,7 +494,7 @@ window.openTecModal = async function(type, fromBulk = false) {
     const modal = $('#tec-modal');
     if (!modal) return;
     
-    $('#tec-modal-title').innerText = type === 'tec02' ? 'Generar Planilla TEC-02' : 'Generar Planilla TEC-02A';
+    $('#tec-modal-title').innerText = type === 'cuadrilla' ? 'Generar Cuadrilla (TEC-02 & TEC-02A)' : 'Generar Planilla';
     $('#tec-filename').value = '';
     
     // Fetch all candidates to filter locally
