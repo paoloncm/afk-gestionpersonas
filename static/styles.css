@@ -39,7 +39,7 @@ body {
 /* --- Layout Principal --- */
 .app {
   display: grid;
-  grid-template-columns: 240px 1fr;
+  grid-template-columns: 1fr;
   min-height: 100vh;
 }
 
@@ -204,7 +204,7 @@ tr { cursor: pointer; }
   position: fixed;
   bottom: 24px;
   left: 50%;
-  transform: translateX(-50%) translateX(120px); /* Ajuste por sidebar */
+  transform: translateX(-50%); /* Ajuste por sidebar */
   width: calc(100% - 300px);
   max-width: 900px;
   z-index: 999;

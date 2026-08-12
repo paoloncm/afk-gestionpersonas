@@ -156,7 +156,7 @@
     animateValue("kpi_vacancy_risk", 0, risks, 1500);
     
     // Insight Header
-    $("#headerInsightText").textContent = risks > 0 
+    if ($("#headerInsightText")) $("#headerInsightText").textContent = risks > 0 
         ? `JARVIS: Detectadas ${risks} anomalías críticas en certificaciones. Se recomienda auditoría inmediata.`
         : "JARVIS: Todos los sistemas operativos reportan integridad nominal. Dotación optimizada.";
   }
