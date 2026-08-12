@@ -82,13 +82,14 @@
 
   // --- DATA LOADING ---
   async function init() {
-    console.log("[Analytics] Iniciando Protocolo de Sincronización...");
+    console.log("[Analytics] Iniciando Protocolo de Sincronizacin...");
     if (!window.supabase) {
        console.warn("[Analytics] Esperando enlace con Supabase...");
        setTimeout(init, 500);
        return;
     }
     await loadData();
+    populateAnalyticsFilters();
     renderAll();
     bindEvents();
   }
@@ -126,7 +127,56 @@
 
   // --- RENDERING ---
 
+
+  function populateAnalyticsFilters() {
+      const profs = new Set();
+      const cargos = new Set();
+      const regiones = new Set();
+
+      allWorkers.forEach(p => {
+          if (p.position) profs.add(p.position);
+          if (p.cargo) profs.add(p.cargo);
+          if (p.cargo_a_desempenar) cargos.add(p.cargo_a_desempenar);
+          if (p.company_name) regiones.add(p.company_name);
+      });
+
+      allCandidates.forEach(p => {
+          if (p.profesion) profs.add(p.profesion);
+          if (p.cargo_a_desempenar) cargos.add(p.cargo_a_desempenar);
+          if (p.direccion) regiones.add(p.direccion);
+      });
+
+      const selProf = $('#af-profesion');
+      const selCargo = $('#af-cargo');
+      const selRegion = $('#af-region');
+
+      if (selProf) {
+          Array.from(profs).filter(Boolean).sort().forEach(p => {
+              const opt = document.createElement('option');
+              opt.value = p; opt.innerText = p;
+              selProf.appendChild(opt);
+          });
+      }
+      
+      if (selCargo) {
+          Array.from(cargos).filter(Boolean).sort().forEach(c => {
+              const opt = document.createElement('option');
+              opt.value = c; opt.innerText = c;
+              selCargo.appendChild(opt);
+          });
+      }
+
+      if (selRegion) {
+          Array.from(regiones).filter(Boolean).sort().forEach(r => {
+              const opt = document.createElement('option');
+              opt.value = r; opt.innerText = r;
+              selRegion.appendChild(opt);
+          });
+      }
+  }
+
   function applyAnalyticsFilters() {
+
       const prof = ($('#af-profesion')?.value || '').toLowerCase();
       const cargo = ($('#af-cargo')?.value || '').toLowerCase();
       const region = ($('#af-region')?.value || '').toLowerCase();
@@ -391,9 +441,9 @@
         window.notificar?.("JARVIS: Ejecutando algoritmos de optimizacin de dotacin...", "info");
     });
     
-    $('#af-profesion')?.addEventListener('input', renderAll);
-    $('#af-cargo')?.addEventListener('input', renderAll);
-    $('#af-region')?.addEventListener('input', renderAll);
+    $('#af-profesion')?.addEventListener('change', renderAll);
+    $('#af-cargo')?.addEventListener('change', renderAll);
+    $('#af-region')?.addEventListener('change', renderAll);
   }
 
   // --- BOOTSTRAP ---
