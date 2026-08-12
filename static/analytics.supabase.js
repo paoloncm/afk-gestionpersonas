@@ -12,43 +12,46 @@
   let filteredCandidates = [];
 
   function groupCity(str) {
-      if (!str) return 'Desconocida';
+      if (!str) return 'Otras Localidades';
       str = str.toUpperCase();
+      // Zonas Norte
       if (str.includes('ANTOFAGASTA')) return 'Antofagasta';
       if (str.includes('CALAMA')) return 'Calama';
-      if (str.includes('SANTIAGO')) return 'Santiago';
-      if (str.includes('IQUIQUE')) return 'Iquique';
-      if (str.includes('COPIAP')) return 'Copiapó';
+      if (str.includes('IQUIQUE') || str.includes('TARAPACA') || str.includes('TARAPACÁ')) return 'Iquique';
+      if (str.includes('COPIAP') || str.includes('ATACAMA') || str.includes('CALDERA')) return 'Copiapó';
+      if (str.includes('ARICA') || str.includes('PARINACOTA')) return 'Arica';
+      // Zonas Centro
+      if (str.includes('SANTIAGO') || str.includes('METROPOLITANA') || str.includes('CISTERNA') || str.includes('FLORIDA') || str.includes('ESTACIÓN CENTRAL') || str.includes('ESTACION CENTRAL') || str.includes('PUENTE ALTO') || str.includes('MAIPU') || str.includes('SAN BERNARDO') || str.includes('PROVIDENCIA') || str.includes('LAS CONDES')) return 'Santiago';
       if (str.includes('LA SERENA')) return 'La Serena';
-      if (str.includes('CONCEPCI')) return 'Concepción';
-      if (str.includes('VALPARAISO') || str.includes('VALPARAÍSO')) return 'Valparaíso';
       if (str.includes('COQUIMBO')) return 'Coquimbo';
-      if (str.includes('RANCAGUA')) return 'Rancagua';
-      if (str.includes('TALCA')) return 'Talca';
-      if (str.includes('ARICA')) return 'Arica';
-      if (str.includes('TEMUCO')) return 'Temuco';
-      if (str.includes('PUERTO MONTT')) return 'Puerto Montt';
-      const parts = str.split(',');
-      if (parts.length > 1) {
-          let candidate = parts[parts.length - 2] || parts[parts.length - 1];
-          return candidate.trim();
-      }
-      return str.trim();
+      if (str.includes('VALPARAISO') || str.includes('VALPARAÍSO') || str.includes('VIÑA DEL MAR') || str.includes('ALEMANA') || str.includes('QUINTA REGION') || str.includes('QUINTA REGIÓN') || str.includes('CALERA')) return 'Valparaíso';
+      if (str.includes('RANCAGUA') || str.includes('HIGGINS')) return 'Rancagua';
+      if (str.includes('TALCA') || str.includes('MAULE') || str.includes('LINARES') || str.includes('CURICO')) return 'Talca';
+      // Zonas Sur
+      if (str.includes('CONCEPCI') || str.includes('BIOBIO') || str.includes('BIOBÍO') || str.includes('CHILLAN') || str.includes('CHILLÁN')) return 'Concepción';
+      if (str.includes('TEMUCO') || str.includes('ARAUCANIA') || str.includes('ARAUCANÍA')) return 'Temuco';
+      if (str.includes('VALDIVIA') || str.includes('RIOS') || str.includes('RÍOS')) return 'Valdivia';
+      if (str.includes('PUERTO MONTT') || str.includes('LAGOS') || str.includes('OSORNO')) return 'Puerto Montt';
+      if (str.includes('COYHAIQUE') || str.includes('AYSEN') || str.includes('AYSÉN')) return 'Coyhaique';
+      if (str.includes('PUNTA ARENAS') || str.includes('MAGALLANES')) return 'Punta Arenas';
+      
+      return 'Otras Localidades';
   }
 
   function groupProfession(str) {
-      if (!str) return 'Otros';
+      if (!str) return 'Otros Cargos';
       str = str.toUpperCase();
       if (str.includes('INGENIERO') || str.includes('INGENIERÍA') || str.includes('INGENIERIA')) return 'Ingeniería';
       if (str.includes('TÉCNICO') || str.includes('TECNICO') || str.includes('TÉC.') || str.includes('TEC.')) return 'Técnicos';
       if (str.includes('OPERADOR') || str.includes('CHOFER') || str.includes('CONDUCTOR') || str.includes('MAQUINARIA')) return 'Operadores';
-      if (str.includes('SUPERVISOR') || str.includes('JEFATURA') || str.includes('JEFE') || str.includes('ENCARGADO') || str.includes('CAPATAZ')) return 'Supervisores/Jefaturas';
-      if (str.includes('ADMINISTRATIVO') || str.includes('ASISTENTE') || str.includes('SECRETARI') || str.includes('RECURSOS HUMANOS') || str.includes('RRHH')) return 'Administrativos';
-      if (str.includes('MECÁNICO') || str.includes('MECANICO') || str.includes('ELÉCTRICO') || str.includes('ELECTRICO') || str.includes('SOLDADOR') || str.includes('MANTENIMIENTO')) return 'Mantenimiento / Oficios';
-      if (str.includes('PREVENCION') || str.includes('PREVENCIÓN') || str.includes('HSEC') || str.includes('SEGURIDAD')) return 'Prevención y Seguridad';
+      if (str.includes('SUPERVISOR') || str.includes('JEFATURA') || str.includes('JEFE') || str.includes('ENCARGADO') || str.includes('CAPATAZ') || str.includes('LÍDER') || str.includes('LIDER')) return 'Supervisores/Jefaturas';
+      if (str.includes('ADMINISTRATIVO') || str.includes('ASISTENTE') || str.includes('SECRETARI') || str.includes('RECURSOS HUMANOS') || str.includes('RRHH') || str.includes('PLANIFICADOR')) return 'Administrativos y Planificación';
+      if (str.includes('MECÁNICO') || str.includes('MECANICO') || str.includes('ELÉCTRICO') || str.includes('ELECTRICO') || str.includes('SOLDADOR') || str.includes('MANTENIMIENTO') || str.includes('MANTENEDOR') || str.includes('ESPECIALISTA') || str.includes('SAPCI') || str.includes('JORNALERO') || str.includes('AYUDANTE')) return 'Mantenimiento / Oficios';
+      if (str.includes('PREVENCION') || str.includes('PREVENCIÓN') || str.includes('HSEC') || str.includes('SEGURIDAD') || str.includes('ASESOR')) return 'Prevención y Seguridad';
       if (str.includes('GEÓLOGO') || str.includes('GEOLOGO') || str.includes('TOPÓGRAFO') || str.includes('TOPOGRAFO')) return 'Geología y Topografía';
       if (str.includes('MÉDICO') || str.includes('MEDICO') || str.includes('ENFERMER') || str.includes('PARAMEDICO')) return 'Salud';
-      return 'Otros Profesionales';
+      if (str.includes('ADC MODULO')) return 'Operaciones ADC';
+      return 'Otros Cargos';
   }
 
   let allExams = [];
