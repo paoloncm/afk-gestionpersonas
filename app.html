@@ -532,23 +532,23 @@
           <option value="">Todas las Regiones/Empresas</option>
         </select>
       </div>
-      <div class="analytical-grid"
- style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 20px;">
-         <div class="card">
-            <h4 style="color:#f59e0b; margin:0 0 15px; font-size:12px; text-transform:uppercase;">Distribución por Rango Etario</h4>
-            <div style="height:200px;"><canvas id="chart_age_dist"></canvas></div>
-         </div>
-         <div class="card">
-            <h4 style="color:#f59e0b; margin:0 0 15px; font-size:12px; text-transform:uppercase;">Geolocalización Stark</h4>
-            <div id="map_candidates" style="height:200px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); overflow: hidden;"></div>
-         </div>
+      <div class="analytical-grid" style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; margin-bottom: 20px;">
+          <div class="card">
+             <h4 style="color:#f59e0b; margin:0 0 15px; font-size:12px; text-transform:uppercase;">Distribución por Rango Etario</h4>
+             <div style="height:250px;"><canvas id="chart_age_dist"></canvas></div>
+          </div>
+          <div class="card">
+             <h4 style="color:#f59e0b; margin:0 0 15px; font-size:12px; text-transform:uppercase;">Talonario de Profesiones</h4>
+             <div style="height:250px;"><canvas id="chart_professions"></canvas></div>
+          </div>
       </div>
 
       <div class="analytical-grid" style="display: grid; grid-template-columns: 1fr; gap: 20px; margin-bottom: 20px;">
-         <div class="card">
-            <h4 style="color:#f59e0b; margin:0 0 15px; font-size:12px; text-transform:uppercase;">Talonario de Profesiones</h4>
-            <div style="height:250px;"><canvas id="chart_professions"></canvas></div>
-         </div>
+          <div class="card">
+             <h4 style="color:#f59e0b; margin:0 0 15px; font-size:12px; text-transform:uppercase;">Geolocalización</h4>
+             <div id="map_candidates" style="height:350px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); overflow: hidden;"></div>
+          </div>
+      </div>
       </div>
 
 
