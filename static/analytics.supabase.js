@@ -247,7 +247,7 @@
 
   function renderKPIs() {
     const total = filteredWorkers.length + filteredCandidates.length;
-    animateValue("kpi_total_workers", 0, total, 1000);
+    animateValue("kpi-candidates", 0, total, 1000);
 
     // Edad Promedio
     const ages = [...filteredWorkers, ...filteredCandidates].map(p => getAge(p.birth_date || p.fecha_nacimiento)).filter(a => a !== null);
