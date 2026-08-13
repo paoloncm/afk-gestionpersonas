@@ -11,9 +11,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class DriveSync:
-    def __init__(self, credentials_path='credentials.json'):
+    def __init__(self, credentials_path='credentials.json', tenant_email='paoloncm@gmail.com'):
         self.scopes = ['https://www.googleapis.com/auth/drive']
         self.creds = None
+        self.tenant_email = tenant_email
         
         # 1. Try environment variable (for Production/Railway)
         env_creds = os.getenv("GOOGLE_CREDENTIALS")
@@ -156,8 +157,8 @@ class DriveSync:
                         print(f"🎯 Stark Priority: Setting cargo to '{forced_cargo}'")
                         cv_data.cargo_a_desempenar = forced_cargo
 
-                    print(f"💾 Syncing to Supabase...")
-                    self.processor.sync_to_supabase(None, cv_data, text)
+                    print(f"🚀 Syncing to Supabase...")
+                    self.processor.sync_to_supabase(None, cv_data, text, self.tenant_email)
                     print(f"✅ JARVIS: {f['name']} integrated successfully.")
                     
                     # Archive the file if requested

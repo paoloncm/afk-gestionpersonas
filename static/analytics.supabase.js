@@ -141,7 +141,8 @@
   async function loadAnalyticsData() {
   try {
     console.log("[Analytics] Fetching global dataset...");
-    const { data: { user } } = await window.supabase.auth.getUser();
+    const { data: { session } } = await window.supabase.auth.getSession();
+    const user = session ? session.user : null;
     const tenant_email = user ? user.email : "paoloncm@gmail.com";
 
     const [

@@ -45,7 +45,8 @@ async function initDashboard() {
 async function loadKPIs() {
     console.log("[JARVIS] ⚡ Sincronizando métricas operativas...");
     try {
-        const { data: { user } } = await window.supabase.auth.getUser();
+        const { data: { session } } = await window.supabase.auth.getSession();
+    const user = session ? session.user : null;
         const tenant_email = user ? user.email : "paoloncm@gmail.com";
 
         const [
@@ -90,7 +91,8 @@ async function loadRecentCandidates(reset = false) {
     const tbody = $('#candidates-tbody');
     if (!tbody) return;
 
-    const { data: { user } } = await window.supabase.auth.getUser();
+    const { data: { session } } = await window.supabase.auth.getSession();
+    const user = session ? session.user : null;
     const tenant_email = user ? user.email : "paoloncm@gmail.com";
 
     if (reset) {
@@ -206,7 +208,8 @@ function updateLoadMoreButton() {
 
 async function fetchFilterOptions() {
     console.log("[JARVIS] 🔍 Poblando opciones de filtrado táctico...");
-    const { data: { user } } = await window.supabase.auth.getUser();
+    const { data: { session } } = await window.supabase.auth.getSession();
+    const user = session ? session.user : null;
     const tenant_email = user ? user.email : "paoloncm@gmail.com";
     
     // Cargos únicos
@@ -257,7 +260,8 @@ function updateBulkBar() {
 async function loadPipeline() {
     const container = $('#dashboard-pipeline');
     if (!container) return;
-    const { data: { user } } = await window.supabase.auth.getUser();
+    const { data: { session } } = await window.supabase.auth.getSession();
+    const user = session ? session.user : null;
     const tenant_email = user ? user.email : "paoloncm@gmail.com";
 
     const { count: tenderCount, error } = await supabase
@@ -278,7 +282,8 @@ async function loadPipeline() {
 async function loadTopCandidates() {
     const list = $('#dashboard-top-candidates');
     if (!list) return;
-    const { data: { user } } = await window.supabase.auth.getUser();
+    const { data: { session } } = await window.supabase.auth.getSession();
+    const user = session ? session.user : null;
     const tenant_email = user ? user.email : "paoloncm@gmail.com";
 
     const { data: topCands, error } = await supabase
@@ -312,7 +317,8 @@ function setupEventListeners() {
              btnSync.disabled = true;
              btnSync.innerText = "Sincronizando...";
                try {
-                  const { data: { user } } = await window.supabase.auth.getUser();
+                  const { data: { session } } = await window.supabase.auth.getSession();
+    const user = session ? session.user : null;
                   const tenant_email = user ? user.email : "paoloncm@gmail.com";
                   const res = await fetch('/api/sync-drive', { 
                       method: 'POST',
@@ -509,7 +515,8 @@ window.openTecModal = async function(type, fromBulk = false) {
     const modal = $('#tec-modal');
     if (!modal) return;
     
-    const { data: { user } } = await window.supabase.auth.getUser();
+    const { data: { session } } = await window.supabase.auth.getSession();
+    const user = session ? session.user : null;
     const tenant_email = user ? user.email : "paoloncm@gmail.com";
 
     $('#tec-modal-title').innerText = type === 'cuadrilla' ? 'Generar Cuadrilla (TEC-02 & TEC-02A)' : 'Generar Planilla';

@@ -192,15 +192,18 @@ async def generate_bulk_reports(req: BulkReportRequest):
         print(f"Error generando reporte: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+class SyncDriveRequest(BaseModel):
+    tenant_email: Optional[str] = "paoloncm@gmail.com"
+
 @app.post("/api/sync-drive")
-async def sync_drive(background_tasks: BackgroundTasks):
+async def sync_drive(req: SyncDriveRequest, background_tasks: BackgroundTasks):
     def _do_sync():
         try:
             from drive_sync import DriveSync
             folder_id = os.getenv("DRIVE_FOLDER_ID")
             archive_id = os.getenv("DRIVE_ARCHIVE_ID")
             if folder_id:
-                sync = DriveSync()
+                sync = DriveSync(tenant_email=req.tenant_email)
                 sync.sync_hierarchy(folder_id, archive_id)
         except Exception as e:
             print(f"Error en sync_drive: {e}")

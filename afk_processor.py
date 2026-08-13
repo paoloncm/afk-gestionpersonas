@@ -311,13 +311,13 @@ class AFKProcessor:
             )
             return response_fallback.data[0].embedding
 
-    def sync_to_supabase(self, candidate_id: Optional[str], cv_data: CandidateCV, full_text: str):
+    def sync_to_supabase(self, candidate_id: Optional[str], cv_data: CandidateCV, full_text: str, tenant_email: str = 'paoloncm@gmail.com'):
         if not self.supabase:
             print("Supabase client not initialized. Skipping sync.")
             return
 
         # 1. Generar Embedding
-        print("🧠 Generando embedding vectorial...")
+        print("💡 Generando embedding vectorial...")
         embedding = self.generate_embedding(full_text)
 
         # 2. Construir payload con columnas que existen en la tabla candidates
@@ -329,7 +329,7 @@ class AFKProcessor:
             "experiencia_en_empresa_actual", "exp_cargo_actual", "exp_proy_similares",
             "cargo_a_desempenar", "nota", "ranking", "status", "vacancy_id",
             "match_score", "onboarding_progress", "source",
-            "antecedentes_academicos", "direccion", "cv_full_text", "cv_embedding", "resumen_ia"
+            "antecedentes_academicos", "direccion", "cv_full_text", "cv_embedding", "resumen_ia", "tenant_email"
         }
 
         raw = cv_data.model_dump()
@@ -337,6 +337,7 @@ class AFKProcessor:
         payload["status"] = "Analizado por IA"
         payload["cv_full_text"] = full_text
         payload["cv_embedding"] = embedding
+        payload["tenant_email"] = tenant_email
 
         # Sanitizar strings (PostgreSQL no soporta el carácter nulo \u0000)
         for key, val in payload.items():
