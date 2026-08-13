@@ -436,7 +436,7 @@ function setupEventListeners() {
             const typesToGenerate = currentTecType === 'cuadrilla' ? ['tec02', 'tec02a'] : [currentTecType];
             let successCount = 0;
             
-            for (const rType of typesToGenerate) {
+            await Promise.all(typesToGenerate.map(async (rType) => {
                 const res = await fetch('/api/reports/bulk-generate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -461,7 +461,7 @@ function setupEventListeners() {
                 } else {
                     alert("Error al generar reporte " + rType + ": " + res.statusText);
                 }
-            }
+            }));
             if (successCount === typesToGenerate.length) {
                 closeTecModal();
             }
