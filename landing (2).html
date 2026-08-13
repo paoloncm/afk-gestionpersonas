@@ -431,12 +431,9 @@ footer p{font-size:12px;color:var(--text-3);}
     <li><a href="#calculadora">Calculadora</a></li>
     <li><a href="#pricing">Precios</a></li>
   </ul>
-  <div style="display:flex; gap:16px; align-items:center;">
-    <a href="login.html" style="color:var(--text); text-decoration:none; font-size:15px; font-weight:500; opacity:0.8; transition:0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'">Iniciar sesión</a>
-    <a class="nav-btn" href="#contacto" onclick="document.getElementById('contacto').scrollIntoView({behavior:'smooth'});return false;">
-      Solicitar demo →
-    </a>
-  </div>
+  <a class="nav-btn" href="#contacto" onclick="document.getElementById('contacto').scrollIntoView({behavior:'smooth'});return false;">
+    Solicitar demo →
+  </a>
 </nav>
 
 <!-- HERO -->
@@ -529,7 +526,7 @@ footer p{font-size:12px;color:var(--text-3);}
     <div class="bento">
       <div class="bento-card span-4 reveal">
         <span class="bento-emoji">📄</span>
-        <div class="tag-red">Dolor #1</div>
+        <div class="tag-red">Pain #1</div>
         <h3>CVs en formatos imposibles de estandarizar</h3>
         <p>Word, PDF, fotos escaneadas, escritos a mano. Cada candidato entrega lo que puede. Tu equipo pierde horas interpretando, eligiendo y transcribiendo campo por campo.</p>
       </div>
@@ -540,19 +537,19 @@ footer p{font-size:12px;color:var(--text-3);}
       </div>
       <div class="bento-card span-2 reveal d2">
         <span class="bento-emoji">⌨️</span>
-        <div class="tag-red">Dolor #2</div>
+        <div class="tag-red">Pain #2</div>
         <h3>Sin base de datos centralizada</h3>
         <p>La información vive en archivos sueltos, correos y la memoria de alguien. No hay una fuente única de verdad sobre tu dotación.</p>
       </div>
       <div class="bento-card span-3 reveal d3">
         <span class="bento-emoji">📊</span>
-        <div class="tag-red">Dolor #3</div>
+        <div class="tag-red">Pain #3</div>
         <h3>Planillas desactualizadas desde el día que se crean</h3>
         <p>El Excel de dotación se queda viejo apenas hay un nuevo ingreso. Con rotaciones de 30–60% anual en minería, el proceso de carga nunca termina. El backlog crece sin control.</p>
       </div>
       <div class="bento-card span-3 reveal d4">
         <span class="bento-emoji">📋</span>
-        <div class="tag-red">Dolor #4</div>
+        <div class="tag-red">Pain #4</div>
         <h3>Múltiples licitaciones a la vez</h3>
         <p>Cuando tu empresa participa en varias licitaciones simultáneas, el volumen de CVs se dispara. Sin un proceso automatizado, tu equipo colapsa intentando cumplir los plazos de cada mandante.</p>
       </div>
@@ -749,7 +746,7 @@ footer p{font-size:12px;color:var(--text-3);}
         <div class="p-price" style="color:var(--gold);">$250.000</div>
         <div class="p-unit">CLP fijo / mes · + $1.000 por CV procesado</div>
         <ul class="p-list">
-          <li>Plataforma de gestión</li>
+          <li>Todo lo del plan Proyecto</li>
           <li>Nuevos CVs procesados cada mes</li>
           <li>Planillas actualizadas automáticamente</li>
           <li>Base de datos siempre al día</li>
@@ -855,20 +852,17 @@ async function sendForm(e){
     empresa:      document.getElementById('f-empresa').value,
     email:        document.getElementById('f-email').value,
     telefono:     document.getElementById('f-tel').value,
-    cantidad_cvs: document.getElementById('f-cvs').value,
-    _subject:     '🟡 Nuevo lead AFK RRHH — Solicitud de propuesta',
-    _cc:          'carlos.zurita@afkservices.com,nicolas.morales@afkservices.com',
-    _captcha:     'false'
+    cantidad_cvs: document.getElementById('f-cvs').value
   };
 
   try {
-    const res = await fetch('https://formsubmit.co/ajax/paolo.cossio@afkservices.com', {
+    const res = await fetch('/api/contact', {
       method:  'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify(payload)
     });
     const data = await res.json();
-    if(data.success === 'true' || data.success === true){
+    if(data.success){
       document.getElementById('contact-form').style.display = 'none';
       document.getElementById('success-msg').style.display  = 'block';
     } else {
