@@ -760,258 +760,51 @@
                             <div class="score-panel">
                                 <div style="position:relative; width:108px; height:108px; flex:0 0 108px;">
                                     <svg width="108" height="108" viewBox="0 0 36 36">
-                                        <circle cx="18" cy="18" r="16" fill="none" stroke="rgba(34,211,238,0.06)"
-                                            stroke-width="2"></circle>
-                                        <circle id="starkCircle" cx="18" cy="18" r="16" fill="none"
-                                            stroke="var(--accent)" stroke-width="3" stroke-dasharray="94 100"
-                                            transform="rotate(-90 18 18)"
-                                            style="transition: stroke-dasharray 1.4s ease;"></circle>
-                                        <text x="18" y="19" fill="#fff" font-size="8" font-weight="900"
-                                            text-anchor="middle" style="font-family:'JetBrains Mono', monospace;"
-                                            id="matchScoreVal">94%</text>
-                                        <text x="18" y="23" fill="rgba(255,255,255,.6)" font-size="2.7"
-                                            text-anchor="middle"
-                                            style="font-family:'JetBrains Mono', monospace;">SCORE</text>
+                                        <circle cx="18" cy="18" r="16" fill="none" stroke="rgba(34,211,238,0.06)" stroke-width="2"></circle>
+                                        <circle id="starkCircle" cx="18" cy="18" r="16" fill="none" stroke="var(--accent)" stroke-width="3" stroke-dasharray="94 100" transform="rotate(-90 18 18)" style="transition: stroke-dasharray 1.4s ease;"></circle>
+                                        <text x="18" y="19" fill="#fff" font-size="8" font-weight="900" text-anchor="middle" style="font-family:'JetBrains Mono', monospace;" id="matchScoreVal">0%</text>
+                                        <text x="18" y="23" fill="rgba(255,255,255,.6)" font-size="2.7" text-anchor="middle" style="font-family:'JetBrains Mono', monospace;">SCORE</text>
                                     </svg>
-                                    <div
-                                        style="position:absolute; inset:14px; border:1px dashed rgba(34,211,238,0.18); border-radius:50%; pointer-events:none;">
-                                    </div>
-                                </div>
-
-                                <div class="score-meta">
-                                    <div class="section-kicker" style="margin-bottom:2px;">Índice de mérito</div>
-                                    <div id="phRankingBadge" style="font-size:13px; color:#fff; font-weight:800;">
-                                        Ranking #2 de 20</div>
-                                    <div class="muted" style="font-size:12px;">Top 10% del pipeline actual</div>
-                                    <div class="muted" style="font-size:12px;">Mejor que 18 candidatos comparables</div>
-                                </div>
-                            </div>
-
-                            <div class="decision-panel">
-                                <div class="decision-status">
-                                    <span class="decision-dot"></span>
-                                    <span id="decisionState">En riesgo</span>
-                                </div>
-                                <h3 id="decisionTitle" class="decision-title">Apto técnico, pero con observaciones
-                                    críticas</h3>
-                                <p id="decisionText" class="decision-text">
-                                    El candidato muestra alto potencial para el cargo por experiencia y fit técnico,
-                                    pero requiere cerrar brechas documentales antes de ser presentado como habilitado
-                                    para faena.
-                                </p>
-
-                                <div class="actions-row">
-                                    <button class="btn btn--primary">Preseleccionar</button>
-                                    <button class="btn btn-ghost-accent">Solicitar docs</button>
-                                    <button class="btn">Enviar a cliente</button>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </section>
 
-                <div class="candidate-layout">
-                    <!-- ALERTAS -->
-                    <section class="stark-card">
-                        <div class="section-kicker">➔ Alertas críticas</div>
-                        <div id="criticalAlerts" class="alert-list">
-                            <div class="alert-item alert-item--danger">
-                                <span class="alert-bullet alert-bullet--danger"></span>
-                                <div>
-                                    <div style="color:#fff; font-weight:800; font-size:13px;">Falta examen de sílice
-                                    </div>
-                                    <div class="muted" style="font-size:12px; line-height:1.6;">Bloquea cumplimiento
-                                        completo para acreditación si el cargo o faena lo exige.</div>
-                                </div>
-                            </div>
-
-                            <div class="alert-item alert-item--warn">
-                                <span class="alert-bullet alert-bullet--warn"></span>
-                                <div>
-                                    <div style="color:#fff; font-weight:800; font-size:13px;">Altura física próxima a
-                                        vencer</div>
-                                    <div class="muted" style="font-size:12px; line-height:1.6;">Quedan 12 días de
-                                        vigencia. Requiere renovación preventiva.</div>
-                                </div>
-                            </div>
-
-                            <div class="alert-item alert-item--ok">
-                                <span class="alert-bullet alert-bullet--ok"></span>
-                                <div>
-                                    <div style="color:#fff; font-weight:800; font-size:13px;">Experiencia técnica
-                                        validada</div>
-                                    <div class="muted" style="font-size:12px; line-height:1.6;">El perfil muestra una
-                                        trayectoria consistente para funciones eléctricas industriales.</div>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-
-                    <!-- IA + SCORE -->
+                <div class="candidate-layout" style="margin-top: 24px; display: grid; gap: 24px;">
+                    
                     <div class="grid-2">
+                        <!-- INFO DEL PERFIL -->
                         <section class="stark-card">
-                            <div class="section-kicker">➔ Resumen ejecutivo IA</div>
-
-                            <div style="display:flex; align-items:flex-start; gap:12px; margin-bottom:14px;">
-                                <div class="pulse"></div>
-                                <div id="aiSummaryPreview" class="soft"
-                                    style="font-family:'JetBrains Mono', monospace; font-size:12px;">
-                                    SISTEMA LISTO · El perfil presenta alto match técnico para continuar evaluación.
+                            <div class="section-kicker">➔ Evaluación y Capacidades</div>
+                            
+                            <div style="margin-bottom:18px;">
+                                <div class="section-kicker" style="margin-bottom:10px; font-size: 10px; color: var(--text-dim);">Evaluación Crítica IA</div>
+                                <div id="phEval" class="soft" style="font-size:13px; line-height:1.7; border-left:2px solid var(--accent); padding-left:14px;">
+                                    Procesando información...
                                 </div>
                             </div>
 
-                            <div id="phEval" class="ai-summary">
-                                <p><em>Sintonizando telemetría de JARVIS...</em></p>
-                            </div>
-
-                            <div class="actions-row" style="margin-top:18px;">
-                                <button id="btnAiSummary" class="btn btn--primary">Detonar análisis extremo</button>
-                                <button class="btn">Generar informe</button>
+                            <div style="margin-bottom:18px;">
+                                <div class="section-kicker" style="margin-bottom:10px; font-size: 10px; color: var(--text-dim);">Conocimientos / Software</div>
+                                <div id="phConoc" style="display:flex; flex-wrap:wrap; gap:8px;">
+                                    <!-- Chips here -->
+                                </div>
                             </div>
                         </section>
 
+                        <!-- RADAR CHART -->
                         <section class="stark-card">
-                            <div class="section-kicker">➔ Score explicado</div>
-
-                            <div class="score-breakdown">
-                                <div class="score-line">
-                                    <div class="name">Experiencia</div>
-                                    <div class="score-bar"><span id="sbExp" style="width: 0%"></span></div>
-                                    <div class="val">0%</div>
-                                </div>
-                                <div class="score-line">
-                                    <div class="name">Certificaciones</div>
-                                    <div class="score-bar"><span id="sbCert" style="width: 0%"></span></div>
-                                    <div class="val">0%</div>
-                                </div>
-                                <div class="score-line">
-                                    <div class="name">Estabilidad</div>
-                                    <div class="score-bar"><span id="sbEst" style="width: 0%"></span></div>
-                                    <div class="val">0%</div>
-                                </div>
-                                <div class="score-line">
-                                    <div class="name">Fit técnico</div>
-                                    <div class="score-bar"><span id="sbFit" style="width: 0%"></span></div>
-                                    <div class="val">0%</div>
-                                </div>
-                                <div class="score-line">
-                                    <div class="name">Otros</div>
-                                    <div class="score-bar"><span id="sbOtr" style="width: 0%"></span></div>
-                                    <div class="val">0%</div>
-                                </div>
-                            </div>
-
-                            <div style="height:1px; background:rgba(255,255,255,0.06); margin:18px 0;"></div>
-
-                            <div class="section-kicker" style="margin-bottom:10px;">Posición relativa</div>
-                            <div class="kv-grid">
-                                <div class="kv-item">
-                                    <div class="label">Ranking</div>
-                                    <div class="value">#2 de 20 candidatos</div>
-                                </div>
-                                <div class="kv-item">
-                                    <div class="label">Percentil</div>
-                                    <div class="value">Top 10%</div>
-                                </div>
-                                <div class="kv-item">
-                                    <div class="label">Fortaleza diferencial</div>
-                                    <div class="value">Experiencia específica en terreno</div>
-                                </div>
-                                <div class="kv-item">
-                                    <div class="label">Brecha principal</div>
-                                    <div class="value">Cumplimiento documental</div>
-                                </div>
+                            <div class="section-kicker">➔ Radar de competencias</div>
+                            <div class="chart-box" style="height:260px;">
+                                <canvas id="radar"></canvas>
                             </div>
                         </section>
                     </div>
 
-                    <!-- PERFIL + GESTIÓN -->
-                    <div class="grid-2">
-                        <section class="stark-card">
-                            <div class="section-kicker">➔ Perfil rápido y capacidades</div>
-
-                            <div class="kv-grid" style="margin-bottom:16px;">
-                                <div class="kv-item">
-                                    <div class="label">Profesión</div>
-                                    <div id="phCargo" class="value">Técnico de nivel superior en electricidad industrial
-                                    </div>
-                                </div>
-                                <div class="kv-item">
-                                    <div class="label">Disponibilidad</div>
-                                    <div id="phDisponibilidad" class="value">Inmediata</div>
-                                </div>
-                                <div class="kv-item">
-                                    <div class="label">Experiencia en cargo</div>
-                                    <div id="phExpCargo" class="value">8 años</div>
-                                </div>
-                                <div class="kv-item">
-                                    <div class="label">Proyectos similares</div>
-                                    <div id="phExpSimilar" class="value">6 años</div>
-                                </div>
-                            </div>
-
-                            <div>
-                                <div class="section-kicker" style="margin-bottom:10px;">Experiencia específica IA</div>
-                                <ul id="phConoc" class="pill-list">
-                                    <li>Electricidad industrial</li>
-                                    <li>Protección contra incendios</li>
-                                    <li>Mantenimiento</li>
-                                    <li>Faena minera</li>
-                                    <li>Instalaciones críticas</li>
-                                    <li>Seguridad electrónica</li>
-                                </ul>
-                            </div>
-
-                            <div style="margin-top:18px;">
-                                <div class="section-kicker" style="margin-bottom:10px;">Evaluación crítica</div>
-                                <div id="phEval" class="soft"
-                                    style="font-size:13px; line-height:1.7; border-left:2px solid var(--accent); padding-left:14px;">
-                                    Perfil con una propuesta de valor fuerte para cargos técnicos de terreno. Destaca
-                                    por experiencia acumulada, exposición a sistemas críticos y capacidad de integrarse
-                                    rápidamente a operaciones exigentes. La observación principal se concentra en
-                                    regularizar documentos para presentación segura a cliente.
-                                </div>
-                            </div>
-                        </section>
-
-                        <section class="stark-card">
-                            <div class="section-kicker">➔ Gestión de expediente</div>
-
-                            <div style="display:grid; gap:14px;">
-                                <div>
-                                    <label class="stat-label">Vincular a vacante</label>
-                                    <select id="selectVacancy" class="input"
-                                        style="width:100%; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); color:#fff; margin-bottom:10px;">
-                                        <option>Seleccionar vacante...</option>
-                                    </select>
-                                    <button id="btnLinkVacancy" class="btn btn--primary" style="width:100%;">Sincronizar
-                                        vacante</button>
-                                </div>
-
-                                <div>
-                                    <label class="stat-label">Programar entrevista</label>
-                                    <input type="datetime-local" id="interviewDate" class="input"
-                                        style="width:100%; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); color:#fff; margin-bottom:10px;">
-                                    <button id="btnScheduleInterview" class="btn btn--primary"
-                                        style="width:100%;">Agendar operación</button>
-                                </div>
-
-                                <div>
-                                    <label class="stat-label">Acciones rápidas</label>
-                                    <div class="cta-grid">
-                                        <button class="btn cta-btn btn--primary">Preseleccionar</button>
-                                        <button class="btn cta-btn">Descartar</button>
-                                        <button class="btn cta-btn btn-ghost-accent">Solicitar docs</button>
-                                        <button class="btn cta-btn">Enviar a cliente</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </section>
-                    </div>
-
-                    <!-- TRAYECTORIA -->
+                    <!-- TIMELINE -->
                     <section class="stark-card">
-                        <div class="section-kicker">➔ Trayectoria laboral</div>
+                        <div class="section-kicker">➔ Trayectoria laboral (Años Experiencia Estimada)</div>
                         <div class="chart-box" style="height:230px;">
                             <canvas id="expTimeline"></canvas>
                         </div>
@@ -1020,26 +813,7 @@
                     <!-- DOCUMENTOS -->
                     <section class="stark-card">
                         <div class="section-kicker">➔ Cumplimiento documental</div>
-
-                        <div class="compliance-grid">
-                            <div class="mini-state">
-                                <div class="num">6</div>
-                                <div class="txt">Vigentes</div>
-                            </div>
-                            <div class="mini-state">
-                                <div class="num">1</div>
-                                <div class="txt">Por vencer</div>
-                            </div>
-                            <div class="mini-state">
-                                <div class="num">1</div>
-                                <div class="txt">Faltantes</div>
-                            </div>
-                            <div class="mini-state">
-                                <div class="num">🟡</div>
-                                <div class="txt">Estado general</div>
-                            </div>
-                        </div>
-
+                        
                         <div class="table-shell" style="margin-bottom:16px;">
                             <table class="afk-table">
                                 <thead>
@@ -1050,99 +824,15 @@
                                         <th>Observación</th>
                                     </tr>
                                 </thead>
-                                <tbody id="documentsTableBody">
+                                <tbody id="docsTbody">
                                     <tr>
-                                        <td>Sílice</td>
-                                        <td><span class="status-chip status-chip--danger">Faltante</span></td>
-                                        <td>—</td>
-                                        <td>Requerido para cumplimiento completo</td>
-                                    </tr>
-                                    <tr>
-                                        <td>Altura física</td>
-                                        <td><span class="status-chip status-chip--warn">Próximo</span></td>
-                                        <td>12 días</td>
-                                        <td>Renovación preventiva sugerida</td>
-                                    </tr>
-                                    <tr>
-                                        <td>Psicológico</td>
-                                        <td><span class="status-chip status-chip--ok">Vigente</span></td>
-                                        <td>2027-01-14</td>
-                                        <td>Sin observaciones</td>
-                                    </tr>
-                                    <tr>
-                                        <td>Inducción</td>
-                                        <td><span class="status-chip status-chip--ok">Vigente</span></td>
-                                        <td>2026-11-30</td>
-                                        <td>Habilita continuidad operativa</td>
+                                        <td colspan="4" style="text-align:center;" class="soft">Obteniendo expedientes...</td>
                                     </tr>
                                 </tbody>
                             </table>
                         </div>
-
-                        <div class="grid-2-equal">
-                            <div>
-                                <div class="section-kicker">➔ Documentos IA</div>
-                                <div class="files" id="docList">
-                                    <div class="file-pill"><span>CV_Antonio_Garrido.pdf</span><span
-                                            class="muted">CV</span></div>
-                                    <div class="file-pill"><span>Examen_Altura_Fisica.pdf</span><span
-                                            class="muted">Examen</span></div>
-                                    <div class="file-pill"><span>Psicologico_2026.pdf</span><span
-                                            class="muted">Evaluación</span></div>
-                                </div>
-                            </div>
-
-                            <div>
-                                <div class="section-kicker">➔ Visor documental</div>
-                                <iframe id="pdfViewer"></iframe>
-                            </div>
-                        </div>
                     </section>
 
-                    <!-- RADAR + COMPARACIÓN -->
-                    <div class="grid-2">
-                        <section class="stark-card">
-                            <div class="section-kicker">➔ Radar de competencias</div>
-                            <div class="chart-box" style="height:260px;">
-                                <canvas id="radar"></canvas>
-                            </div>
-                        </section>
-
-                        <section class="stark-card">
-                            <div class="section-kicker">➔ Benchmark del candidato</div>
-
-                            <div class="kv-grid">
-                                <div class="kv-item">
-                                    <div class="label">Experiencia</div>
-                                    <div class="value">Superior al promedio</div>
-                                </div>
-                                <div class="kv-item">
-                                    <div class="label">Certificaciones</div>
-                                    <div class="value">Bajo promedio</div>
-                                </div>
-                                <div class="kv-item">
-                                    <div class="label">Estabilidad</div>
-                                    <div class="value">Promedio</div>
-                                </div>
-                                <div class="kv-item">
-                                    <div class="label">Match vacante</div>
-                                    <div class="value">Alto</div>
-                                </div>
-                            </div>
-
-                            <div
-                                style="margin-top:16px; padding:14px; border-radius:14px; background:rgba(34,211,238,0.05); border:1px solid rgba(34,211,238,0.16);">
-                                <div
-                                    style="font-size:12px; color:var(--accent); font-family:'JetBrains Mono', monospace; text-transform:uppercase; margin-bottom:8px;">
-                                    Conclusión comparativa</div>
-                                <div class="soft" style="font-size:13px; line-height:1.7;">
-                                    El candidato destaca por experiencia específica y potencial de desempeño inmediato.
-                                    La variable que más castiga su posición es el estado documental, no la capacidad
-                                    técnica.
-                                </div>
-                            </div>
-                        </section>
-                    </div>
                 </div>
             </div>
         </main>
