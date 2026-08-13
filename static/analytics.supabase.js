@@ -387,7 +387,11 @@
     filteredCandidates.forEach(cand => {
       const coords = findCoords(cand.direccion);
       if (coords) {
-        const marker = L.circleMarker(coords, {
+        const jitterLat = (Math.random() - 0.5) * 0.04;
+        const jitterLng = (Math.random() - 0.5) * 0.04;
+        const finalCoords = [coords[0] + jitterLat, coords[1] + jitterLng];
+
+        const marker = L.circleMarker(finalCoords, {
           radius: 6,
           fillColor: "#22d3ee",
           color: "#fff",
@@ -404,7 +408,11 @@
     filteredWorkers.forEach(w => {
       const coords = findCoords(w.company_name);
       if (coords) {
-        const marker = L.circleMarker(coords, {
+        const jitterLat = (Math.random() - 0.5) * 0.04;
+        const jitterLng = (Math.random() - 0.5) * 0.04;
+        const finalCoords = [coords[0] + jitterLat, coords[1] + jitterLng];
+
+        const marker = L.circleMarker(finalCoords, {
           radius: 4,
           fillColor: "#f97316",
           color: "#fff",
