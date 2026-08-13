@@ -215,7 +215,7 @@ tr { cursor: pointer; }
   display: flex !important; /* Forzado por flex vs none */
   align-items: center;
   justify-content: space-between;
-  padding: 14px 24px;
+  padding: 10px 20px;
   border-radius: 20px;
   animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
