@@ -537,9 +537,9 @@ function renderTecCandidates() {
         const checked = selectedTecIds.has(c.id) ? 'checked' : '';
         return `
             <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-                <td style="padding:8px;"><input type="checkbox" class="tec-cb" data-id="${c.id}" ${checked}></td>
-                <td style="padding:8px; font-size:12px; font-weight:600;">${c.nombre_completo}</td>
-                <td style="padding:8px; font-size:11px; color:var(--muted);">${c.cargo_a_desempenar || '--'}</td>
+                <td style="padding:6px;"><input type="checkbox" class="tec-cb" data-id="${c.id}" ${checked}></td>
+                <td style="padding:6px; font-size:10px; font-weight:600;">${c.nombre_completo}</td>
+                <td style="padding:6px; font-size:11px; color:var(--muted);">${c.cargo_a_desempenar || '--'}</td>
             </tr>
         `;
     }).join('');
