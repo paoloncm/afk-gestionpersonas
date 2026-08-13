@@ -394,6 +394,7 @@
     }
 
     markersLayer.clearLayers();
+    const bounds = [];
 
     // Plot Candidates (Cyan)
     filteredCandidates.forEach(cand => {
@@ -402,6 +403,7 @@
         const jitterLat = (Math.random() - 0.5) * 0.04;
         const jitterLng = (Math.random() - 0.5) * 0.04;
         const finalCoords = [coords[0] + jitterLat, coords[1] + jitterLng];
+        bounds.push(finalCoords);
 
         const marker = L.circleMarker(finalCoords, {
           radius: 6,
@@ -423,6 +425,7 @@
         const jitterLat = (Math.random() - 0.5) * 0.04;
         const jitterLng = (Math.random() - 0.5) * 0.04;
         const finalCoords = [coords[0] + jitterLat, coords[1] + jitterLng];
+        bounds.push(finalCoords);
 
         const marker = L.circleMarker(finalCoords, {
           radius: 4,
@@ -436,6 +439,12 @@
         markersLayer.addLayer(marker);
       }
     });
+
+    if (bounds.length > 0) {
+        mapInstance.fitBounds(bounds, { padding: [50, 50], maxZoom: 12, animate: true, duration: 1.5 });
+    } else {
+        mapInstance.setView([-33.4489, -70.6693], 4);
+    }
   }
 
   function findCoords(input) {
