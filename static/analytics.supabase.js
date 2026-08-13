@@ -132,25 +132,29 @@
        setTimeout(init, 500);
        return;
     }
-    await loadData();
+    await loadAnalyticsData();
     populateAnalyticsFilters();
     renderAll();
     bindEvents();
   }
 
-  async function loadData() {
-    try {
-      const [
-          { data: workers, error: wErr },
-          { data: candidates, error: cErr },
-          { data: exams, error: eErr },
-          { data: vacancies, error: vErr }
-      ] = await Promise.all([
-          window.supabase.from("workers").select("*"),
-          window.supabase.from("candidates").select("*"),
-          window.supabase.from("medical_exam_records").select("*"),
-          window.supabase.from("vacancies").select("*")
-      ]);
+  async function loadAnalyticsData() {
+  try {
+    console.log("[Analytics] Fetching global dataset...");
+    const { data: { user } } = await window.supabase.auth.getUser();
+    const tenant_email = user ? user.email : "paoloncm@gmail.com";
+
+    const [
+      { data: workers, error: wErr },
+      { data: candidates, error: cErr },
+      { data: exams, error: eErr },
+      { data: vacancies, error: vErr }
+    ] = await Promise.all([
+      window.supabase.from("workers").select("*").eq("tenant_email", tenant_email),
+      window.supabase.from("candidates").select("*").eq("tenant_email", tenant_email),
+      window.supabase.from("medical_exam_records").select("*").eq("tenant_email", tenant_email),
+      window.supabase.from("vacancies").select("*").eq("tenant_email", tenant_email)
+    ]);
 
       if (wErr) console.warn("[Analytics] Error loading workers:", wErr);
       if (cErr) console.warn("[Analytics] Error loading candidates:", cErr);

@@ -44,18 +44,21 @@ async function initDashboard() {
 
 async function loadKPIs() {
     console.log("[JARVIS] ⚡ Sincronizando métricas operativas...");
+    try {
+        const { data: { user } } = await window.supabase.auth.getUser();
+        const tenant_email = user ? user.email : "paoloncm@gmail.com";
 
-    const [
-        { count: workerCount },
-        { count: candCount },
-        { count: riskCount },
-        { count: compliantCount }
-    ] = await Promise.all([
-        supabase.from('workers').select('*', { count: 'exact', head: true }),
-        supabase.from('candidates').select('*', { count: 'exact', head: true }),
-        supabase.from('workers').select('*', { count: 'exact', head: true }).eq('status', 'bloqueado'),
-        supabase.from('workers').select('*', { count: 'exact', head: true }).not('rut', 'is', null).not('email', 'is', null)
-    ]);
+        const [
+            { count: workerCount },
+            { count: candCount },
+            { count: riskCount },
+            { count: compliantCount }
+        ] = await Promise.all([
+            supabase.from('workers').select('*', { count: 'exact', head: true }).eq('tenant_email', tenant_email),
+            supabase.from('candidates').select('*', { count: 'exact', head: true }).eq('tenant_email', tenant_email),
+            supabase.from('workers').select('*', { count: 'exact', head: true }).eq('status', 'bloqueado').eq('tenant_email', tenant_email),
+            supabase.from('workers').select('*', { count: 'exact', head: true }).not('rut', 'is', null).not('email', 'is', null).eq('tenant_email', tenant_email)
+        ]);
     
     if ($('#kpi-workers')) $('#kpi-workers').innerText = workerCount || 0;
     if ($('#kpi-candidates')) $('#kpi-candidates').innerText = candCount || 0;
@@ -75,6 +78,7 @@ async function loadKPIs() {
         $('#kpi-compliance').innerText = per + "%";
         if ($('#bar-compliance')) $('#bar-compliance').style.width = per + "%";
     }
+    } catch (e) { console.error("Error loading KPIs", e); }
 }
 
 let selectedCandidateIds = new Set();
@@ -85,6 +89,9 @@ let isLastPage = false;
 async function loadRecentCandidates(reset = false) {
     const tbody = $('#candidates-tbody');
     if (!tbody) return;
+
+    const { data: { user } } = await window.supabase.auth.getUser();
+    const tenant_email = user ? user.email : "paoloncm@gmail.com";
 
     if (reset) {
         currentPage = 0;
@@ -103,7 +110,8 @@ async function loadRecentCandidates(reset = false) {
 
     let query = supabase
         .from('candidates')
-        .select('id, nombre_completo, profesion, cargo_a_desempenar, nota, status');
+        .select('id, nombre_completo, profesion, cargo_a_desempenar, nota, status')
+        .eq('tenant_email', tenant_email);
 
     if (cargo) query = query.eq('cargo_a_desempenar', cargo);
     if (status) query = query.eq('status', status);
@@ -198,9 +206,11 @@ function updateLoadMoreButton() {
 
 async function fetchFilterOptions() {
     console.log("[JARVIS] 🔍 Poblando opciones de filtrado táctico...");
+    const { data: { user } } = await window.supabase.auth.getUser();
+    const tenant_email = user ? user.email : "paoloncm@gmail.com";
     
     // Cargos únicos
-    const { data: cargos } = await supabase.from('candidates').select('cargo_a_desempenar').not('cargo_a_desempenar', 'is', null);
+    const { data: cargos } = await supabase.from('candidates').select('cargo_a_desempenar').not('cargo_a_desempenar', 'is', null).eq('tenant_email', tenant_email);
     if (cargos) {
         const uniqueCargos = Array.from(new Set(cargos.map(c => c.cargo_a_desempenar))).sort();
         const selCargo = $('#filter-cargo');
@@ -214,7 +224,7 @@ async function fetchFilterOptions() {
     }
 
     // Estados únicos
-    const { data: statuses } = await supabase.from('candidates').select('status').not('status', 'is', null);
+    const { data: statuses } = await supabase.from('candidates').select('status').not('status', 'is', null).eq('tenant_email', tenant_email);
     if (statuses) {
         const uniqueStatus = Array.from(new Set(statuses.map(s => s.status))).sort();
         const selStatus = $('#filter-status');
@@ -247,10 +257,13 @@ function updateBulkBar() {
 async function loadPipeline() {
     const container = $('#dashboard-pipeline');
     if (!container) return;
+    const { data: { user } } = await window.supabase.auth.getUser();
+    const tenant_email = user ? user.email : "paoloncm@gmail.com";
 
     const { count: tenderCount, error } = await supabase
         .from('tenders')
-        .select('*', { count: 'exact', head: true });
+        .select('*', { count: 'exact', head: true })
+        .eq('tenant_email', tenant_email);
 
     if (error) return;
 
@@ -265,10 +278,13 @@ async function loadPipeline() {
 async function loadTopCandidates() {
     const list = $('#dashboard-top-candidates');
     if (!list) return;
+    const { data: { user } } = await window.supabase.auth.getUser();
+    const tenant_email = user ? user.email : "paoloncm@gmail.com";
 
     const { data: topCands, error } = await supabase
         .from('candidates')
         .select('nombre_completo, nota, cargo_a_desempenar')
+        .eq('tenant_email', tenant_email)
         .order('nota', { ascending: false })
         .limit(5);
 
@@ -295,9 +311,15 @@ function setupEventListeners() {
         btnSync.onclick = async () => {
              btnSync.disabled = true;
              btnSync.innerText = "Sincronizando...";
-             try {
-                const res = await fetch('/api/sync-drive', { method: 'POST' });
-                const data = await res.json();
+               try {
+                  const { data: { user } } = await window.supabase.auth.getUser();
+                  const tenant_email = user ? user.email : "paoloncm@gmail.com";
+                  const res = await fetch('/api/sync-drive', { 
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ tenant_email: tenant_email })
+                  });
+                  const data = await res.json();
                 if (data.ok) alert("JARVIS: Sincronización iniciada.");
                 else alert("JARVIS: Error: " + data.detail);
              } catch (e) { alert("JARVIS: Error de comunicación."); }
@@ -487,11 +509,14 @@ window.openTecModal = async function(type, fromBulk = false) {
     const modal = $('#tec-modal');
     if (!modal) return;
     
+    const { data: { user } } = await window.supabase.auth.getUser();
+    const tenant_email = user ? user.email : "paoloncm@gmail.com";
+
     $('#tec-modal-title').innerText = type === 'cuadrilla' ? 'Generar Cuadrilla (TEC-02 & TEC-02A)' : 'Generar Planilla';
     $('#tec-filename').value = '';
     
     // Fetch all candidates to filter locally
-    const { data, error } = await supabase.from('candidates').select('id, nombre_completo, cargo_a_desempenar, experiencia, software_que_domina, ultima_exp_laboral_empresa');
+    const { data, error } = await supabase.from('candidates').select('id, nombre_completo, cargo_a_desempenar, experiencia, software_que_domina, ultima_exp_laboral_empresa').eq('tenant_email', tenant_email);
     if (data) {
         tecCandidatesData = data;
     }
