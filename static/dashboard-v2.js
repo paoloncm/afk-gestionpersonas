@@ -43,24 +43,22 @@ async function initDashboard() {
 }
 
 async function loadKPIs() {
-    console.log("[JARVIS] 📊 Sincronizando métricas operativas...");
+    console.log("[JARVIS] ⚡ Sincronizando métricas operativas...");
 
-    const { count: workerCount } = await supabase
-        .from('workers')
-        .select('*', { count: 'exact', head: true });
+    const [
+        { count: workerCount },
+        { count: candCount },
+        { count: riskCount },
+        { count: compliantCount }
+    ] = await Promise.all([
+        supabase.from('workers').select('*', { count: 'exact', head: true }),
+        supabase.from('candidates').select('*', { count: 'exact', head: true }),
+        supabase.from('workers').select('*', { count: 'exact', head: true }).eq('status', 'bloqueado'),
+        supabase.from('workers').select('*', { count: 'exact', head: true }).not('rut', 'is', null).not('email', 'is', null)
+    ]);
     
     if ($('#kpi-workers')) $('#kpi-workers').innerText = workerCount || 0;
-
-    const { count: candCount } = await supabase
-        .from('candidates')
-        .select('*', { count: 'exact', head: true });
-    
     if ($('#kpi-candidates')) $('#kpi-candidates').innerText = candCount || 0;
-
-    const { count: riskCount } = await supabase
-        .from('workers')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'bloqueado');
     
     if ($('#kpi-risks')) {
         const val = riskCount || 0;
@@ -70,17 +68,12 @@ async function loadKPIs() {
 
     if ($('#kpi-expiring')) $('#kpi-expiring').innerText = "4"; 
     if ($('#bar-expiring')) $('#bar-expiring').style.width = "40%";
-
-    const { count: compliantCount } = await supabase
-        .from('workers')
-        .select('*', { count: 'exact', head: true })
-        .not('rut', 'is', null)
-        .not('email', 'is', null);
     
     if ($('#kpi-compliance')) {
         const total = workerCount || 1;
-        const pct = Math.round(((compliantCount || 0) / total) * 100);
-        $('#kpi-compliance').innerText = pct + "%";
+        const per = Math.round(((compliantCount || 0) / total) * 100);
+        $('#kpi-compliance').innerText = per + "%";
+        if ($('#bar-compliance')) $('#bar-compliance').style.width = per + "%";
     }
 }
 

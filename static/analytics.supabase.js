@@ -140,10 +140,17 @@
 
   async function loadData() {
     try {
-      const { data: workers, error: wErr } = await window.supabase.from("workers").select("*");
-      const { data: candidates, error: cErr } = await window.supabase.from("candidates").select("*");
-      const { data: exams, error: eErr } = await window.supabase.from("medical_exam_records").select("*");
-      const { data: vacancies, error: vErr } = await window.supabase.from("vacancies").select("*");
+      const [
+          { data: workers, error: wErr },
+          { data: candidates, error: cErr },
+          { data: exams, error: eErr },
+          { data: vacancies, error: vErr }
+      ] = await Promise.all([
+          window.supabase.from("workers").select("*"),
+          window.supabase.from("candidates").select("*"),
+          window.supabase.from("medical_exam_records").select("*"),
+          window.supabase.from("vacancies").select("*")
+      ]);
 
       if (wErr) console.warn("[Analytics] Error loading workers:", wErr);
       if (cErr) console.warn("[Analytics] Error loading candidates:", cErr);
@@ -386,7 +393,7 @@
     if (!mapEl) return;
 
     if (!mapInstance) {
-      mapInstance = L.map('map_candidates', { zoomControl: false }).setView([-33.4489, -70.6693], 4);
+      mapInstance = L.map('map_candidates', { zoomControl: false, preferCanvas: true }).setView([-33.4489, -70.6693], 4);
       L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
         attribution: '&copy; CartoDB'
       }).addTo(mapInstance);
