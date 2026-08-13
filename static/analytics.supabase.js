@@ -217,6 +217,18 @@
               selRegion.appendChild(opt);
           });
       }
+      window.zoomMap = function(level) {
+      if (!mapInstance) return;
+      if (level === 'pais') {
+          mapInstance.flyTo([-35.6751, -71.5430], 4, { duration: 1.5 });
+      } else if (level === 'norte') {
+          mapInstance.flyTo([-23.6509, -70.3975], 5, { duration: 1.5 });
+      } else if (level === 'centro') {
+          mapInstance.flyTo([-33.4489, -70.6693], 7, { duration: 1.5 });
+      } else if (level === 'sur') {
+          mapInstance.flyTo([-41.4693, -72.9424], 5, { duration: 1.5 });
+      }
+    };
   }
 
   function applyAnalyticsFilters() {
